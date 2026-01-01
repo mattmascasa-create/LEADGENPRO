@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import AICoach from '@/components/AICoach';
 import AICopilot from '@/components/AICopilot';
+import TeamChat from '@/components/TeamChat';
 
 const DashboardLayout = ({ children }) => {
   return (
@@ -14,6 +15,7 @@ const DashboardLayout = ({ children }) => {
       </div>
       <AICoach />
       <AICopilot />
+      <TeamChat />
     </div>
   );
 };

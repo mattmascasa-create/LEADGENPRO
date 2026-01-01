@@ -876,6 +876,99 @@ async def log_call_outcome(
     
     return {"message": "Call logged successfully", "outcome": outcome.outcome}
 
+# Tasks Management
+class Task(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    type: str  # call, email, meeting, follow_up, other
+    lead_id: Optional[str] = None
+    assigned_to: str
+    assigned_name: Optional[str] = None
+    due_date: datetime
+    priority: str = "medium"  # low, medium, high
+    completed: bool = False
+    completed_at: Optional[datetime] = None
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    type: str
+    lead_id: Optional[str] = None
+    assigned_to: str
+    due_date: datetime
+    priority: str = "medium"
+
+@api_router.get("/tasks", response_model=List[Task])
+async def get_tasks(current_user: User = Depends(get_current_user)):
+    \"\"\"Get all tasks\"\"\"
+    query = {}
+    if current_user.role == "employee":
+        query["assigned_to"] = current_user.id
+    
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
+    return [Task(**task) for task in tasks]
+
+@api_router.post("/tasks", response_model=Task)
+async def create_task(task_data: TaskCreate, current_user: User = Depends(get_current_user)):
+    \"\"\"Create a new task\"\"\"
+    # Get assigned user name
+    assigned_user = await db.users.find_one({"id": task_data.assigned_to})
+    
+    task = Task(
+        **task_data.model_dump(),
+        created_by=current_user.id,
+        assigned_name=assigned_user['full_name'] if assigned_user else None
+    )
+    doc = task.model_dump()
+    doc['due_date'] = doc['due_date'].isoformat()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.tasks.insert_one(doc)
+    
+    # Log activity
+    activity = Activity(
+        type="task_created",
+        description=f"Created task: {task.title}",
+        lead_id=task.lead_id,
+        user_id=current_user.id
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return task
+
+@api_router.put("/tasks/{task_id}/complete")
+async def complete_task(task_id: str, current_user: User = Depends(get_current_user)):
+    \"\"\"Mark a task as completed\"\"\"
+    result = await db.tasks.update_one(
+        {"id": task_id},
+        {"$set": {
+            "completed": True,
+            "completed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Log activity
+    task = await db.tasks.find_one({"id": task_id})
+    activity = Activity(
+        type="task_completed",
+        description=f"Completed task: {task['title']}",
+        lead_id=task.get('lead_id'),
+        user_id=current_user.id
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"message": "Task completed"}
+
 # Team Chat - Channels
 class Channel(BaseModel):
     model_config = ConfigDict(extra="ignore")

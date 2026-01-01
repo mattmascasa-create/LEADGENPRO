@@ -8,9 +8,14 @@ import '@/App.css';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import OnboardingWizard from '@/pages/OnboardingWizard';
 import DashboardPage from '@/pages/DashboardPage';
+import PipelinePage from '@/pages/PipelinePage';
 import LeadsPage from '@/pages/LeadsPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
+import SequencesPage from '@/pages/SequencesPage';
+import TemplatesPage from '@/pages/TemplatesPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -30,6 +35,11 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
+  // Redirect to onboarding if not completed
+  if (!user.onboarding_completed && window.location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   return children;
 };
 
@@ -42,10 +52,26 @@ function AppContent() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <OnboardingWizard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pipeline"
+            element={
+              <ProtectedRoute>
+                <PipelinePage />
               </ProtectedRoute>
             }
           />
@@ -65,15 +91,39 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/sequences"
+            element={
+              <ProtectedRoute>
+                <SequencesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/templates"
+            element={
+              <ProtectedRoute>
+                <TemplatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
       <ToastContainer
         position="top-right"
-        theme="dark"
+        theme="light"
         toastStyle={{
-          background: 'hsl(240 10% 3.9%)',
-          border: '1px solid hsl(240 3.7% 15.9%)',
-          color: 'hsl(0 0% 98%)'
+          background: '#ffffff',
+          border: '1px solid hsl(214 32% 91%)',
+          color: 'hsl(222 47% 11%)'
         }}
       />
     </div>

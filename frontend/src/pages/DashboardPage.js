@@ -1,255 +1,188 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, Target, Calendar, TrendingUp, Award, LogOut, Menu } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { TrendingUp, Users, Target, Calendar, Sparkles, ArrowRight, Activity } from 'lucide-react';
 import { toast } from 'react-toastify';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const DashboardPage = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [insights, setInsights] = useState([]);
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
-    fetchStats();
+    fetchData();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/stats`);
-      setStats(response.data);
+      const [statsRes, insightsRes, activitiesRes] = await Promise.all([
+        axios.get(`${API_URL}/api/stats`),
+        axios.get(`${API_URL}/api/insights`),
+        axios.get(`${API_URL}/api/activities?limit=10`)
+      ]);
+      setStats(statsRes.data);
+      setInsights(insightsRes.data);
+      setActivities(activitiesRes.data);
     } catch (error) {
-      toast.error('Failed to load stats');
+      toast.error('Failed to load dashboard data');
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    toast.success('Logged out successfully');
-  };
-
   const chartData = [
-    { name: 'Mon', leads: 24 },
-    { name: 'Tue', leads: 32 },
-    { name: 'Wed', leads: 28 },
-    { name: 'Thu', leads: 45 },
-    { name: 'Fri', leads: 38 },
-    { name: 'Sat', leads: 15 },
-    { name: 'Sun', leads: 12 }
+    { name: 'Mon', leads: 24, deals: 12 },
+    { name: 'Tue', leads: 32, deals: 18 },
+    { name: 'Wed', leads: 28, deals: 15 },
+    { name: 'Thu', leads: 45, deals: 22 },
+    { name: 'Fri', leads: 38, deals: 20 },
+    { name: 'Sat', leads: 15, deals: 8 },
+    { name: 'Sun', leads: 12, deals: 6 }
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="glassmorphism border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-black text-primary">LeadGen Pro</h1>
-              <div className="hidden md:flex gap-4">
-                <Link to="/dashboard" className="px-4 py-2 rounded-lg bg-primary/10 text-primary font-semibold">
-                  Dashboard
-                </Link>
-                <Link to="/leads" className="px-4 py-2 rounded-lg hover:bg-primary/10 text-foreground transition-colors">
-                  Leads
-                </Link>
-                <Link to="/appointments" className="px-4 py-2 rounded-lg hover:bg-primary/10 text-foreground transition-colors">
-                  Appointments
-                </Link>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold">{user?.full_name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-primary/10"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {menuOpen && (
-            <div className="md:hidden mt-4 space-y-2">
-              <Link to="/dashboard" className="block px-4 py-2 rounded-lg bg-primary/10 text-primary font-semibold">
-                Dashboard
-              </Link>
-              <Link to="/leads" className="block px-4 py-2 rounded-lg hover:bg-primary/10 text-foreground">
-                Leads
-              </Link>
-              <Link to="/appointments" className="block px-4 py-2 rounded-lg hover:bg-primary/10 text-foreground">
-                Appointments
-              </Link>
-            </div>
-          )}
+    <DashboardLayout>
+      <div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+          <p className="text-secondary">Welcome back! Here's what's happening today.</p>
         </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h2 className="text-4xl font-black mb-2">Welcome back, {user?.full_name}! 🚀</h2>
-          <p className="text-muted-foreground text-lg">Here's what's happening with your leads today</p>
-        </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            {
-              icon: <Target className="w-8 h-8" />,
-              label: 'Total Leads',
-              value: stats?.total_leads || 0,
-              color: 'text-primary',
-              bg: 'bg-primary/10'
-            },
-            {
-              icon: <Users className="w-8 h-8" />,
-              label: 'Team Members',
-              value: stats?.total_users || 0,
-              color: 'text-accent',
-              bg: 'bg-accent/10'
-            },
-            {
-              icon: <Calendar className="w-8 h-8" />,
-              label: 'Appointments',
-              value: stats?.total_appointments || 0,
-              color: 'text-green-500',
-              bg: 'bg-green-500/10'
-            },
-            {
-              icon: <TrendingUp className="w-8 h-8" />,
-              label: 'Conversion Rate',
-              value: `${stats?.conversion_rate || 0}%`,
-              color: 'text-yellow-500',
-              bg: 'bg-yellow-500/10'
-            }
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="glassmorphism p-6 rounded-xl hover:border-primary transition-all group"
-            >
-              <div className={`${stat.bg} ${stat.color} w-16 h-16 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                {stat.icon}
-              </div>
-              <p className="text-muted-foreground text-sm mb-1">{stat.label}</p>
-              <p className="metric-value text-3xl font-bold">{stat.value}</p>
-            </motion.div>
-          ))}
+            { icon: Target, label: 'Total Leads', value: stats?.total_leads || 0, color: 'text-primary', bg: 'bg-primary/10' },
+            { icon: Users, label: 'Team Members', value: stats?.total_users || 0, color: 'text-accent', bg: 'bg-accent/10' },
+            { icon: Calendar, label: 'Appointments', value: stats?.total_appointments || 0, color: 'text-green-600', bg: 'bg-green-100' },
+            { icon: TrendingUp, label: 'Conversion Rate', value: `${stats?.conversion_rate || 0}%`, color: 'text-blue-600', bg: 'bg-blue-100' }
+          ].map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white p-6 rounded-xl border border-border hover:border-primary transition-all duration-200 hover:shadow-md"
+              >
+                <div className={`${stat.bg} ${stat.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <p className="text-sm text-secondary mb-1">{stat.label}</p>
+                <p className="text-3xl font-bold metric-value text-foreground">{stat.value}</p>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Chart Section */}
+        {/* AI Insights */}
+        {insights.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-accent" />
+              AI Insights
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {insights.map((insight, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="ai-card p-6 rounded-xl"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-5 h-5 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-2">{insight.message}</h3>
+                      {insight.action_items && insight.action_items.length > 0 && (
+                        <ul className="space-y-1">
+                          {insight.action_items.map((item, i) => (
+                            <li key={i} className="text-sm text-secondary flex items-center gap-2">
+                              <ArrowRight className="w-3 h-3" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="glassmorphism p-6 rounded-xl"
-          >
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart className="w-6 h-6 text-primary" />
-              Weekly Lead Activity
-            </h3>
+          <div className="bg-white p-6 rounded-xl border border-border">
+            <h3 className="text-lg font-semibold text-foreground mb-6">Weekly Activity</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 3.7% 15.9%)" />
-                <XAxis dataKey="name" stroke="hsl(0 0% 98%)" />
-                <YAxis stroke="hsl(0 0% 98%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
+                <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
+                <YAxis stroke="hsl(215 16% 47%)" />
                 <Tooltip
                   contentStyle={{
-                    background: 'hsl(240 10% 3.9%)',
-                    border: '1px solid hsl(240 3.7% 15.9%)',
+                    background: '#ffffff',
+                    border: '1px solid hsl(214 32% 91%)',
                     borderRadius: '0.5rem'
                   }}
                 />
-                <Bar dataKey="leads" fill="hsl(263.4 70% 50.4%)" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="leads" fill="hsl(226 71% 40%)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="glassmorphism p-6 rounded-xl"
-          >
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Award className="w-6 h-6 text-accent" />
-              Top Performers
-            </h3>
-            <div className="space-y-4">
-              {[
-                { name: 'Sarah Johnson', leads: 45, badge: '🥇' },
-                { name: 'Mike Chen', leads: 38, badge: '🥈' },
-                { name: 'Emma Davis', leads: 32, badge: '🥉' }
-              ].map((performer, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{performer.badge}</span>
-                    <div>
-                      <p className="font-semibold">{performer.name}</p>
-                      <p className="text-sm text-muted-foreground">{performer.leads} leads closed</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 bg-primary/10 text-primary rounded-lg font-bold">
-                    +{performer.leads}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          <div className="bg-white p-6 rounded-xl border border-border">
+            <h3 className="text-lg font-semibold text-foreground mb-6">Conversion Trend</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
+                <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
+                <YAxis stroke="hsl(215 16% 47%)" />
+                <Tooltip
+                  contentStyle={{
+                    background: '#ffffff',
+                    border: '1px solid hsl(214 32% 91%)',
+                    borderRadius: '0.5rem'
+                  }}
+                />
+                <Line type="monotone" dataKey="deals" stroke="hsl(24 95% 53%)" strokeWidth={3} dot={{ fill: 'hsl(24 95% 53%)' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glassmorphism p-6 rounded-xl"
-        >
-          <h3 className="text-xl font-bold mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link to="/leads">
-              <button className="w-full p-4 bg-primary text-primary-foreground rounded-lg font-semibold hover:scale-105 transition-transform">
-                Add New Lead
-              </button>
-            </Link>
-            <Link to="/appointments">
-              <button className="w-full p-4 bg-accent text-accent-foreground rounded-lg font-semibold hover:scale-105 transition-transform">
-                Schedule Meeting
-              </button>
-            </Link>
-            <button className="w-full p-4 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/10 transition-colors">
-              View Reports
-            </button>
-            <button className="w-full p-4 border-2 border-accent text-accent rounded-lg font-semibold hover:bg-accent/10 transition-colors">
-              Team Chat
-            </button>
+        {/* Activity Feed */}
+        <div className="bg-white p-6 rounded-xl border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            Recent Activity
+          </h3>
+          <div className="space-y-4">
+            {activities.length > 0 ? activities.map((activity, index) => (
+              <div key={index} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                <div className="flex-1">
+                  <p className="text-sm text-foreground">{activity.description}</p>
+                  <p className="text-xs text-secondary mt-1">
+                    {new Date(activity.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-secondary text-center py-8">No recent activity</p>
+            )}
           </div>
-        </motion.div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

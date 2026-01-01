@@ -11,7 +11,9 @@ import {
   BarChart3, 
   Settings,
   LogOut,
-  Sparkles
+  Sparkles,
+  Phone,
+  UserCog
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -21,18 +23,25 @@ const Sidebar = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Call Lists', href: '/call-lists', icon: Phone, roles: ['employee', 'admin'] },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
     { name: 'Leads', href: '/leads', icon: Users },
     { name: 'Calendar', href: '/appointments', icon: Calendar },
     { name: 'Sequences', href: '/sequences', icon: Mail },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Distribute Leads', href: '/admin/distribute', icon: UserCog, roles: ['admin'] },
   ];
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const filteredNavigation = navigation.filter(item => {
+    if (!item.roles) return true;
+    return item.roles.includes(user?.role);
+  });
 
   return (
     <div className="sidebar-dark h-screen w-64 fixed left-0 top-0 flex flex-col z-50">
@@ -47,8 +56,8 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {navigation.map((item) => {
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {filteredNavigation.map((item) => {
           const isActive = location.pathname === item.href;
           const Icon = item.icon;
           
@@ -63,8 +72,7 @@ const Sidebar = () => {
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }
               `}
-            >
-              <Icon className="w-5 h-5" />
+            >\n              <Icon className="w-5 h-5" />
               <span className="font-medium">{item.name}</span>
             </Link>
           );

@@ -876,6 +876,105 @@ async def log_call_outcome(
     
     return {"message": "Call logged successfully", "outcome": outcome.outcome}
 
+# Team Chat - Channels
+class Channel(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    type: str = "public"  # public, private
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChannelCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    type: str = "public"
+
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    channel_id: str
+    sender_id: str
+    sender_name: str
+    content: str
+    type: str = "text"  # text, file, meeting
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChatMessageCreate(BaseModel):
+    channel_id: str
+    content: str
+    type: str = "text"
+    metadata: Optional[Dict[str, Any]] = None
+
+@api_router.get("/chat/channels", response_model=List[Channel])
+async def get_channels(current_user: User = Depends(get_current_user)):
+    \"\"\"Get all channels\"\"\"
+    channels = await db.channels.find({}, {"_id": 0}).to_list(1000)
+    
+    # Create default channels if none exist
+    if not channels:
+        default_channels = [
+            {"name": "general", "description": "General team discussion", "type": "public"},
+            {"name": "sales", "description": "Sales team coordination", "type": "public"},
+            {"name": "leads", "description": "Lead discussions", "type": "public"}
+        ]
+        for ch in default_channels:
+            channel = Channel(**ch, created_by=current_user.id)
+            doc = channel.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.channels.insert_one(doc)
+        
+        channels = await db.channels.find({}, {"_id": 0}).to_list(1000)
+    
+    return [Channel(**ch) for ch in channels]
+
+@api_router.post("/chat/channels", response_model=Channel)
+async def create_channel(channel_data: ChannelCreate, current_user: User = Depends(get_current_user)):
+    \"\"\"Create a new channel\"\"\"
+    channel = Channel(**channel_data.model_dump(), created_by=current_user.id)
+    doc = channel.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.channels.insert_one(doc)
+    return channel
+
+@api_router.get("/chat/messages/{channel_id}", response_model=List[ChatMessage])
+async def get_messages(channel_id: str, limit: int = 100, current_user: User = Depends(get_current_user)):
+    \"\"\"Get messages for a channel\"\"\"
+    messages = await db.chat_messages.find(
+        {"channel_id": channel_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    messages.reverse()  # Show oldest first
+    return [ChatMessage(**msg) for msg in messages]
+
+@api_router.post("/chat/messages", response_model=ChatMessage)
+async def send_message(msg_data: ChatMessageCreate, current_user: User = Depends(get_current_user)):
+    \"\"\"Send a message to a channel\"\"\"
+    message = ChatMessage(
+        **msg_data.model_dump(),
+        sender_id=current_user.id,
+        sender_name=current_user.full_name
+    )
+    doc = message.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.chat_messages.insert_one(doc)
+    
+    # Log activity
+    activity = Activity(
+        type="message_sent",
+        description=f"Sent message in #{msg_data.channel_id}",
+        user_id=current_user.id,
+        metadata={"channel_id": msg_data.channel_id}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return message
+
 app.include_router(api_router)
 
 app.add_middleware(

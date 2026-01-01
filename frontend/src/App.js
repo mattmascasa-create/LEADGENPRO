@@ -19,6 +19,7 @@ import AnalyticsPage from '@/pages/AnalyticsPage';
 import AdminDistributePage from '@/pages/AdminDistributePage';
 import CallListsPage from '@/pages/CallListsPage';
 
+import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';
 
 // Auth Context
@@ -124,6 +125,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AdminDistributePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <TasksPage />
               </ProtectedRoute>
             }
           />

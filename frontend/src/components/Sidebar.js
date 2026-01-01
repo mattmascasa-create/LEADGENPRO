@@ -13,7 +13,9 @@ import {
   LogOut,
   Sparkles,
   Phone,
-  UserCog
+  UserCog,
+  CheckSquare,
+  FolderOpen
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -24,6 +26,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Call Lists', href: '/call-lists', icon: Phone, roles: ['employee', 'admin'] },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
     { name: 'Leads', href: '/leads', icon: Users },

@@ -1,23 +1,15 @@
 .App {
   min-height: 100vh;
-  background: hsl(240 10% 3.9%);
 }
 
-.App-header {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+.control-room-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
 }
 
-.App-link {
-  color: hsl(263.4 70% 50.4%);
-  transition: all 0.3s ease;
-}
-
-.App-link:hover {
-  filter: brightness(1.2);
-  transform: scale(1.05);
+@media (max-width: 768px) {
+  .control-room-grid {
+    grid-template-columns: 1fr;
+  }
 }

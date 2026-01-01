@@ -117,6 +117,22 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/distribute"
+            element={
+              <ProtectedRoute>
+                <AdminDistributePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/call-lists"
+            element={
+              <ProtectedRoute>
+                <CallListsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
       <ToastContainer

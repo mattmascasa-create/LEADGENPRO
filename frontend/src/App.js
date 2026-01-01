@@ -19,6 +19,8 @@ import AnalyticsPage from '@/pages/AnalyticsPage';
 import AdminDistributePage from '@/pages/AdminDistributePage';
 import CallListsPage from '@/pages/CallListsPage';
 
+import MeetingsPage from '@/pages/MeetingsPage';
+
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
@@ -122,6 +124,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AdminDistributePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meetings"
+            element={
+              <ProtectedRoute>
+                <MeetingsPage />
               </ProtectedRoute>
             }
           />

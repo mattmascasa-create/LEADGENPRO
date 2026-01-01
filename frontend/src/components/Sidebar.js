@@ -24,9 +24,9 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Call Lists', href: '/call-lists', icon: Phone, roles: ['employee', 'admin'] },
+    { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
     { name: 'Leads', href: '/leads', icon: Users },
-    { name: 'Calendar', href: '/appointments', icon: Calendar },
     { name: 'Sequences', href: '/sequences', icon: Mail },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },

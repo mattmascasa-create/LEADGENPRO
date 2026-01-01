@@ -1,5 +1,6 @@
 import React from 'react';
 import Sidebar from '@/components/Sidebar';
+import AICoach from '@/components/AICoach';
 
 const DashboardLayout = ({ children }) => {
   return (
@@ -10,6 +11,7 @@ const DashboardLayout = ({ children }) => {
           {children}
         </main>
       </div>
+      <AICoach />
     </div>
   );
 };

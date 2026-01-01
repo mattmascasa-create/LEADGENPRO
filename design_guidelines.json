@@ -1,123 +1,174 @@
 {
-  "brand_identity": {
-    "name": "LeadGen Pro",
-    "archetype": "Electric & Neon (Future, Speed, Disruption)",
-    "tone": "Energetic, Competitive, Professional, High-Tech",
-    "theme_mode": "dark",
-    "design_principles": [
-      "Fusion over Imitation: Mix Gaming UI with Enterprise SaaS",
-      "Emotion First: Every interaction should feel rewarding",
-      "Content is King: Data is the hero, make it pop",
-      "Zoom In: Focus on the metrics that matter",
-      "Negative Space: Use black void to make neon pop",
-      "Contrast: High contrast for readability and excitement"
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "philosophy": "Fusion over Imitation. Emotion First. Content is King.",
+    "anti_patterns": [
+      "Generic purple/teal gradients",
+      "Inter font everywhere",
+      "Centered layouts without tension",
+      "Gradient overload"
     ]
   },
   "typography": {
-    "headings": {
-      "family": "Outfit, sans-serif",
-      "weights": ["400", "700", "900"],
-      "usage": "Main headings, hero text, dashboard widgets titles",
-      "letter_spacing": "tracking-tight"
+    "fonts": {
+      "headings": {
+        "family": "Outfit, sans-serif",
+        "weights": ["500", "700", "900"],
+        "usage": "Page titles, Section headers, Modal titles",
+        "letter_spacing": "tracking-tight"
+      },
+      "body": {
+        "family": "Manrope, sans-serif",
+        "weights": ["400", "500", "600"],
+        "usage": "Paragraphs, UI labels, Form inputs",
+        "line_height": "leading-relaxed"
+      },
+      "data": {
+        "family": "JetBrains Mono, monospace",
+        "weights": ["400"],
+        "usage": "Metrics, KPIs, Code snippets, IDs",
+        "letter_spacing": "tracking-wide"
+      }
     },
-    "body": {
-      "family": "Manrope, sans-serif",
-      "weights": ["400", "500", "600"],
-      "usage": "Paragraphs, UI labels, form inputs",
-      "letter_spacing": "tracking-normal"
-    },
-    "mono": {
-      "family": "JetBrains Mono, monospace",
-      "weights": ["400"],
-      "usage": "Data values, code snippets, financial metrics",
-      "letter_spacing": "tracking-wide"
-    },
-    "installation": "Import from Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Manrope:wght@400;500;600&family=Outfit:wght@400;700;900&display=swap');"
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold",
+      "body_lg": "text-lg leading-7",
+      "body_base": "text-base leading-6",
+      "caption": "text-sm text-muted-foreground uppercase tracking-wider"
+    }
   },
   "colors": {
     "palette": {
-      "background": "hsl(240 10% 3.9%)",
-      "foreground": "hsl(0 0% 98%)",
-      "card": "hsl(240 10% 3.9%)",
-      "card_foreground": "hsl(0 0% 98%)",
-      "popover": "hsl(240 10% 3.9%)",
-      "popover_foreground": "hsl(0 0% 98%)",
-      "primary": "hsl(263.4 70% 50.4%)",
-      "primary_foreground": "hsl(210 40% 98%)",
-      "secondary": "hsl(240 3.7% 15.9%)",
-      "secondary_foreground": "hsl(0 0% 98%)",
-      "muted": "hsl(240 3.7% 15.9%)",
-      "muted_foreground": "hsl(240 5% 64.9%)",
-      "accent": "hsl(322 81% 43%)",
-      "accent_foreground": "hsl(0 0% 98%)",
-      "destructive": "hsl(0 62.8% 30.6%)",
-      "destructive_foreground": "hsl(0 0% 98%)",
-      "border": "hsl(240 3.7% 15.9%)",
-      "input": "hsl(240 3.7% 15.9%)",
-      "ring": "hsl(263.4 70% 50.4%)"
+      "primary": {
+        "name": "Executive Indigo",
+        "value": "hsl(226 71% 40%)",
+        "usage": "Primary buttons, Active states, Brand moments"
+      },
+      "secondary": {
+        "name": "Slate Steel",
+        "value": "hsl(215 16% 47%)",
+        "usage": "Secondary text, Borders, Inactive icons"
+      },
+      "accent": {
+        "name": "Signal Orange",
+        "value": "hsl(24 95% 53%)",
+        "usage": "AI Insights, Critical Alerts, Call-to-Action highlights"
+      },
+      "background": {
+        "name": "Pale Slate",
+        "value": "hsl(210 40% 98%)",
+        "usage": "Main app background (Light Mode)"
+      },
+      "surface": {
+        "name": "Pure White",
+        "value": "#ffffff",
+        "usage": "Cards, Modals, Dropdowns"
+      },
+      "sidebar": {
+        "name": "Deep Void",
+        "value": "hsl(222 47% 11%)",
+        "usage": "Navigation Sidebar (Dark Mode contrast)"
+      }
     },
-    "chart_colors": {
-      "chart_1": "hsl(263.4 70% 50.4%)",
-      "chart_2": "hsl(160 84% 39%)",
-      "chart_3": "hsl(322 81% 43%)",
-      "chart_4": "hsl(47 95% 57%)",
-      "chart_5": "hsl(199 89% 48%)"
-    },
-    "usage_rules": [
-      "Use 'primary' (Electric Violet) for main CTAs and active states.",
-      "Use 'accent' (Hot Pink) for gamification elements (badges, new notifications).",
-      "Use 'chart_2' (Neon Green) for positive financial metrics.",
-      "Use 'chart_4' (Cyber Yellow) for warnings or pending states.",
-      "Backgrounds must be deep dark (Zinc 950), never pure black unless for contrast layers."
-    ]
+    "gradients": {
+      "ai_glow": "linear-gradient(135deg, hsl(24 95% 53%), hsl(226 71% 40%))",
+      "glass_surface": "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%)"
+    }
   },
-  "layout": {
-    "spacing_scale": "Generous (p-6, p-8, p-12)",
-    "border_radius": "0.5rem",
-    "grids": {
-      "marketing": "Mode A: The Tetris Grid (Asymmetrical, Artful)",
-      "dashboard": "Mode B: The Control Room Grid (Dense, Data-Heavy)"
+  "visual_enhancers": {
+    "shadows": {
+      "card": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+      "floating": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)",
+      "glow": "0 0 15px rgba(249, 115, 22, 0.3)"
     },
-    "container_padding": "px-4 md:px-8 lg:px-12"
+    "borders": {
+      "subtle": "1px solid hsl(214 32% 91%)",
+      "tracing_beam": "1px solid transparent"
+    },
+    "radius": {
+      "card": "rounded-xl",
+      "button": "rounded-md",
+      "input": "rounded-md"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "type": "Control Room Grid",
+      "grid_cols": "grid-cols-1 md:grid-cols-4 lg:grid-cols-12",
+      "gap": "gap-4 md:gap-6",
+      "padding": "p-4 md:p-8"
+    },
+    "marketing": {
+      "type": "Tetris Grid",
+      "grid_cols": "grid-cols-1 md:grid-cols-12",
+      "gap": "gap-8 md:gap-12",
+      "padding": "p-8 md:p-12"
+    }
   },
   "components": {
-    "buttons": {
-      "style": "Sharp or slightly rounded (rounded-md). High contrast.",
-      "hover": "Glow effect (shadow-[0_0_15px_rgba(124,58,237,0.5)])"
+    "AI_Insight_Card": {
+      "description": "A special card for AI recommendations. Uses a 'Tracing Beam' border effect.",
+      "style": "relative overflow-hidden border border-orange-500/20 bg-orange-50/50 dark:bg-orange-950/10",
+      "icon": "SparklesIcon (Lucide)"
     },
-    "cards": {
-      "style": "Flat background (bg-card), subtle border (border-border).",
-      "special": "Use 'Tracing Beam' effect for high-value cards (Pricing, Hero Features)."
+    "Metric_Card": {
+      "description": "Standard data card. Clean, minimal, value-focused.",
+      "style": "bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200",
+      "typography": "Value in JetBrains Mono, Label in Manrope"
     },
-    "glassmorphism": {
-      "usage": "Sticky headers, modal overlays, floating controls.",
-      "classes": "bg-black/60 backdrop-blur-xl border border-white/10"
+    "Pipeline_Column": {
+      "description": "Kanban column for sales stages.",
+      "style": "bg-slate-50/50 rounded-lg p-4 min-w-[300px]",
+      "header_style": "font-outfit font-semibold text-slate-700 mb-4 flex justify-between items-center"
     },
-    "charts": {
-      "library": "Recharts (via Shadcn)",
-      "style": "Neon strokes, dark tooltip backgrounds, no grid lines or very subtle (opacity-10)."
+    "Sidebar": {
+      "description": "Vertical navigation. Dark mode for contrast.",
+      "style": "bg-slate-900 text-slate-300 h-screen w-64 fixed left-0 top-0 flex flex-col border-r border-slate-800",
+      "active_item": "bg-indigo-600 text-white"
     }
   },
-  "assets": {
-    "images": {
-      "hero_background": "https://images.unsplash.com/photo-1762279388988-3f8abcc7dca2?crop=entropy&cs=srgb&fm=jpg&q=85",
-      "team_celebration": "https://images.unsplash.com/photo-1758691737492-48e8fdd336f7?crop=entropy&cs=srgb&fm=jpg&q=85",
-      "abstract_data": "https://images.unsplash.com/photo-1762279389006-43963a0cee55?crop=entropy&cs=srgb&fm=jpg&q=85",
-      "trophy_leaderboard": "https://images.unsplash.com/photo-1754300681803-61eadeb79d10?crop=entropy&cs=srgb&fm=jpg&q=85"
-    },
-    "icons": {
-      "library": "lucide-react",
-      "style": "Stroke width 1.5px or 2px. Use colored icons for status indicators."
-    }
+  "image_urls": {
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1650784854945-264d5b0b6b07?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Professional woman headshot",
+        "category": "User Avatar"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1650784855038-9f4d5ed154a9?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Professional woman headshot 2",
+        "category": "Team Member"
+      },
+      {
+        "url": "https://images.pexels.com/photos/8547399/pexels-photo-8547399.jpeg",
+        "description": "Man in suit headshot",
+        "category": "Sales Manager"
+      }
+    ],
+    "office_environment": [
+      {
+        "url": "https://images.unsplash.com/photo-1745970649957-b4b1f7fde4ea?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Modern glass meeting room",
+        "category": "Dashboard Widget Background"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1707386320792-e158bec69beb?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Office view through glass",
+        "category": "Login Page Background"
+      }
+    ]
   },
-  "motion": {
-    "transitions": "transition-all duration-300 ease-out",
-    "hover_effects": "Scale up slightly (scale-105) or glow.",
-    "page_load": "Staggered fade-in for dashboard widgets.",
-    "libraries": ["framer-motion"]
+  "instructions_to_main_agent": {
+    "general": "Follow the 'Executive Cockpit' theme. High contrast, dense data, but with 'breathing room' padding inside containers.",
+    "charts": "Use Recharts. Style them with minimal grid lines. Use the 'Executive Indigo' and 'Signal Orange' palette for data series.",
+    "ai_features": "Highlight AI features (Lead Scoring, Coaching) using the 'Signal Orange' accent color and subtle glow effects. Do not overdo it.",
+    "tables": "Use Shadcn Table. Customize with 'JetBrains Mono' for numerical data cells. Add hover effects on rows.",
+    "navigation": "Implement a collapsible sidebar to maximize screen real estate for the dashboard.",
+    "motion": "Add subtle entrance animations (fade-in-up) for dashboard cards. Use 'sonner' for all notifications."
   },
-  "universal_guidelines": [
-    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
     "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
     "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
     "Create depth through layered design elements with z-index hierarchy",
@@ -135,7 +186,6 @@
     "Examine existing components to understand the project's component patterns before creating new ones",
     "Components MUST use named exports (export const ComponentName = ...)",
     "Pages MUST use default exports (export default function PageName() {...})",
-    "Use sonner for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
-  ],
-  "instructions_to_main_agent": "Follow the 'Electric & Neon' archetype. Build a high-energy, gamified sales platform. Use the provided image URLs for the landing page and dashboard placeholders. Ensure the dashboard uses the 'Control Room' grid layout. Use 'Outfit' for all headings to give it a distinct look. Implement the 'Tracing Beam' effect on the pricing cards and key feature highlights."
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
 }

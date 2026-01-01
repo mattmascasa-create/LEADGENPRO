@@ -565,6 +565,317 @@ async def get_users(current_user: User = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
     return [User(**user) for user in users]
 
+# Bulk Import
+class BulkImportResult(BaseModel):
+    success: int
+    failed: int
+    errors: List[str] = []
+
+@api_router.post("/leads/bulk-import", response_model=BulkImportResult)
+async def bulk_import_leads(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Import leads from CSV file"""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    
+    contents = await file.read()
+    csv_data = csv.DictReader(io.StringIO(contents.decode('utf-8')))
+    
+    success_count = 0
+    failed_count = 0
+    errors = []
+    
+    for row_num, row in enumerate(csv_data, start=2):
+        try:
+            # Map CSV columns to lead fields
+            lead_data = {
+                'first_name': row.get('first_name') or row.get('First Name') or row.get('FirstName', '').strip(),
+                'last_name': row.get('last_name') or row.get('Last Name') or row.get('LastName', '').strip(),
+                'email': row.get('email') or row.get('Email', '').strip(),
+                'phone': row.get('phone') or row.get('Phone') or row.get('PhoneNumber', '').strip(),
+                'company': row.get('company') or row.get('Company', '').strip(),
+                'title': row.get('title') or row.get('Title') or row.get('JobTitle', '').strip(),
+                'status': 'new',
+                'tags': []
+            }
+            
+            # Validate required fields
+            if not lead_data['first_name'] or not lead_data['last_name'] or not lead_data['email'] or not lead_data['company']:
+                errors.append(f"Row {row_num}: Missing required fields")
+                failed_count += 1
+                continue
+            
+            # Create lead
+            lead_data['created_by'] = current_user.id
+            lead_data['score'] = await calculate_lead_score(lead_data)
+            
+            lead = Lead(**lead_data)
+            doc = lead.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            
+            await db.leads.insert_one(doc)
+            success_count += 1
+            
+        except Exception as e:
+            errors.append(f"Row {row_num}: {str(e)}")
+            failed_count += 1
+    
+    return BulkImportResult(
+        success=success_count,
+        failed=failed_count,
+        errors=errors[:10]  # Return first 10 errors
+    )
+
+# Website Scraper
+class ScrapeRequest(BaseModel):
+    url: str
+    selectors: Optional[Dict[str, str]] = None
+
+class ScrapedContact(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    title: Optional[str] = None
+
+@api_router.post("/leads/scrape")
+async def scrape_website(
+    request: ScrapeRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Scrape contact information from a website"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request.url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                html = await response.text()
+        
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Extract emails
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        emails = re.findall(email_pattern, html)
+        emails = list(set([e for e in emails if not e.endswith(('.png', '.jpg', '.gif'))]))[:20]
+        
+        # Extract phone numbers
+        phone_pattern = r'\\+?1?\\s*\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
+        phones = re.findall(phone_pattern, html)
+        phones = list(set(phones))[:10]
+        
+        # Extract company name from title or h1
+        company = None
+        title_tag = soup.find('title')
+        if title_tag:
+            company = title_tag.text.strip().split('|')[0].strip()
+        
+        # Create leads from scraped data
+        created_leads = []
+        for i, email in enumerate(emails):
+            name_parts = email.split('@')[0].split('.')
+            first_name = name_parts[0].capitalize() if name_parts else 'Unknown'
+            last_name = name_parts[1].capitalize() if len(name_parts) > 1 else 'Contact'
+            
+            lead_data = {
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': email,
+                'phone': phones[i] if i < len(phones) else None,
+                'company': company or 'Scraped Company',
+                'title': 'Contact',
+                'status': 'new',
+                'tags': ['scraped'],
+                'created_by': current_user.id
+            }
+            
+            lead_data['score'] = await calculate_lead_score(lead_data)
+            lead = Lead(**lead_data)
+            doc = lead.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            
+            await db.leads.insert_one(doc)
+            created_leads.append(lead)
+        
+        return {
+            "message": f"Scraped {len(created_leads)} contacts from website",
+            "contacts_found": len(emails),
+            "leads_created": len(created_leads),
+            "url": request.url
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scraping failed: {str(e)}")
+
+# Lead Distribution
+class DistributeLeadsRequest(BaseModel):
+    employee_ids: List[str]
+    lead_ids: Optional[List[str]] = None
+    count_per_employee: Optional[int] = None
+    filters: Optional[Dict[str, Any]] = None
+
+@api_router.post("/admin/distribute-leads")
+async def distribute_leads(
+    request: DistributeLeadsRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Distribute leads to employees (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get leads to distribute
+    if request.lead_ids:
+        # Specific leads
+        query = {"id": {"$in": request.lead_ids}, "assigned_to": None}
+    else:
+        # Unassigned leads with optional filters
+        query = {"assigned_to": None}
+        if request.filters:
+            if request.filters.get('status'):
+                query['status'] = request.filters['status']
+            if request.filters.get('score_min'):
+                query['score'] = {"$gte": request.filters['score_min']}
+    
+    available_leads = await db.leads.find(query, {"_id": 0}).to_list(10000)
+    
+    if not available_leads:
+        raise HTTPException(status_code=404, detail="No unassigned leads found")
+    
+    # Distribute leads
+    distributed = []
+    employee_count = len(request.employee_ids)
+    leads_per_employee = request.count_per_employee or (len(available_leads) // employee_count)
+    
+    for i, employee_id in enumerate(request.employee_ids):
+        start_idx = i * leads_per_employee
+        end_idx = start_idx + leads_per_employee
+        employee_leads = available_leads[start_idx:end_idx]
+        
+        for lead in employee_leads:
+            await db.leads.update_one(
+                {"id": lead['id']},
+                {
+                    "$set": {
+                        "assigned_to": employee_id,
+                        "assigned_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            distributed.append({
+                "lead_id": lead['id'],
+                "employee_id": employee_id,
+                "lead_name": f"{lead['first_name']} {lead['last_name']}"
+            })
+    
+    return {
+        "message": f"Distributed {len(distributed)} leads to {employee_count} employees",
+        "total_distributed": len(distributed),
+        "leads_per_employee": leads_per_employee,
+        "distributions": distributed[:50]  # Return first 50
+    }
+
+# Call List for Employee
+class CallListItem(BaseModel):
+    lead: Lead
+    call_status: Optional[str] = None
+    last_call_attempt: Optional[datetime] = None
+    notes: Optional[str] = None
+
+@api_router.get("/call-list")
+async def get_call_list(current_user: User = Depends(get_current_user)):
+    """Get daily call list for employee"""
+    if current_user.role not in ["employee", "admin"]:
+        raise HTTPException(status_code=403, detail="Employee access required")
+    
+    # Get assigned leads that need calling
+    leads = await db.leads.find({
+        "assigned_to": current_user.id,
+        "status": {"$in": ["new", "contacted", "follow_up"]}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Get call history
+    call_history = await db.call_logs.find({
+        "employee_id": current_user.id
+    }, {"_id": 0}).to_list(1000)
+    
+    call_history_dict = {log['lead_id']: log for log in call_history}
+    
+    call_list = []
+    for lead_doc in leads:
+        lead = Lead(**lead_doc)
+        history = call_history_dict.get(lead.id, {})
+        call_list.append({
+            "lead": lead,
+            "call_status": history.get('status'),
+            "last_call_attempt": history.get('last_attempt'),
+            "notes": history.get('notes')
+        })
+    
+    return {
+        "total_calls": len(call_list),
+        "call_list": call_list
+    }
+
+# Log Call Outcome
+class CallOutcome(BaseModel):
+    lead_id: str
+    outcome: str  # contacted, no_answer, voicemail, wrong_number, meeting_scheduled
+    notes: Optional[str] = None
+    meeting_scheduled_at: Optional[datetime] = None
+
+@api_router.post("/call-log")
+async def log_call_outcome(
+    outcome: CallOutcome,
+    current_user: User = Depends(get_current_user)
+):
+    """Log the outcome of a call"""
+    # Update lead status
+    update_data = {
+        "status": "contacted" if outcome.outcome == "contacted" else "follow_up",
+        "last_contacted": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # If meeting scheduled, update lead stage
+    if outcome.outcome == "meeting_scheduled":
+        update_data["stage"] = "qualified"
+        update_data["status"] = "meeting_scheduled"
+    
+    await db.leads.update_one(
+        {"id": outcome.lead_id},
+        {"$set": update_data}
+    )
+    
+    # Log the call
+    call_log = {
+        "id": str(uuid.uuid4()),
+        "lead_id": outcome.lead_id,
+        "employee_id": current_user.id,
+        "outcome": outcome.outcome,
+        "notes": outcome.notes,
+        "meeting_scheduled_at": outcome.meeting_scheduled_at.isoformat() if outcome.meeting_scheduled_at else None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.call_logs.insert_one(call_log)
+    
+    # Log activity
+    activity = Activity(
+        type="call_logged",
+        description=f"Call outcome: {outcome.outcome}",
+        lead_id=outcome.lead_id,
+        user_id=current_user.id,
+        metadata={"outcome": outcome.outcome}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"message": "Call logged successfully", "outcome": outcome.outcome}
+
 app.include_router(api_router)
 
 app.add_middleware(

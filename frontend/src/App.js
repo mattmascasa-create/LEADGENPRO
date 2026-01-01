@@ -16,6 +16,8 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import SequencesPage from '@/pages/SequencesPage';
 import TemplatesPage from '@/pages/TemplatesPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
+import AdminDistributePage from '@/pages/AdminDistributePage';
+import CallListsPage from '@/pages/CallListsPage';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';

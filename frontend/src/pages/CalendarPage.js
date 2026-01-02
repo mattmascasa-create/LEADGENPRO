@@ -1,0 +1,494 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, addHours } from 'date-fns';
+import enUS from 'date-fns/locale/en-US';
+import { 
+  Plus, X, Clock, User, Users, MapPin, Video, Phone,
+  CalendarDays, ChevronLeft, ChevronRight, Trash2, Edit
+} from 'lucide-react';
+import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
+import DashboardLayout from '@/components/DashboardLayout';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const locales = { 'en-US': enUS };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales
+});
+
+const eventStyleGetter = (event) => {
+  const colors = {
+    meeting: { bg: '#3b82f6', border: '#2563eb' },
+    call: { bg: '#10b981', border: '#059669' },
+    task: { bg: '#f59e0b', border: '#d97706' },
+    reminder: { bg: '#8b5cf6', border: '#7c3aed' },
+    other: { bg: '#6b7280', border: '#4b5563' }
+  };
+  const color = colors[event.type] || colors.other;
+  return {
+    style: {
+      backgroundColor: color.bg,
+      borderLeft: `4px solid ${color.border}`,
+      borderRadius: '4px',
+      color: 'white',
+      padding: '2px 8px'
+    }
+  };
+};
+
+const CalendarPage = () => {
+  const [events, setEvents] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showEventDetail, setShowEventDetail] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState('month');
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'meeting',
+    start: '',
+    end: '',
+    attendees: [],
+    location: '',
+    meeting_link: ''
+  });
+
+  useEffect(() => {
+    fetchEvents();
+    fetchTeamMembers();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/calendar/events`);
+      const formattedEvents = response.data.map(event => ({
+        ...event,
+        start: new Date(event.start),
+        end: new Date(event.end)
+      }));
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Failed to load events:', error);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/users`);
+      setTeamMembers(response.data);
+    } catch (error) {
+      console.error('Failed to load team members:', error);
+    }
+  };
+
+  const handleSelectSlot = useCallback(({ start, end }) => {
+    setSelectedSlot({ start, end });
+    setFormData({
+      ...formData,
+      start: format(start, "yyyy-MM-dd'T'HH:mm"),
+      end: format(end, "yyyy-MM-dd'T'HH:mm")
+    });
+    setShowEventModal(true);
+  }, [formData]);
+
+  const handleSelectEvent = useCallback((event) => {
+    setShowEventDetail(event);
+  }, []);
+
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_URL}/api/calendar/events`, {
+        ...formData,
+        start: new Date(formData.start).toISOString(),
+        end: new Date(formData.end).toISOString()
+      });
+      toast.success('Event created!');
+      setShowEventModal(false);
+      setFormData({
+        title: '',
+        description: '',
+        type: 'meeting',
+        start: '',
+        end: '',
+        attendees: [],
+        location: '',
+        meeting_link: ''
+      });
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to create event');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await axios.delete(`${API_URL}/api/calendar/events/${eventId}`);
+      toast.success('Event deleted!');
+      setShowEventDetail(null);
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to delete event');
+    }
+  };
+
+  const eventTypes = [
+    { value: 'meeting', label: 'Meeting', icon: Video },
+    { value: 'call', label: 'Call', icon: Phone },
+    { value: 'task', label: 'Task', icon: CalendarDays },
+    { value: 'reminder', label: 'Reminder', icon: Clock }
+  ];
+
+  return (
+    <DashboardLayout>
+      <div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Team Calendar</h1>
+            <p className="text-secondary">Manage team schedules and events</p>
+          </div>
+          <button
+            onClick={() => {
+              setFormData({
+                ...formData,
+                start: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+                end: format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm")
+              });
+              setShowEventModal(true);
+            }}
+            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            New Event
+          </button>
+        </div>
+
+        {/* Calendar */}
+        <div className="bg-white rounded-xl border border-border p-4" style={{ height: 700 }}>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: '100%' }}
+            onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
+            selectable
+            eventPropGetter={eventStyleGetter}
+            date={currentDate}
+            onNavigate={setCurrentDate}
+            view={view}
+            onView={setView}
+            views={['month', 'week', 'day', 'agenda']}
+            popup
+            components={{
+              toolbar: (props) => (
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => props.onNavigate('PREV')}
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => props.onNavigate('TODAY')}
+                      className="px-3 py-1 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => props.onNavigate('NEXT')}
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <span className="text-lg font-semibold text-foreground ml-4">
+                      {props.label}
+                    </span>
+                  </div>
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    {['month', 'week', 'day', 'agenda'].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => props.onView(v)}
+                        className={`px-3 py-1 text-sm font-medium rounded-md capitalize transition-colors ${
+                          props.view === v ? 'bg-white shadow-sm' : 'hover:bg-white/50'
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            }}
+          />
+        </div>
+
+        {/* Create Event Modal */}
+        <AnimatePresence>
+          {showEventModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              onClick={(e) => e.target === e.currentTarget && setShowEventModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
+                className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+              >
+                <div className="p-6 border-b border-border flex items-center justify-between">
+                  <h2 className="text-xl font-bold">Create Event</h2>
+                  <button onClick={() => setShowEventModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Event Title *</label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      required
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Enter event title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Event Type</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {eventTypes.map((type) => {
+                        const Icon = type.icon;
+                        return (
+                          <button
+                            key={type.value}
+                            type="button"
+                            onClick={() => setFormData({...formData, type: type.value})}
+                            className={`p-2 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${
+                              formData.type === type.value
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <Icon className="w-5 h-5" />
+                            <span className="text-xs">{type.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Start *</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.start}
+                        onChange={(e) => setFormData({...formData, start: e.target.value})}
+                        required
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">End *</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.end}
+                        onChange={(e) => setFormData({...formData, end: e.target.value})}
+                        required
+                        className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      rows={3}
+                      placeholder="Add event description..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Location</label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Add location or meeting room"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Meeting Link</label>
+                    <input
+                      type="url"
+                      value={formData.meeting_link}
+                      onChange={(e) => setFormData({...formData, meeting_link: e.target.value})}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="https://zoom.us/j/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Attendees</label>
+                    <select
+                      multiple
+                      value={formData.attendees}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        attendees: Array.from(e.target.selectedOptions, option => option.value)
+                      })}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {teamMembers.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.full_name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-secondary mt-1">Hold Ctrl/Cmd to select multiple</p>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowEventModal(false)}
+                      className="flex-1 py-2 border border-border rounded-lg font-medium hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90"
+                    >
+                      Create Event
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Event Detail Modal */}
+        <AnimatePresence>
+          {showEventDetail && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              onClick={(e) => e.target === e.currentTarget && setShowEventDetail(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
+                className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              >
+                <div className={`p-6 text-white ${
+                  showEventDetail.type === 'meeting' ? 'bg-blue-500' :
+                  showEventDetail.type === 'call' ? 'bg-green-500' :
+                  showEventDetail.type === 'task' ? 'bg-yellow-500' :
+                  'bg-purple-500'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium uppercase opacity-80">{showEventDetail.type}</span>
+                    <button onClick={() => setShowEventDetail(null)} className="p-1 hover:bg-white/20 rounded">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <h2 className="text-2xl font-bold">{showEventDetail.title}</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-3 text-secondary">
+                    <Clock className="w-5 h-5" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {format(showEventDetail.start, 'EEEE, MMMM d, yyyy')}
+                      </p>
+                      <p className="text-sm">
+                        {format(showEventDetail.start, 'h:mm a')} - {format(showEventDetail.end, 'h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                  {showEventDetail.location && (
+                    <div className="flex items-center gap-3 text-secondary">
+                      <MapPin className="w-5 h-5" />
+                      <span>{showEventDetail.location}</span>
+                    </div>
+                  )}
+                  {showEventDetail.meeting_link && (
+                    <div className="flex items-center gap-3">
+                      <Video className="w-5 h-5 text-secondary" />
+                      <a
+                        href={showEventDetail.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Join Meeting
+                      </a>
+                    </div>
+                  )}
+                  {showEventDetail.description && (
+                    <div className="pt-4 border-t border-border">
+                      <p className="text-sm text-secondary">{showEventDetail.description}</p>
+                    </div>
+                  )}
+                  {showEventDetail.attendees && showEventDetail.attendees.length > 0 && (
+                    <div className="pt-4 border-t border-border">
+                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Attendees
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {showEventDetail.attendee_names?.map((name, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-slate-100 rounded text-sm">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => handleDeleteEvent(showEventDetail.id)}
+                      className="flex-1 py-2 border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setShowEventDetail(null)}
+                      className="flex-1 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default CalendarPage;

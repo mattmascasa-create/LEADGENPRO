@@ -577,6 +577,24 @@ async def get_activities(limit: int = 50, lead_id: Optional[str] = None, current
     activities = await db.activities.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
     return [Activity(**act) for act in activities]
 
+class ActivityCreate(BaseModel):
+    type: str
+    description: str
+    lead_id: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+
+@api_router.post("/activities", response_model=Activity)
+async def create_activity(activity_data: ActivityCreate, current_user: User = Depends(get_current_user)):
+    """Create a new activity"""
+    activity = Activity(
+        **activity_data.model_dump(),
+        user_id=current_user.id
+    )
+    doc = activity.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.activities.insert_one(doc)
+    return activity
+
 # Stats routes
 @api_router.get("/stats", response_model=Stats)
 async def get_stats(current_user: User = Depends(get_current_user)):

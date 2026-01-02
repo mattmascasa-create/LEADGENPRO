@@ -193,6 +193,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/content-hub"
+            element={
+              <ProtectedRoute>
+                <ContentHubPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Public booking page - no auth required */}
           <Route path="/book/:userId" element={<BookingPage />} />
         </Routes>

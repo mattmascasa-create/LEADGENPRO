@@ -214,11 +214,17 @@ const LeadDetailPage = () => {
                   <Phone className="w-5 h-5 text-green-600" />
                   <span className="text-xs font-medium text-green-600">Call</span>
                 </button>
-                <button className="flex flex-col items-center gap-2 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <button 
+                  onClick={() => setShowEmailModal(true)}
+                  className="flex flex-col items-center gap-2 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
                   <Mail className="w-5 h-5 text-blue-600" />
                   <span className="text-xs font-medium text-blue-600">Email</span>
                 </button>
-                <button className="flex flex-col items-center gap-2 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <button 
+                  onClick={() => setShowMeetingModal(true)}
+                  className="flex flex-col items-center gap-2 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                >
                   <Calendar className="w-5 h-5 text-purple-600" />
                   <span className="text-xs font-medium text-purple-600">Meet</span>
                 </button>

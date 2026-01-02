@@ -40,6 +40,18 @@ ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
+# Twilio configuration
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_API_KEY = os.environ.get('TWILIO_API_KEY')
+TWILIO_API_SECRET = os.environ.get('TWILIO_API_SECRET')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+
+# Initialize Twilio client
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
 # Create the main app
 app = FastAPI(title="LeadGen Pro API")
 api_router = APIRouter(prefix="/api")

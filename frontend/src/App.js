@@ -19,9 +19,14 @@ import TemplatesPage from '@/pages/TemplatesPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import AdminDistributePage from '@/pages/AdminDistributePage';
 import CallListsPage from '@/pages/CallListsPage';
+import CalendarPage from '@/pages/CalendarPage';
+import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';
+
+// Components
+import AIAssistant from '@/components/AIAssistant';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';

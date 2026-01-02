@@ -1558,6 +1558,26 @@ async def end_call(call_sid: str, current_user: User = Depends(get_current_user)
             "call_sid": call.sid,
             "status": call.status
         }
+
+class HangupRequest(BaseModel):
+    call_sid: str
+
+@api_router.post("/voice/hangup")
+async def hangup_call(request: HangupRequest, current_user: User = Depends(get_current_user)):
+    """End an active call via hangup"""
+    if not twilio_client:
+        raise HTTPException(status_code=500, detail="Twilio is not configured")
+    
+    try:
+        call = twilio_client.calls(request.call_sid).update(status="completed")
+        return {
+            "success": True,
+            "call_sid": call.sid,
+            "status": call.status
+        }
+    except Exception as e:
+        logging.error(f"Error hanging up call: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logging.error(f"Error ending call: {e}")
         raise HTTPException(status_code=500, detail=str(e))

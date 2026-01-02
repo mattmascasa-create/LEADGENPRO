@@ -1445,6 +1445,370 @@ async def get_users(current_user: User = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
     return [User(**user) for user in users]
 
+# ==================== Public Booking Endpoints ====================
+
+class BookingRequest(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    notes: Optional[str] = None
+    datetime: datetime
+    duration: int = 30
+
+class AvailabilitySlot(BaseModel):
+    time: str
+    available: bool = True
+
+@api_router.get("/booking/{user_id}")
+async def get_booking_info(user_id: str):
+    """Get user info and booked slots for public booking page"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get all booked events for this user
+    booked_events = await db.calendar_events.find({
+        "$or": [
+            {"created_by": user_id},
+            {"attendees": user_id}
+        ]
+    }, {"_id": 0}).to_list(1000)
+    
+    # Extract booked slot times
+    booked_slots = [event['start'] for event in booked_events]
+    
+    return {
+        "user": User(**user),
+        "booked_slots": booked_slots
+    }
+
+@api_router.get("/booking/{user_id}/slots")
+async def get_available_slots(user_id: str, date: str):
+    """Get available time slots for a specific date"""
+    from datetime import datetime as dt
+    
+    try:
+        target_date = dt.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Get all events for this user on the target date
+    start_of_day = target_date.replace(hour=0, minute=0, second=0)
+    end_of_day = target_date.replace(hour=23, minute=59, second=59)
+    
+    booked_events = await db.calendar_events.find({
+        "$or": [
+            {"created_by": user_id},
+            {"attendees": user_id}
+        ],
+        "start": {
+            "$gte": start_of_day.isoformat(),
+            "$lte": end_of_day.isoformat()
+        }
+    }, {"_id": 0}).to_list(100)
+    
+    # Generate available slots (9 AM to 5 PM, 30-minute intervals)
+    available_slots = []
+    booked_times = set()
+    
+    for event in booked_events:
+        event_start = dt.fromisoformat(event['start'].replace('Z', '+00:00') if 'Z' in event['start'] else event['start'])
+        booked_times.add(event_start.strftime("%H:%M"))
+    
+    now = dt.now()
+    for hour in range(9, 17):  # 9 AM to 5 PM
+        for minute in [0, 30]:
+            slot_time = f"{hour:02d}:{minute:02d}"
+            
+            # Skip past times for today
+            if target_date.date() == now.date():
+                slot_datetime = target_date.replace(hour=hour, minute=minute)
+                if slot_datetime < now:
+                    continue
+            
+            if slot_time not in booked_times:
+                available_slots.append(slot_time)
+    
+    return {"slots": available_slots, "date": date}
+
+@api_router.post("/booking/{user_id}/book")
+async def create_booking(user_id: str, booking: BookingRequest):
+    """Create a booking (public endpoint - no auth required)"""
+    # Verify user exists
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if slot is available
+    booking_start = booking.datetime
+    booking_end = booking_start + timedelta(minutes=booking.duration)
+    
+    # Look for conflicting events
+    conflict = await db.calendar_events.find_one({
+        "$or": [
+            {"created_by": user_id},
+            {"attendees": user_id}
+        ],
+        "$or": [
+            {
+                "start": {"$lt": booking_end.isoformat()},
+                "end": {"$gt": booking_start.isoformat()}
+            }
+        ]
+    })
+    
+    if conflict:
+        raise HTTPException(status_code=400, detail="This time slot is no longer available")
+    
+    # Create calendar event for the booking
+    event = CalendarEvent(
+        title=f"Meeting with {booking.name}",
+        description=f"Booked via public booking page\nCompany: {booking.company or 'N/A'}\nPhone: {booking.phone or 'N/A'}\nNotes: {booking.notes or 'None'}",
+        type="meeting",
+        start=booking_start,
+        end=booking_end,
+        attendees=[user_id],
+        attendee_names=[user['full_name']],
+        location="Video Call",
+        created_by=user_id
+    )
+    
+    doc = event.model_dump()
+    doc['start'] = doc['start'].isoformat()
+    doc['end'] = doc['end'].isoformat()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.calendar_events.insert_one(doc)
+    
+    # Also create a lead from the booking if not exists
+    existing_lead = await db.leads.find_one({"email": booking.email})
+    if not existing_lead:
+        name_parts = booking.name.split(' ', 1)
+        lead_data = {
+            'first_name': name_parts[0],
+            'last_name': name_parts[1] if len(name_parts) > 1 else '',
+            'email': booking.email,
+            'phone': booking.phone,
+            'company': booking.company or 'Unknown',
+            'title': 'Lead',
+            'status': 'meeting_scheduled',
+            'stage': 'qualified',
+            'tags': ['booking'],
+            'created_by': user_id,
+            'assigned_to': user_id
+        }
+        lead_data['score'] = await calculate_lead_score(lead_data)
+        lead = Lead(**lead_data)
+        lead_doc = lead.model_dump()
+        lead_doc['created_at'] = lead_doc['created_at'].isoformat()
+        lead_doc['updated_at'] = lead_doc['updated_at'].isoformat()
+        await db.leads.insert_one(lead_doc)
+    
+    # Log activity
+    activity = Activity(
+        type="booking_created",
+        description=f"New booking from {booking.name} ({booking.email})",
+        user_id=user_id,
+        metadata={"guest_name": booking.name, "guest_email": booking.email}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {
+        "success": True,
+        "event_id": event.id,
+        "message": "Meeting booked successfully",
+        "details": {
+            "with": user['full_name'],
+            "datetime": booking.datetime.isoformat(),
+            "duration": booking.duration
+        }
+    }
+
+@api_router.get("/booking/link/{user_id}")
+async def get_booking_link(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get the public booking link for a user"""
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    base_url = os.environ.get('REACT_APP_BACKEND_URL', '').replace('/api', '')
+    if not base_url:
+        base_url = "https://your-domain.com"
+    
+    return {
+        "booking_link": f"{base_url}/book/{user_id}",
+        "user_id": user_id
+    }
+
+# ==================== Admin User Management Endpoints ====================
+
+class AdminUserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    role: str  # employee, manager, admin
+    department: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+
+class AdminUserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+
+@api_router.get("/admin/users")
+async def admin_get_users(current_user: User = Depends(get_current_user)):
+    """Get all users (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    
+    # Add department and phone info if exists
+    result = []
+    for user in users:
+        user_data = {**user}
+        result.append(user_data)
+    
+    return result
+
+@api_router.post("/admin/users")
+async def admin_create_user(user_data: AdminUserCreate, current_user: User = Depends(get_current_user)):
+    """Create a new user (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Validate role
+    valid_roles = ["employee", "manager", "admin"]
+    if user_data.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
+    
+    # Create user
+    user = User(
+        email=user_data.email,
+        full_name=user_data.full_name,
+        role=user_data.role,
+        company=user_data.company,
+        onboarding_completed=True  # Admin-created users skip onboarding
+    )
+    
+    doc = user.model_dump()
+    doc['password'] = get_password_hash(user_data.password)
+    doc['department'] = user_data.department
+    doc['phone'] = user_data.phone
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.users.insert_one(doc)
+    
+    # Log activity
+    activity = Activity(
+        type="user_created",
+        description=f"Created user: {user.full_name} ({user.role})",
+        user_id=current_user.id,
+        metadata={"new_user_id": user.id, "role": user.role}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {
+        "success": True,
+        "user": user,
+        "message": f"User {user.full_name} created successfully"
+    }
+
+@api_router.put("/admin/users/{user_id}")
+async def admin_update_user(user_id: str, update_data: AdminUserUpdate, current_user: User = Depends(get_current_user)):
+    """Update a user (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check if user exists
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prepare update
+    update_fields = {}
+    if update_data.full_name:
+        update_fields['full_name'] = update_data.full_name
+    if update_data.role:
+        valid_roles = ["employee", "manager", "admin"]
+        if update_data.role not in valid_roles:
+            raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
+        update_fields['role'] = update_data.role
+    if update_data.department is not None:
+        update_fields['department'] = update_data.department
+    if update_data.phone is not None:
+        update_fields['phone'] = update_data.phone
+    if update_data.company is not None:
+        update_fields['company'] = update_data.company
+    
+    if update_fields:
+        await db.users.update_one({"id": user_id}, {"$set": update_fields})
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return updated_user
+
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a user (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Prevent self-deletion
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    # Check if user exists
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete user
+    await db.users.delete_one({"id": user_id})
+    
+    # Log activity
+    activity = Activity(
+        type="user_deleted",
+        description=f"Deleted user: {existing['full_name']}",
+        user_id=current_user.id,
+        metadata={"deleted_user_id": user_id}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"success": True, "message": "User deleted successfully"}
+
+@api_router.post("/admin/users/{user_id}/reset-password")
+async def admin_reset_password(user_id: str, new_password: str, current_user: User = Depends(get_current_user)):
+    """Reset a user's password (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check if user exists
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update password
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password": get_password_hash(new_password)}}
+    )
+    
+    return {"success": True, "message": "Password reset successfully"}
+
 # ==================== AI Assistant Endpoints ====================
 
 @api_router.post("/assistant/chat")

@@ -1665,11 +1665,13 @@ async def create_booking(user_id: str, booking: BookingRequest):
     
     # Look for conflicting events
     conflict = await db.calendar_events.find_one({
-        "$or": [
-            {"created_by": user_id},
-            {"attendees": user_id}
-        ],
-        "$or": [
+        "$and": [
+            {
+                "$or": [
+                    {"created_by": user_id},
+                    {"attendees": user_id}
+                ]
+            },
             {
                 "start": {"$lt": booking_end.isoformat()},
                 "end": {"$gt": booking_start.isoformat()}

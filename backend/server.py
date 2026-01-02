@@ -1360,6 +1360,178 @@ async def get_call_stats(current_user: User = Depends(get_current_user)):
         "connect_rate": round((outcome_counts.get("connected", 0) / total_calls * 100) if total_calls > 0 else 0, 1)
     }
 
+# ==================== Calendar Endpoints ====================
+
+@api_router.get("/calendar/events", response_model=List[CalendarEvent])
+async def get_calendar_events(current_user: User = Depends(get_current_user)):
+    """Get all calendar events visible to the user"""
+    events = await db.calendar_events.find({}, {"_id": 0}).sort("start", 1).to_list(1000)
+    return [CalendarEvent(**event) for event in events]
+
+@api_router.post("/calendar/events", response_model=CalendarEvent)
+async def create_calendar_event(event_data: CalendarEventCreate, current_user: User = Depends(get_current_user)):
+    """Create a new calendar event"""
+    # Get attendee names
+    attendee_names = []
+    for attendee_id in event_data.attendees:
+        user = await db.users.find_one({"id": attendee_id}, {"_id": 0})
+        if user:
+            attendee_names.append(user["full_name"])
+    
+    event = CalendarEvent(
+        **event_data.model_dump(),
+        attendee_names=attendee_names,
+        created_by=current_user.id
+    )
+    
+    doc = event.model_dump()
+    doc['start'] = doc['start'].isoformat()
+    doc['end'] = doc['end'].isoformat()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.calendar_events.insert_one(doc)
+    
+    # Log activity
+    activity = Activity(
+        type="event_created",
+        description=f"Created {event.type}: {event.title}",
+        user_id=current_user.id,
+        metadata={"event_id": event.id, "event_type": event.type}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return event
+
+@api_router.delete("/calendar/events/{event_id}")
+async def delete_calendar_event(event_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a calendar event"""
+    result = await db.calendar_events.delete_one({"id": event_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return {"message": "Event deleted"}
+
+@api_router.get("/users", response_model=List[User])
+async def get_users(current_user: User = Depends(get_current_user)):
+    """Get all team members"""
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    return [User(**user) for user in users]
+
+# ==================== AI Assistant Endpoints ====================
+
+@api_router.post("/assistant/chat")
+async def assistant_chat(request: AssistantChatRequest, current_user: User = Depends(get_current_user)):
+    """AI Assistant for helping users navigate the platform"""
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"assistant-{current_user.id}",
+            system_message="""You are a helpful AI assistant for LeadGen Pro, a sales CRM platform. 
+            Help users navigate the platform and provide guidance on sales best practices.
+            
+            Platform features include:
+            - Dashboard: View stats, AI insights, and recent activity
+            - Pipeline: Kanban board for managing leads through stages (Prospecting → Qualified → Proposal → Negotiation → Closed)
+            - Leads: Add, import, or scrape leads. Click on leads to see details and activity history
+            - Calendar: Team calendar for scheduling meetings, calls, and tasks
+            - Tasks: Create and track tasks, assign to team members
+            - Meetings: Schedule and manage appointments with prospects
+            - Team Chat: Internal messaging with channels
+            - Call Analytics: View call recordings, transcripts, and AI-powered analysis
+            
+            Quick tips:
+            - To add a lead: Go to Leads page → Click "Add Lead" button
+            - To make a call: Go to a lead's detail page → Click the green "Call" button
+            - To schedule a meeting: Go to Calendar → Click "New Event" or click on a time slot
+            - To move a lead through the pipeline: Go to Pipeline → Drag and drop the lead card
+            
+            Be concise, helpful, and encourage users to explore the platform. If you don't know something specific about the platform, provide general sales guidance instead."""
+        ).with_model("openai", "gpt-4o")
+        
+        message = UserMessage(text=request.message)
+        response = await chat.send_message(message)
+        
+        return {"response": response}
+    except Exception as e:
+        logging.error(f"Assistant error: {e}")
+        return {"response": "I'm having trouble connecting right now. Please try again in a moment, or explore the platform using the sidebar navigation!"}
+
+# ==================== Call Recording & Analysis Endpoints ====================
+
+@api_router.get("/calls/{call_id}/analysis")
+async def get_call_analysis(call_id: str, current_user: User = Depends(get_current_user)):
+    """Get AI analysis of a call (generate if not exists)"""
+    call = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    # If analysis already exists, return it
+    if call.get("analysis"):
+        return call
+    
+    # Generate analysis using AI
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"call-analysis-{call_id}",
+            system_message="You are a sales call analyst. Analyze calls and provide insights."
+        ).with_model("openai", "gpt-4o")
+        
+        # Create context from call data
+        context = f"""Analyze this sales call:
+        - Outcome: {call.get('outcome')}
+        - Duration: {call.get('duration')} seconds
+        - Notes: {call.get('notes', 'No notes provided')}
+        
+        Provide analysis in JSON format with:
+        - sentiment (0-1 scale)
+        - talk_ratio (percentage of time agent talked, estimate)
+        - questions_asked (estimated number)
+        - topics (list of key topics discussed)
+        - coaching_tip (one actionable improvement suggestion)
+        
+        Return only valid JSON."""
+        
+        message = UserMessage(text=context)
+        response = await chat.send_message(message)
+        
+        # Parse the AI response
+        try:
+            import json
+            # Clean the response
+            clean_response = response.strip()
+            if clean_response.startswith("```json"):
+                clean_response = clean_response[7:]
+            if clean_response.startswith("```"):
+                clean_response = clean_response[3:]
+            if clean_response.endswith("```"):
+                clean_response = clean_response[:-3]
+            
+            analysis = json.loads(clean_response.strip())
+        except:
+            # Default analysis if parsing fails
+            analysis = {
+                "sentiment": 0.5,
+                "talk_ratio": 50,
+                "questions_asked": 3,
+                "topics": ["product", "pricing", "timeline"],
+                "coaching_tip": "Try asking more open-ended questions to understand prospect needs better."
+            }
+        
+        # Update call with analysis
+        await db.call_logs.update_one(
+            {"id": call_id},
+            {"$set": {"analysis": analysis}}
+        )
+        
+        call["analysis"] = analysis
+        return call
+        
+    except Exception as e:
+        logging.error(f"Call analysis error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate analysis")
+
 app.include_router(api_router)
 
 app.add_middleware(

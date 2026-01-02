@@ -141,11 +141,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Create, Read, Update, Delete leads all working. Stage update tested for drag-and-drop"
+      - working: true
+        agent: "testing"
+        comment: "All CRUD operations tested successfully: POST /api/leads (create), GET /api/leads (read), PUT /api/leads/{id} (update), DELETE /api/leads/{id} (delete). Lead scoring and AI insights working"
 
   - task: "Lead Stage Update (for Kanban)"
     implemented: true

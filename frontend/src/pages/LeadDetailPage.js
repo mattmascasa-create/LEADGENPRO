@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
+import CallModal from '@/components/CallModal';
 import { useAuth } from '@/context/AuthContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;

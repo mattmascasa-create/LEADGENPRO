@@ -197,15 +197,18 @@ backend:
 
   - task: "Bulk Import Leads"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "CSV import endpoint exists but not tested"
+      - working: true
+        agent: "testing"
+        comment: "Bulk import tested successfully: POST /api/leads/bulk-import accepts CSV files, validates required fields, creates leads with scoring. Imported 3 test leads successfully"
 
   - task: "Website Scraper"
     implemented: true

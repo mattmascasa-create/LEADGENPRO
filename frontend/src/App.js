@@ -21,6 +21,8 @@ import AdminDistributePage from '@/pages/AdminDistributePage';
 import CallListsPage from '@/pages/CallListsPage';
 import CalendarPage from '@/pages/CalendarPage';
 import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
+import AdminUsersPage from '@/pages/AdminUsersPage';
+import BookingPage from '@/pages/BookingPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';
@@ -182,6 +184,16 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Public booking page - no auth required */}
+          <Route path="/book/:userId" element={<BookingPage />} />
         </Routes>
         {/* AI Assistant Widget - Available on all pages */}
         <AIAssistant />

@@ -1846,7 +1846,7 @@ async def create_booking(user_id: str, booking: BookingRequest):
     await db.activities.insert_one(activity_doc)
     
     # Send email notification to the employee
-    email_sent = False
+    employee_email_sent = False
     if user.get('email'):
         email_result = await send_booking_notification_email(
             employee_email=user['email'],
@@ -1859,13 +1859,28 @@ async def create_booking(user_id: str, booking: BookingRequest):
             duration=booking.duration,
             notes=booking.notes
         )
-        email_sent = email_result is not None
+        employee_email_sent = email_result is not None
+    
+    # Send confirmation email to the guest
+    guest_email_sent = False
+    guest_confirmation = await send_guest_confirmation_email(
+        guest_name=booking.name,
+        guest_email=booking.email,
+        employee_name=user['full_name'],
+        employee_email=user.get('email', ''),
+        booking_datetime=booking_start,
+        duration=booking.duration
+    )
+    guest_email_sent = guest_confirmation is not None
     
     return {
         "success": True,
         "event_id": event.id,
         "message": "Meeting booked successfully",
-        "email_notification_sent": email_sent,
+        "notifications": {
+            "employee_notified": employee_email_sent,
+            "guest_confirmation_sent": guest_email_sent
+        },
         "details": {
             "with": user['full_name'],
             "datetime": booking.datetime.isoformat(),

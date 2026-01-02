@@ -181,6 +181,40 @@ class Activity(BaseModel):
     metadata: Dict[str, Any] = {}
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Call/Voice Models
+class CallOutcome(str):
+    CONNECTED = "connected"
+    VOICEMAIL = "voicemail"
+    NO_ANSWER = "no_answer"
+    BUSY = "busy"
+    WRONG_NUMBER = "wrong_number"
+    DECLINED = "declined"
+
+class CallLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lead_id: str
+    phone_number: str
+    outcome: str
+    duration: int = 0  # in seconds
+    notes: Optional[str] = None
+    call_sid: Optional[str] = None
+    agent_id: str
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CallLogCreate(BaseModel):
+    lead_id: str
+    phone_number: str
+    outcome: str
+    duration: int = 0
+    notes: Optional[str] = None
+    call_sid: Optional[str] = None
+
+class VoiceTokenRequest(BaseModel):
+    identity: str
+
 class Stats(BaseModel):
     total_leads: int
     total_users: int

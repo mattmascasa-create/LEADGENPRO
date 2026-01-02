@@ -59,6 +59,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Booking creates calendar event + lead if new
    - 30-minute meeting slots, 9 AM - 5 PM
    - **Email notifications** to employees when bookings are made (via Resend)
+   - **Guest confirmation emails** with meeting details and preparation tips
 
 2. **Admin User Management**
    - `/admin/users` page for admins

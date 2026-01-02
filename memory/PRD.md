@@ -118,15 +118,16 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 ## Technical Architecture
 
 ### Tech Stack
-- **Frontend**: React, Tailwind CSS, react-router-dom, lucide-react
+- **Frontend**: React, Tailwind CSS, react-router-dom, lucide-react, recharts
 - **Backend**: FastAPI, MongoDB (pymongo), JWT auth
-- **Integrations**: Twilio (VoIP), Emergent LLM Key (AI features), Resend (email notifications)
+- **Integrations**: Twilio (VoIP), Emergent LLM Key (AI features, Whisper STT), Resend (email notifications)
 
 ### Key Files
 - `/app/backend/server.py` - All API endpoints
 - `/app/frontend/src/pages/BookingPage.js` - Public booking UI
 - `/app/frontend/src/pages/AdminUsersPage.js` - Admin user management
 - `/app/frontend/src/pages/CalendarPage.js` - Team calendar
+- `/app/frontend/src/pages/CallAnalyticsPage.js` - Gong-like call analytics with transcription
 
 ## Test Credentials
 - Admin: `admin@test.com` / `admin123`

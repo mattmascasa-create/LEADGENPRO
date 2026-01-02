@@ -121,6 +121,12 @@ const Sidebar = () => {
           <span className="text-sm">Sign Out</span>
         </button>
       </div>
+
+      {/* Phone Dialer Modal */}
+      <PhoneDialer 
+        isOpen={showDialer} 
+        onClose={() => setShowDialer(false)} 
+      />
     </div>
   );
 };

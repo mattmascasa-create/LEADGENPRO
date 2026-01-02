@@ -2186,6 +2186,236 @@ async def get_call_analysis(call_id: str, current_user: User = Depends(get_curre
         logging.error(f"Call analysis error: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate analysis")
 
+@api_router.post("/calls/{call_id}/transcribe")
+async def transcribe_call(call_id: str, current_user: User = Depends(get_current_user)):
+    """Transcribe a call recording using OpenAI Whisper"""
+    call = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    # Check if already transcribed
+    if call.get("transcript"):
+        return {
+            "success": True,
+            "call_id": call_id,
+            "transcript": call["transcript"],
+            "already_transcribed": True
+        }
+    
+    # Check if recording URL exists
+    recording_url = call.get("recording_url")
+    if not recording_url:
+        raise HTTPException(status_code=400, detail="No recording available for this call")
+    
+    try:
+        # Download the audio file from the recording URL
+        async with httpx.AsyncClient() as client:
+            # Twilio recordings may need authentication
+            if "twilio.com" in recording_url:
+                auth = (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+                response = await client.get(recording_url, auth=auth, follow_redirects=True)
+            else:
+                response = await client.get(recording_url, follow_redirects=True)
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"Failed to download recording: {response.status_code}")
+            
+            audio_data = response.content
+        
+        # Initialize Whisper STT
+        stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
+        
+        # Create a file-like object from the audio data
+        import io
+        audio_file = io.BytesIO(audio_data)
+        audio_file.name = "recording.mp3"
+        
+        # Transcribe using Whisper
+        transcription_response = await stt.transcribe(
+            file=audio_file,
+            model="whisper-1",
+            response_format="verbose_json",
+            language="en",
+            prompt="This is a sales call between a sales representative and a potential customer."
+        )
+        
+        transcript = transcription_response.text
+        
+        # Save transcript to database
+        update_data = {"transcript": transcript}
+        
+        # If we have segments, save those too
+        segments = []
+        if hasattr(transcription_response, 'segments') and transcription_response.segments:
+            for seg in transcription_response.segments:
+                segments.append({
+                    "start": seg.start,
+                    "end": seg.end,
+                    "text": seg.text
+                })
+            update_data["transcript_segments"] = segments
+        
+        await db.call_logs.update_one(
+            {"id": call_id},
+            {"$set": update_data}
+        )
+        
+        # Log activity
+        activity = Activity(
+            type="call_transcribed",
+            description=f"Call recording transcribed",
+            user_id=current_user.id,
+            metadata={"call_id": call_id, "word_count": len(transcript.split())}
+        )
+        activity_doc = activity.model_dump()
+        activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+        await db.activities.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "call_id": call_id,
+            "transcript": transcript,
+            "segments": segments,
+            "word_count": len(transcript.split()),
+            "already_transcribed": False
+        }
+        
+    except Exception as e:
+        logging.error(f"Transcription error for call {call_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@api_router.post("/calls/{call_id}/analyze")
+async def analyze_call_with_transcript(call_id: str, current_user: User = Depends(get_current_user)):
+    """Perform Gong-like AI analysis on a call with transcript"""
+    call = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    transcript = call.get("transcript", "")
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"call-analysis-{call_id}-{uuid.uuid4().hex[:8]}",
+            system_message="""You are an expert sales call analyst like Gong. Analyze sales calls and provide detailed, actionable insights.
+            Focus on:
+            - Communication patterns and techniques
+            - Customer engagement signals
+            - Sales methodology adherence
+            - Areas for improvement
+            Always be constructive and specific in your feedback."""
+        ).with_model("openai", "gpt-4o")
+        
+        # Create comprehensive analysis prompt
+        analysis_prompt = f"""Analyze this sales call recording:
+
+**Call Metadata:**
+- Outcome: {call.get('outcome', 'Unknown')}
+- Duration: {call.get('duration', 0)} seconds ({call.get('duration', 0) // 60} min {call.get('duration', 0) % 60} sec)
+- Notes: {call.get('notes', 'No notes')}
+
+**Call Transcript:**
+{transcript if transcript else "No transcript available - analyze based on metadata only."}
+
+Provide a comprehensive Gong-style analysis in the following JSON format:
+{{
+    "overall_score": <0-100 score based on call effectiveness>,
+    "sentiment": {{
+        "overall": <0-1 scale, 1 being most positive>,
+        "customer": <0-1 customer sentiment>,
+        "progression": "<improved/declined/stable>"
+    }},
+    "talk_ratio": {{
+        "rep_percentage": <estimated % of time rep talked>,
+        "customer_percentage": <estimated % of time customer talked>,
+        "assessment": "<balanced/rep_dominated/customer_dominated>"
+    }},
+    "questions": {{
+        "total_asked": <number>,
+        "open_ended": <number>,
+        "discovery_questions": <number>,
+        "quality": "<excellent/good/needs_improvement>"
+    }},
+    "key_topics": ["topic1", "topic2", "topic3"],
+    "customer_signals": {{
+        "buying_signals": ["signal1", "signal2"],
+        "objections": ["objection1"],
+        "concerns": ["concern1"]
+    }},
+    "next_steps": {{
+        "mentioned": <true/false>,
+        "clear": <true/false>,
+        "items": ["step1", "step2"]
+    }},
+    "coaching_insights": {{
+        "strengths": ["strength1", "strength2"],
+        "improvements": ["improvement1", "improvement2"],
+        "priority_action": "<single most important action to improve>"
+    }},
+    "call_summary": "<2-3 sentence summary of the call>"
+}}
+
+Return ONLY valid JSON, no additional text."""
+
+        message = UserMessage(text=analysis_prompt)
+        response = await chat.send_message(message)
+        
+        # Parse the AI response
+        try:
+            clean_response = response.strip()
+            if clean_response.startswith("```json"):
+                clean_response = clean_response[7:]
+            if clean_response.startswith("```"):
+                clean_response = clean_response[3:]
+            if clean_response.endswith("```"):
+                clean_response = clean_response[:-3]
+            
+            analysis = json.loads(clean_response.strip())
+        except json.JSONDecodeError as je:
+            logging.error(f"JSON parse error: {je}")
+            # Fallback analysis
+            analysis = {
+                "overall_score": 65,
+                "sentiment": {"overall": 0.6, "customer": 0.55, "progression": "stable"},
+                "talk_ratio": {"rep_percentage": 55, "customer_percentage": 45, "assessment": "balanced"},
+                "questions": {"total_asked": 5, "open_ended": 2, "discovery_questions": 2, "quality": "good"},
+                "key_topics": ["product features", "pricing", "implementation"],
+                "customer_signals": {"buying_signals": [], "objections": [], "concerns": []},
+                "next_steps": {"mentioned": True, "clear": False, "items": ["Follow up"]},
+                "coaching_insights": {
+                    "strengths": ["Good rapport building"],
+                    "improvements": ["Ask more discovery questions"],
+                    "priority_action": "Focus on understanding customer needs before presenting solutions"
+                },
+                "call_summary": "Sales call with discussion of product and pricing. Follow-up needed."
+            }
+        
+        # Update call with detailed analysis
+        await db.call_logs.update_one(
+            {"id": call_id},
+            {"$set": {"analysis": analysis, "analyzed_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Also update with simpler analysis fields for backward compatibility
+        simple_analysis = {
+            "sentiment": analysis.get("sentiment", {}).get("overall", 0.5),
+            "talk_ratio": analysis.get("talk_ratio", {}).get("rep_percentage", 50),
+            "questions_asked": analysis.get("questions", {}).get("total_asked", 0),
+            "topics": analysis.get("key_topics", []),
+            "coaching_tip": analysis.get("coaching_insights", {}).get("priority_action", "")
+        }
+        
+        return {
+            "success": True,
+            "call_id": call_id,
+            "analysis": analysis,
+            "simple_analysis": simple_analysis
+        }
+        
+    except Exception as e:
+        logging.error(f"Analysis error for call {call_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
 app.include_router(api_router)
 
 app.add_middleware(

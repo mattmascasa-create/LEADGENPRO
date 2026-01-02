@@ -1446,11 +1446,14 @@ async def generate_voice_token(request: VoiceTokenRequest, current_user: User = 
         logging.error(f"Error generating voice token: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class InitiateCallRequest(BaseModel):
+    to_number: str
+    lead_id: Optional[str] = None
+    record: bool = False
+
 @api_router.post("/voice/call")
 async def initiate_call(
-    phone_number: str,
-    lead_id: str,
-    record: bool = False,
+    request: InitiateCallRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Initiate an outbound call through Twilio"""
@@ -1459,33 +1462,51 @@ async def initiate_call(
     
     try:
         # Format phone number to E.164
-        formatted_number = phone_number
+        formatted_number = request.to_number
         if not formatted_number.startswith('+'):
             # Assume US number if no country code
-            formatted_number = '+1' + re.sub(r'\D', '', formatted_number)
+            digits = re.sub(r'\D', '', formatted_number)
+            if len(digits) == 10:
+                formatted_number = '+1' + digits
+            elif len(digits) == 11 and digits.startswith('1'):
+                formatted_number = '+' + digits
+            else:
+                formatted_number = '+' + digits
+        
+        # Create TwiML for connecting the call
+        # This will call the destination and connect it to the caller
+        twiml = f'''<Response>
+            <Say voice="alice">Connecting your call. Please hold.</Say>
+            <Dial callerId="{TWILIO_PHONE_NUMBER}" timeout="30">
+                <Number>{formatted_number}</Number>
+            </Dial>
+            <Say voice="alice">The call could not be completed. Goodbye.</Say>
+        </Response>'''
         
         # Create the call with optional recording
         call_params = {
             'to': formatted_number,
             'from_': TWILIO_PHONE_NUMBER,
-            'twiml': '<Response><Say>Connecting you now. Please hold.</Say><Dial>' + formatted_number + '</Dial></Response>',
-            'timeout': 60
+            'twiml': twiml,
+            'timeout': 60,
+            'status_callback': f"{os.environ.get('FRONTEND_URL', '')}/api/voice/events",
+            'status_callback_event': ['initiated', 'ringing', 'answered', 'completed']
         }
         
         # Enable recording if requested
-        if record:
+        if request.record:
             call_params['record'] = True
-            call_params['recording_status_callback'] = f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/voice/recording-callback"
+            call_params['recording_status_callback'] = f"{os.environ.get('FRONTEND_URL', '')}/api/voice/recording-callback"
         
         call = twilio_client.calls.create(**call_params)
         
         # Log the call initiation activity
         activity = Activity(
             type="call_initiated",
-            description=f"Initiated {'recorded ' if record else ''}call to {formatted_number}",
-            lead_id=lead_id,
+            description=f"Initiated {'recorded ' if request.record else ''}call to {formatted_number}",
+            lead_id=request.lead_id,
             user_id=current_user.id,
-            metadata={"call_sid": call.sid, "phone_number": formatted_number, "recorded": record}
+            metadata={"call_sid": call.sid, "phone_number": formatted_number, "recorded": request.record}
         )
         activity_doc = activity.model_dump()
         activity_doc['created_at'] = activity_doc['created_at'].isoformat()
@@ -1497,7 +1518,7 @@ async def initiate_call(
             "status": call.status,
             "to": formatted_number,
             "from": TWILIO_PHONE_NUMBER,
-            "recording": record
+            "recording": request.record
         }
     except Exception as e:
         logging.error(f"Error initiating call: {e}")

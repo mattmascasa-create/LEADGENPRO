@@ -486,8 +486,11 @@ async def create_template(tmpl_data: EmailTemplateCreate, current_user: User = D
 
 # Activities
 @api_router.get("/activities", response_model=List[Activity])
-async def get_activities(limit: int = 50, current_user: User = Depends(get_current_user)):
-    activities = await db.activities.find({}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+async def get_activities(limit: int = 50, lead_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if lead_id:
+        query["lead_id"] = lead_id
+    activities = await db.activities.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
     return [Activity(**act) for act in activities]
 
 # Stats routes
@@ -903,11 +906,13 @@ class TaskCreate(BaseModel):
     priority: str = "medium"
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(current_user: User = Depends(get_current_user)):
+async def get_tasks(lead_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
     """Get all tasks"""
     query = {}
     if current_user.role == "employee":
         query["assigned_to"] = current_user.id
+    if lead_id:
+        query["lead_id"] = lead_id
     
     tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
     return [Task(**task) for task in tasks]

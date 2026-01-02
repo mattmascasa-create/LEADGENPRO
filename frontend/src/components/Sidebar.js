@@ -26,6 +26,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [showDialer, setShowDialer] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },

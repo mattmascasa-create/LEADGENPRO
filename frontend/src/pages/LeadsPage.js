@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight, PhoneCall } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight, PhoneCall, Calendar, CheckSquare, Square, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import CallModal from '@/components/CallModal';
+import EmailModal from '@/components/EmailModal';
+import MeetingModal from '@/components/MeetingModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,7 +24,13 @@ const LeadsPage = () => {
   const [scraping, setScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [showCallModal, setShowCallModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [selectedLeadForCall, setSelectedLeadForCall] = useState(null);
+  const [selectedLeadForEmail, setSelectedLeadForEmail] = useState(null);
+  const [selectedLeadForMeeting, setSelectedLeadForMeeting] = useState(null);
+  const [selectedLeads, setSelectedLeads] = useState([]);
+  const [selectMode, setSelectMode] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -63,6 +71,57 @@ const LeadsPage = () => {
     } catch (error) {
       toast.error('Failed to create lead');
     }
+  };
+
+  // Bulk selection handlers
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedLeads([]);
+  };
+
+  const toggleLeadSelection = (lead) => {
+    setSelectedLeads(prev => {
+      const isSelected = prev.find(l => l.id === lead.id);
+      if (isSelected) {
+        return prev.filter(l => l.id !== lead.id);
+      } else {
+        return [...prev, lead];
+      }
+    });
+  };
+
+  const selectAllLeads = () => {
+    if (selectedLeads.length === filteredLeads.length) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads([...filteredLeads]);
+    }
+  };
+
+  // Export leads to CSV
+  const exportLeads = (leadsToExport = leads) => {
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Company', 'Title', 'Stage', 'Score'];
+    const csvContent = [
+      headers.join(','),
+      ...leadsToExport.map(lead => [
+        lead.first_name || '',
+        lead.last_name || '',
+        lead.email || '',
+        lead.phone || '',
+        lead.company || '',
+        lead.title || '',
+        lead.stage || '',
+        lead.score || 0
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
+    toast.success(`Exported ${leadsToExport.length} leads`);
   };
 
   const handleFileUpload = async (e) => {

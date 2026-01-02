@@ -83,7 +83,7 @@ const CalendarPage = () => {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/users`);
+      const response = await axios.get(`${API_URL}/api/team-members`);
       setTeamMembers(response.data);
     } catch (error) {
       console.error('Failed to load team members:', error);

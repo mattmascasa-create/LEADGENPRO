@@ -356,6 +356,118 @@ async def calculate_lead_score(lead_data: dict) -> int:
     
     return min(score, 100)
 
+async def send_booking_notification_email(
+    employee_email: str,
+    employee_name: str,
+    guest_name: str,
+    guest_email: str,
+    guest_phone: str,
+    guest_company: str,
+    booking_datetime: datetime,
+    duration: int,
+    notes: str
+):
+    """Send email notification to employee when someone books a meeting"""
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY not configured, skipping email notification")
+        return None
+    
+    # Format the datetime nicely
+    formatted_date = booking_datetime.strftime("%A, %B %d, %Y")
+    formatted_time = booking_datetime.strftime("%I:%M %p")
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); padding: 30px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">New Meeting Booked!</h1>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">Hi {employee_name},</p>
+            
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                <strong>{guest_name}</strong> has booked a meeting with you via your LeadGen Pro booking page.
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <h2 style="color: #3b82f6; margin-top: 0; font-size: 18px;">Meeting Details</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b; width: 120px;">Date:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{formatted_date}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Time:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{formatted_time}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Duration:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{duration} minutes</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <h2 style="color: #3b82f6; margin-top: 0; font-size: 18px;">Guest Information</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b; width: 120px;">Name:</td>
+                        <td style="padding: 8px 0;">{guest_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Email:</td>
+                        <td style="padding: 8px 0;"><a href="mailto:{guest_email}" style="color: #3b82f6;">{guest_email}</a></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Phone:</td>
+                        <td style="padding: 8px 0;">{guest_phone or 'Not provided'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Company:</td>
+                        <td style="padding: 8px 0;">{guest_company or 'Not provided'}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            {f'''<div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+                <strong style="color: #92400e;">Notes from guest:</strong>
+                <p style="margin: 10px 0 0 0; color: #78350f;">{notes}</p>
+            </div>''' if notes else ''}
+            
+            <p style="font-size: 14px; color: #64748b; margin-top: 20px;">
+                This meeting has been automatically added to your LeadGen Pro calendar.
+            </p>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+                    Powered by LeadGen Pro
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [employee_email],
+        "subject": f"New Meeting Booked: {guest_name} on {formatted_date}",
+        "html": html_content
+    }
+    
+    try:
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logging.info(f"Booking notification email sent to {employee_email}, email_id: {email.get('id')}")
+        return email
+    except Exception as e:
+        logging.error(f"Failed to send booking notification email: {str(e)}")
+        return None
+
 # Auth routes
 @api_router.post("/auth/register", response_model=Token)
 async def register(user_data: UserCreate):

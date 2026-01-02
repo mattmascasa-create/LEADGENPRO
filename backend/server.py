@@ -202,6 +202,9 @@ class CallLog(BaseModel):
     agent_id: str
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
+    recording_url: Optional[str] = None
+    transcript: Optional[str] = None
+    analysis: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CallLogCreate(BaseModel):
@@ -214,6 +217,37 @@ class CallLogCreate(BaseModel):
 
 class VoiceTokenRequest(BaseModel):
     identity: str
+
+# Calendar Models
+class CalendarEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    type: str = "meeting"  # meeting, call, task, reminder
+    start: datetime
+    end: datetime
+    attendees: List[str] = []
+    attendee_names: List[str] = []
+    location: Optional[str] = None
+    meeting_link: Optional[str] = None
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CalendarEventCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    type: str = "meeting"
+    start: datetime
+    end: datetime
+    attendees: List[str] = []
+    location: Optional[str] = None
+    meeting_link: Optional[str] = None
+
+# AI Assistant Models
+class AssistantChatRequest(BaseModel):
+    message: str
+    context: str = "general"
 
 class Stats(BaseModel):
     total_leads: int

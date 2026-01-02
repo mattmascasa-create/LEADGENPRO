@@ -1196,6 +1196,7 @@ async def generate_voice_token(request: VoiceTokenRequest, current_user: User = 
 async def initiate_call(
     phone_number: str,
     lead_id: str,
+    record: bool = False,
     current_user: User = Depends(get_current_user)
 ):
     """Initiate an outbound call through Twilio"""
@@ -1209,21 +1210,28 @@ async def initiate_call(
             # Assume US number if no country code
             formatted_number = '+1' + re.sub(r'\D', '', formatted_number)
         
-        # Create the call
-        call = twilio_client.calls.create(
-            to=formatted_number,
-            from_=TWILIO_PHONE_NUMBER,
-            twiml='<Response><Say>Connecting you now. Please hold.</Say><Dial>' + formatted_number + '</Dial></Response>',
-            timeout=60
-        )
+        # Create the call with optional recording
+        call_params = {
+            'to': formatted_number,
+            'from_': TWILIO_PHONE_NUMBER,
+            'twiml': '<Response><Say>Connecting you now. Please hold.</Say><Dial>' + formatted_number + '</Dial></Response>',
+            'timeout': 60
+        }
+        
+        # Enable recording if requested
+        if record:
+            call_params['record'] = True
+            call_params['recording_status_callback'] = f"{os.environ.get('REACT_APP_BACKEND_URL', '')}/api/voice/recording-callback"
+        
+        call = twilio_client.calls.create(**call_params)
         
         # Log the call initiation activity
         activity = Activity(
             type="call_initiated",
-            description=f"Initiated call to {formatted_number}",
+            description=f"Initiated {'recorded ' if record else ''}call to {formatted_number}",
             lead_id=lead_id,
             user_id=current_user.id,
-            metadata={"call_sid": call.sid, "phone_number": formatted_number}
+            metadata={"call_sid": call.sid, "phone_number": formatted_number, "recorded": record}
         )
         activity_doc = activity.model_dump()
         activity_doc['created_at'] = activity_doc['created_at'].isoformat()
@@ -1234,7 +1242,8 @@ async def initiate_call(
             "call_sid": call.sid,
             "status": call.status,
             "to": formatted_number,
-            "from": TWILIO_PHONE_NUMBER
+            "from": TWILIO_PHONE_NUMBER,
+            "recording": record
         }
     except Exception as e:
         logging.error(f"Error initiating call: {e}")

@@ -483,6 +483,21 @@ const LeadDetailPage = () => {
         lead={lead}
         onCallLogged={fetchLeadData}
       />
+
+      {/* Email Modal */}
+      <EmailModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        singleLead={lead}
+      />
+
+      {/* Meeting Modal */}
+      <MeetingModal
+        isOpen={showMeetingModal}
+        onClose={() => setShowMeetingModal(false)}
+        lead={lead}
+        onMeetingScheduled={fetchLeadData}
+      />
     </DashboardLayout>
   );
 };

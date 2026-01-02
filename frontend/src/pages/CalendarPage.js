@@ -67,9 +67,14 @@ const CalendarPage = () => {
     fetchTeamMembers();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
+
   const fetchEvents = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/calendar/events`);
+      const response = await axios.get(`${API_URL}/api/calendar/events`, getAuthHeaders());
       const formattedEvents = response.data.map(event => ({
         ...event,
         start: new Date(event.start),
@@ -83,7 +88,7 @@ const CalendarPage = () => {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/team-members`);
+      const response = await axios.get(`${API_URL}/api/team-members`, getAuthHeaders());
       setTeamMembers(response.data);
     } catch (error) {
       console.error('Failed to load team members:', error);

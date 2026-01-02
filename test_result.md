@@ -126,11 +126,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Login endpoint working - tested via curl"
+      - working: true
+        agent: "testing"
+        comment: "POST /api/auth/login fully tested - validates credentials, returns JWT token, proper error handling for invalid credentials"
 
   - task: "Lead CRUD Operations"
     implemented: true

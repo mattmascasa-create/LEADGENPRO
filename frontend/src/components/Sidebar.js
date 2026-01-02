@@ -15,7 +15,9 @@ import {
   Phone,
   UserCog,
   CheckSquare,
-  FolderOpen
+  FolderOpen,
+  CalendarDays,
+  Mic
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -25,7 +27,9 @@ const Sidebar = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Calendar', href: '/calendar', icon: CalendarDays },
     { name: 'Call Lists', href: '/call-lists', icon: Phone, roles: ['employee', 'admin'] },
+    { name: 'Call Analytics', href: '/call-analytics', icon: Mic },
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },

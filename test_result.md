@@ -536,6 +536,10 @@ test_plan:
     - "Team Chat Page"
   test_all: false
   test_priority: "stuck_first"
+  completed_new_features:
+    - "Team Calendar Page"
+    - "Call Analytics Page"
+    - "AI Assistant Widget"
 
 agent_communication:
   - agent: "main"

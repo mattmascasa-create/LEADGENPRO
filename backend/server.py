@@ -904,7 +904,7 @@ class TaskCreate(BaseModel):
 
 @api_router.get("/tasks", response_model=List[Task])
 async def get_tasks(current_user: User = Depends(get_current_user)):
-    \"\"\"Get all tasks\"\"\"
+    """Get all tasks"""
     query = {}
     if current_user.role == "employee":
         query["assigned_to"] = current_user.id
@@ -914,7 +914,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: User = Depends(get_current_user)):
-    \"\"\"Create a new task\"\"\"
+    """Create a new task"""
     # Get assigned user name
     assigned_user = await db.users.find_one({"id": task_data.assigned_to})
     
@@ -943,7 +943,7 @@ async def create_task(task_data: TaskCreate, current_user: User = Depends(get_cu
 
 @api_router.put("/tasks/{task_id}/complete")
 async def complete_task(task_id: str, current_user: User = Depends(get_current_user)):
-    \"\"\"Mark a task as completed\"\"\"
+    """Mark a task as completed"""
     result = await db.tasks.update_one(
         {"id": task_id},
         {"$set": {
@@ -1003,7 +1003,7 @@ class ChatMessageCreate(BaseModel):
 
 @api_router.get("/chat/channels", response_model=List[Channel])
 async def get_channels(current_user: User = Depends(get_current_user)):
-    \"\"\"Get all channels\"\"\"
+    """Get all channels"""
     channels = await db.channels.find({}, {"_id": 0}).to_list(1000)
     
     # Create default channels if none exist
@@ -1025,7 +1025,7 @@ async def get_channels(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/chat/channels", response_model=Channel)
 async def create_channel(channel_data: ChannelCreate, current_user: User = Depends(get_current_user)):
-    \"\"\"Create a new channel\"\"\"
+    """Create a new channel"""
     channel = Channel(**channel_data.model_dump(), created_by=current_user.id)
     doc = channel.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -1034,7 +1034,7 @@ async def create_channel(channel_data: ChannelCreate, current_user: User = Depen
 
 @api_router.get("/chat/messages/{channel_id}", response_model=List[ChatMessage])
 async def get_messages(channel_id: str, limit: int = 100, current_user: User = Depends(get_current_user)):
-    \"\"\"Get messages for a channel\"\"\"
+    """Get messages for a channel"""
     messages = await db.chat_messages.find(
         {"channel_id": channel_id},
         {"_id": 0}
@@ -1045,7 +1045,7 @@ async def get_messages(channel_id: str, limit: int = 100, current_user: User = D
 
 @api_router.post("/chat/messages", response_model=ChatMessage)
 async def send_message(msg_data: ChatMessageCreate, current_user: User = Depends(get_current_user)):
-    \"\"\"Send a message to a channel\"\"\"
+    """Send a message to a channel"""
     message = ChatMessage(
         **msg_data.model_dump(),
         sender_id=current_user.id,

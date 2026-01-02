@@ -49,6 +49,16 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [x] AI Copilot/Assistant (floating chatbot widget)
 - [x] AI-powered lead insights
 - [x] Call Analytics page (Gong-like dashboard)
+- [x] **OpenAI Whisper Transcription** - Transcribe call recordings to text
+- [x] **Gong-like AI Analysis** - Detailed call analysis including:
+  - Overall call score (0-100)
+  - Sentiment analysis (overall, customer, progression)
+  - Talk ratio analysis
+  - Question quality assessment
+  - Customer signals (buying signals, objections, concerns)
+  - Next steps tracking
+  - AI coaching insights (strengths, improvements, priority action)
+  - Call summary
 
 ## Implementation Status
 

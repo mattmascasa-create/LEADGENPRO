@@ -172,9 +172,10 @@ const LeadsPage = () => {
   };
 
   const filteredLeads = leads.filter(lead =>
-    lead.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchTerm.toLowerCase())
+    lead.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.company?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -186,6 +187,13 @@ const LeadsPage = () => {
             <p className="text-secondary">Import, scrape, and manage all your leads</p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => exportLeads()}
+              className="px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+            >
+              <Download className="w-5 h-5" />
+              Export All
+            </button>
             <button
               onClick={() => setShowImport(true)}
               className="px-4 py-2 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/10 transition-all duration-200 flex items-center gap-2"

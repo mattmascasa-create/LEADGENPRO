@@ -560,8 +560,8 @@ const LeadsPage = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedLeadForCall(lead);
-                              setShowCallModal(true);
+                              setSelectedLeadForDialer(lead);
+                              setShowDialer(true);
                             }}
                             className="p-2 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
                             title="Call Lead"

@@ -203,7 +203,10 @@ const LeadDetailPage = () => {
             <div className="bg-white p-6 rounded-xl border border-border">
               <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
               <div className="grid grid-cols-3 gap-2">
-                <button className="flex flex-col items-center gap-2 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <button 
+                  onClick={() => setShowCallModal(true)}
+                  className="flex flex-col items-center gap-2 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                >
                   <Phone className="w-5 h-5 text-green-600" />
                   <span className="text-xs font-medium text-green-600">Call</span>
                 </button>

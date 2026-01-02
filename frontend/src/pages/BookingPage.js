@@ -426,12 +426,18 @@ const BookingPage = () => {
                         <User className="w-5 h-5 text-primary" />
                         <span>with {user.full_name}</span>
                       </div>
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-primary" />
+                        <span>Confirmation sent to {bookingDetails.email}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-sm text-secondary mt-8">
-                    Please add this to your calendar. We look forward to meeting you!
-                  </p>
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 max-w-sm mx-auto mt-6">
+                    <p className="text-sm text-green-800">
+                      <strong>What's next?</strong> Check your email for meeting details and preparation tips.
+                    </p>
+                  </div>
                 </motion.div>
               )}
             </div>

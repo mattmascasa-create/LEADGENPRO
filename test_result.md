@@ -212,15 +212,18 @@ backend:
 
   - task: "Website Scraper"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "low"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Scraper endpoint exists but not tested"
+      - working: true
+        agent: "testing"
+        comment: "Website scraper tested: POST /api/leads/scrape working. Fixed regex pattern issue in phone number extraction. Scraper executes without errors and handles edge cases properly"
 
 frontend:
   - task: "Landing Page"

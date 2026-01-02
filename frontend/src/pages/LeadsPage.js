@@ -377,6 +377,19 @@ const LeadsPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
+                  {lead.phone && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedLeadForCall(lead);
+                        setShowCallModal(true);
+                      }}
+                      className="p-2 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                      title="Call Lead"
+                    >
+                      <PhoneCall className="w-5 h-5 text-green-600" />
+                    </button>
+                  )}
                   <div className="text-right">
                     <div className="text-2xl font-bold metric-value text-primary mb-1">{lead.score}</div>
                     <div className="text-xs text-secondary">Lead Score</div>

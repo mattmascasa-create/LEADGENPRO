@@ -468,6 +468,114 @@ async def send_booking_notification_email(
         logging.error(f"Failed to send booking notification email: {str(e)}")
         return None
 
+async def send_guest_confirmation_email(
+    guest_name: str,
+    guest_email: str,
+    employee_name: str,
+    employee_email: str,
+    booking_datetime: datetime,
+    duration: int,
+    company_name: str = "LeadGen Pro"
+):
+    """Send confirmation email to guest after they book a meeting"""
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY not configured, skipping guest confirmation email")
+        return None
+    
+    # Format the datetime nicely
+    formatted_date = booking_datetime.strftime("%A, %B %d, %Y")
+    formatted_time = booking_datetime.strftime("%I:%M %p")
+    
+    # Calculate end time
+    end_time = (booking_datetime + timedelta(minutes=duration)).strftime("%I:%M %p")
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Meeting Confirmed!</h1>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">Hi {guest_name},</p>
+            
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Your meeting with <strong>{employee_name}</strong> has been confirmed. We're looking forward to speaking with you!
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <h2 style="color: #10b981; margin-top: 0; font-size: 18px;">Meeting Details</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b; width: 120px;">Date:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{formatted_date}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Time:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{formatted_time} - {end_time}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Duration:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{duration} minutes</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">With:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{employee_name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Type:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">Video or Phone Call</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+                <h3 style="color: #065f46; margin-top: 0; font-size: 16px;">Before Your Meeting</h3>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #047857;">
+                    <li style="margin-bottom: 8px;">Add this meeting to your calendar</li>
+                    <li style="margin-bottom: 8px;">Prepare any questions or topics you'd like to discuss</li>
+                    <li style="margin-bottom: 8px;">Ensure you have a stable internet connection for video calls</li>
+                    <li style="margin-bottom: 0;">Find a quiet place for the call</li>
+                </ul>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <h3 style="color: #374151; margin-top: 0; font-size: 16px;">Need to reschedule?</h3>
+                <p style="margin: 0; color: #64748b; font-size: 14px;">
+                    If you need to change the time of your meeting, please contact us at 
+                    <a href="mailto:{employee_email}" style="color: #3b82f6;">{employee_email}</a>
+                </p>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+                    Powered by LeadGen Pro
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [guest_email],
+        "subject": f"Meeting Confirmed: {formatted_date} at {formatted_time} with {employee_name}",
+        "html": html_content
+    }
+    
+    try:
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logging.info(f"Guest confirmation email sent to {guest_email}, email_id: {email.get('id')}")
+        return email
+    except Exception as e:
+        logging.error(f"Failed to send guest confirmation email: {str(e)}")
+        return None
+
 # Auth routes
 @api_router.post("/auth/register", response_model=Token)
 async def register(user_data: UserCreate):

@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import CallModal from '@/components/CallModal';
+import EmailModal from '@/components/EmailModal';
+import MeetingModal from '@/components/MeetingModal';
 import { useAuth } from '@/context/AuthContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -27,6 +29,8 @@ const LeadDetailPage = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [taskForm, setTaskForm] = useState({
     title: '',

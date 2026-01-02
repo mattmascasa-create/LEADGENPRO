@@ -129,6 +129,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - `/app/frontend/src/pages/AdminUsersPage.js` - Admin user management
 - `/app/frontend/src/pages/CalendarPage.js` - Team calendar
 - `/app/frontend/src/pages/CallAnalyticsPage.js` - Gong-like call analytics with transcription
+- `/app/frontend/src/components/PhoneDialer.js` - Physical dialer for making calls
 
 ## Test Credentials
 - Admin: `admin@test.com` / `admin123`

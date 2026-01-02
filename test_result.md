@@ -225,6 +225,78 @@ backend:
         agent: "testing"
         comment: "Website scraper tested: POST /api/leads/scrape working. Fixed regex pattern issue in phone number extraction. Scraper executes without errors and handles edge cases properly"
 
+  - task: "Voice Token Generation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/voice/token tested successfully. Generates JWT tokens for browser-based calling with proper identity and expiration. Twilio integration working correctly."
+
+  - task: "Call Initiation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/voice/call tested successfully. Endpoint accessible and returns proper response format. Successfully initiated call with Twilio SID: CAac32a66f344041a3aa28bee98c0f8b36. Phone number formatting and E.164 conversion working."
+
+  - task: "Call Logging"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/calls/log tested successfully. Call outcomes, duration, notes, and call SID logging working perfectly. Updates lead's last_contacted timestamp correctly."
+
+  - task: "Call Logs Retrieval"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/calls/logs tested successfully. Both unfiltered and lead_id filtered queries working correctly. Returns proper list of call logs with all required fields."
+
+  - task: "Call Statistics"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/calls/stats tested successfully. Returns comprehensive statistics including total_calls, duration metrics, outcome breakdown, and connect_rate calculation."
+
+  - task: "Voice Activity Logging"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Activity logging for voice operations tested successfully. Call initiation and call logging activities properly recorded in GET /api/activities endpoint. Found call_logged and call_initiated activity types."
+
 frontend:
   - task: "Landing Page"
     implemented: true

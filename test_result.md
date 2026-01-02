@@ -156,11 +156,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/leads/{id}/stage endpoint working - used by drag-and-drop pipeline"
+      - working: true
+        agent: "testing"
+        comment: "Stage update API fully tested - POST /api/leads/{id}/stage?stage={new_stage} working perfectly. Tested transitions: prospecting → qualified → proposal. Activity logging working"
 
   - task: "Tasks Management"
     implemented: true

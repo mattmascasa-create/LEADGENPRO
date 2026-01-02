@@ -23,6 +23,7 @@ import CalendarPage from '@/pages/CalendarPage';
 import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import BookingPage from '@/pages/BookingPage';
+import ContentHubPage from '@/pages/ContentHubPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';

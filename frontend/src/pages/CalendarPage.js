@@ -116,7 +116,7 @@ const CalendarPage = () => {
         ...formData,
         start: new Date(formData.start).toISOString(),
         end: new Date(formData.end).toISOString()
-      });
+      }, getAuthHeaders());
       toast.success('Event created!');
       setShowEventModal(false);
       setFormData({
@@ -137,7 +137,7 @@ const CalendarPage = () => {
 
   const handleDeleteEvent = async (eventId) => {
     try {
-      await axios.delete(`${API_URL}/api/calendar/events/${eventId}`);
+      await axios.delete(`${API_URL}/api/calendar/events/${eventId}`, getAuthHeaders());
       toast.success('Event deleted!');
       setShowEventDetail(null);
       fetchEvents();

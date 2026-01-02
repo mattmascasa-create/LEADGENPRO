@@ -40,6 +40,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Lead details form
   - Creates calendar event + lead record
   - Accessible via `/book/:userId`
+  - **Email notifications** via Resend when bookings are made
 - [x] Task management (Outreach-like)
 - [x] Team messaging with channels
 - [x] Call lists for employees

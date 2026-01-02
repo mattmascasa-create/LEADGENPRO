@@ -167,15 +167,18 @@ backend:
 
   - task: "Tasks Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoints exist but not fully tested"
+      - working: true
+        agent: "testing"
+        comment: "Tasks management fully tested: POST /api/tasks (create), GET /api/tasks (list), PUT /api/tasks/{id}/complete (complete). Task assignment, due dates, priorities all working"
 
   - task: "Team Chat Channels"
     implemented: true

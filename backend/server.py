@@ -2423,6 +2423,352 @@ Return ONLY valid JSON, no additional text."""
         logging.error(f"Analysis error for call {call_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+# ==================== Google Drive Integration ====================
+
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_DRIVE_REDIRECT_URI = os.environ.get('GOOGLE_DRIVE_REDIRECT_URI')
+FRONTEND_URL = os.environ.get('FRONTEND_URL')
+
+async def get_drive_service(user: User):
+    """Get Google Drive service with auto-refresh credentials"""
+    creds_doc = await db.drive_credentials.find_one({"user_id": user.id})
+    if not creds_doc:
+        return None
+    
+    # Create credentials object
+    creds = Credentials(
+        token=creds_doc["access_token"],
+        refresh_token=creds_doc.get("refresh_token"),
+        token_uri=creds_doc["token_uri"],
+        client_id=creds_doc["client_id"],
+        client_secret=creds_doc["client_secret"],
+        scopes=creds_doc["scopes"]
+    )
+    
+    # Auto-refresh if expired
+    if creds.expired and creds.refresh_token:
+        logging.info(f"Refreshing expired token for user {user.id}")
+        creds.refresh(GoogleRequest())
+        
+        # Update in database
+        await db.drive_credentials.update_one(
+            {"user_id": user.id},
+            {"$set": {
+                "access_token": creds.token,
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return build('drive', 'v3', credentials=creds)
+
+@api_router.get("/drive/status")
+async def get_drive_status(current_user: User = Depends(get_current_user)):
+    """Check if Google Drive is connected for current user"""
+    creds_doc = await db.drive_credentials.find_one({"user_id": current_user.id})
+    
+    if not creds_doc:
+        return {"connected": False, "message": "Google Drive not connected"}
+    
+    return {
+        "connected": True,
+        "connected_at": creds_doc.get("updated_at"),
+        "scopes": creds_doc.get("scopes", [])
+    }
+
+@api_router.get("/drive/connect")
+async def connect_drive(current_user: User = Depends(get_current_user)):
+    """Initiate Google Drive OAuth flow"""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=400, 
+            detail="Google Drive integration not configured. Please add Google OAuth credentials."
+        )
+    
+    try:
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_DRIVE_REDIRECT_URI]
+                }
+            },
+            scopes=['https://www.googleapis.com/auth/drive'],
+            redirect_uri=GOOGLE_DRIVE_REDIRECT_URI
+        )
+        
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent',
+            state=current_user.id
+        )
+        
+        logging.info(f"Drive OAuth initiated for user {current_user.id}")
+        return {"authorization_url": authorization_url}
+    
+    except Exception as e:
+        logging.error(f"Failed to initiate OAuth: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to initiate OAuth: {str(e)}")
+
+@api_router.get("/drive/callback")
+async def drive_callback(code: str, state: str):
+    """Handle Google Drive OAuth callback"""
+    try:
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_DRIVE_REDIRECT_URI]
+                }
+            },
+            scopes=None,
+            redirect_uri=GOOGLE_DRIVE_REDIRECT_URI
+        )
+        
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        
+        logging.info(f"Drive credentials obtained for user {state}, scopes: {credentials.scopes}")
+        
+        # Store credentials in database
+        await db.drive_credentials.update_one(
+            {"user_id": state},
+            {"$set": {
+                "user_id": state,
+                "access_token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": list(credentials.scopes) if credentials.scopes else [],
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        logging.info(f"Drive credentials stored for user {state}")
+        
+        # Redirect to frontend
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=f"{FRONTEND_URL}/content-hub?drive_connected=true")
+    
+    except Exception as e:
+        logging.error(f"OAuth callback failed: {str(e)}")
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=f"{FRONTEND_URL}/content-hub?drive_error={str(e)}")
+
+@api_router.get("/drive/disconnect")
+async def disconnect_drive(current_user: User = Depends(get_current_user)):
+    """Disconnect Google Drive"""
+    await db.drive_credentials.delete_one({"user_id": current_user.id})
+    return {"success": True, "message": "Google Drive disconnected"}
+
+@api_router.get("/drive/files")
+async def list_drive_files(
+    folder_id: str = None,
+    page_token: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """List files from Google Drive"""
+    service = await get_drive_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        # Build query
+        query_parts = ["trashed = false"]
+        if folder_id:
+            query_parts.append(f"'{folder_id}' in parents")
+        else:
+            query_parts.append("'root' in parents")
+        
+        query = " and ".join(query_parts)
+        
+        # Execute query
+        results = service.files().list(
+            q=query,
+            pageSize=50,
+            pageToken=page_token,
+            fields="nextPageToken, files(id, name, mimeType, size, modifiedTime, webViewLink, iconLink, thumbnailLink, parents)",
+            orderBy="folder,name"
+        ).execute()
+        
+        files = results.get('files', [])
+        next_page_token = results.get('nextPageToken')
+        
+        # Format response
+        formatted_files = []
+        for file in files:
+            formatted_files.append({
+                "id": file.get('id'),
+                "name": file.get('name'),
+                "mimeType": file.get('mimeType'),
+                "isFolder": file.get('mimeType') == 'application/vnd.google-apps.folder',
+                "size": int(file.get('size', 0)) if file.get('size') else None,
+                "modifiedTime": file.get('modifiedTime'),
+                "webViewLink": file.get('webViewLink'),
+                "iconLink": file.get('iconLink'),
+                "thumbnailLink": file.get('thumbnailLink')
+            })
+        
+        return {
+            "files": formatted_files,
+            "nextPageToken": next_page_token
+        }
+    
+    except Exception as e:
+        logging.error(f"Failed to list Drive files: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
+
+@api_router.post("/drive/folder")
+async def create_drive_folder(
+    name: str,
+    parent_id: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a folder in Google Drive"""
+    service = await get_drive_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        file_metadata = {
+            'name': name,
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        if parent_id:
+            file_metadata['parents'] = [parent_id]
+        
+        folder = service.files().create(
+            body=file_metadata,
+            fields='id, name, webViewLink'
+        ).execute()
+        
+        return {
+            "success": True,
+            "folder": {
+                "id": folder.get('id'),
+                "name": folder.get('name'),
+                "webViewLink": folder.get('webViewLink')
+            }
+        }
+    
+    except Exception as e:
+        logging.error(f"Failed to create folder: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create folder: {str(e)}")
+
+@api_router.post("/drive/upload")
+async def upload_to_drive(
+    file: UploadFile = File(...),
+    folder_id: str = Form(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a file to Google Drive"""
+    service = await get_drive_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        # Save file temporarily
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        file_metadata = {'name': file.filename}
+        if folder_id:
+            file_metadata['parents'] = [folder_id]
+        
+        media = MediaFileUpload(tmp_path, mimetype=file.content_type, resumable=True)
+        
+        uploaded_file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, name, webViewLink, size'
+        ).execute()
+        
+        # Clean up temp file
+        os.unlink(tmp_path)
+        
+        return {
+            "success": True,
+            "file": {
+                "id": uploaded_file.get('id'),
+                "name": uploaded_file.get('name'),
+                "webViewLink": uploaded_file.get('webViewLink'),
+                "size": uploaded_file.get('size')
+            }
+        }
+    
+    except Exception as e:
+        logging.error(f"Failed to upload file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+@api_router.delete("/drive/files/{file_id}")
+async def delete_drive_file(file_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a file from Google Drive"""
+    service = await get_drive_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        service.files().delete(fileId=file_id).execute()
+        return {"success": True, "message": "File deleted"}
+    
+    except Exception as e:
+        logging.error(f"Failed to delete file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+
+@api_router.get("/drive/search")
+async def search_drive_files(
+    query: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Search files in Google Drive"""
+    service = await get_drive_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Drive not connected")
+    
+    try:
+        search_query = f"name contains '{query}' and trashed = false"
+        
+        results = service.files().list(
+            q=search_query,
+            pageSize=20,
+            fields="files(id, name, mimeType, size, modifiedTime, webViewLink, iconLink, thumbnailLink)"
+        ).execute()
+        
+        files = results.get('files', [])
+        
+        formatted_files = []
+        for file in files:
+            formatted_files.append({
+                "id": file.get('id'),
+                "name": file.get('name'),
+                "mimeType": file.get('mimeType'),
+                "isFolder": file.get('mimeType') == 'application/vnd.google-apps.folder',
+                "size": int(file.get('size', 0)) if file.get('size') else None,
+                "modifiedTime": file.get('modifiedTime'),
+                "webViewLink": file.get('webViewLink'),
+                "iconLink": file.get('iconLink'),
+                "thumbnailLink": file.get('thumbnailLink')
+            })
+        
+        return {"files": formatted_files}
+    
+    except Exception as e:
+        logging.error(f"Failed to search files: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to search files: {str(e)}")
+
 app.include_router(api_router)
 
 app.add_middleware(

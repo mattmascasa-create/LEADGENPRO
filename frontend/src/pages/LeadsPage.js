@@ -623,6 +623,28 @@ const LeadsPage = () => {
         lead={selectedLeadForCall}
         onCallLogged={fetchLeads}
       />
+
+      {/* Email Modal */}
+      <EmailModal
+        isOpen={showEmailModal}
+        onClose={() => {
+          setShowEmailModal(false);
+          setSelectedLeadForEmail(null);
+        }}
+        leads={selectedLeads.length > 0 ? selectedLeads : []}
+        singleLead={selectedLeadForEmail}
+      />
+
+      {/* Meeting Modal */}
+      <MeetingModal
+        isOpen={showMeetingModal}
+        onClose={() => {
+          setShowMeetingModal(false);
+          setSelectedLeadForMeeting(null);
+        }}
+        lead={selectedLeadForMeeting}
+        onMeetingScheduled={fetchLeads}
+      />
     </DashboardLayout>
   );
 };

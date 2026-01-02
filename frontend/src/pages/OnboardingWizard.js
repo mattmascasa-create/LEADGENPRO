@@ -10,8 +10,9 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const OnboardingWizard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState({
     goals: [],
     team_size: '',
@@ -26,12 +27,30 @@ const OnboardingWizard = () => {
   ];
 
   const handleComplete = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
     try {
-      await axios.put(`${API_URL}/api/auth/onboarding`);
+      // Make API call with authorization header
+      await axios.put(`${API_URL}/api/auth/onboarding`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Update local user state
+      if (updateUser) {
+        updateUser({ ...user, onboarding_completed: true });
+      }
+      
       toast.success('Setup complete! Welcome to LeadGen Pro');
-      navigate('/dashboard');
+      
+      // Navigate to dashboard
+      navigate('/dashboard', { replace: true });
     } catch (error) {
+      console.error('Onboarding error:', error);
       toast.error('Failed to complete onboarding');
+      setIsSubmitting(false);
     }
   };
 

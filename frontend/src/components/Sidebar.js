@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import PhoneDialer from './PhoneDialer';
 import { 
   LayoutDashboard, 
   GitBranch, 
@@ -17,7 +18,8 @@ import {
   CheckSquare,
   FolderOpen,
   CalendarDays,
-  Mic
+  Mic,
+  PhoneCall
 } from 'lucide-react';
 
 const Sidebar = () => {

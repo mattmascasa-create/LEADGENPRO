@@ -78,6 +78,23 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Delete users (with self-deletion prevention)
    - Copy booking link for each user
 
+3. **OpenAI Whisper Transcription**
+   - `/api/calls/{call_id}/transcribe` endpoint
+   - Transcribes Twilio call recordings to text
+   - Stores transcript with optional segment timestamps
+   - Uses whisper-1 model via Emergent LLM Key
+
+4. **Gong-like AI Analysis**
+   - `/api/calls/{call_id}/analyze` endpoint
+   - Comprehensive call scoring (0-100)
+   - Sentiment analysis (overall, customer, progression)
+   - Talk ratio assessment (balanced/rep_dominated/customer_dominated)
+   - Question quality tracking (total, open-ended, discovery)
+   - Customer signals detection (buying signals, objections, concerns)
+   - Next steps tracking
+   - AI coaching insights with priority action
+   - Call summary generation
+
 ### Backend Endpoints
 - `/api/booking/{user_id}` - Get user info for booking
 - `/api/booking/{user_id}/slots` - Get available slots

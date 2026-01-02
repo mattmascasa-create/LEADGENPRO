@@ -26,6 +26,7 @@ from twilio.twiml.voice_response import VoiceResponse
 import resend
 from emergentintegrations.llm.openai import OpenAISpeechToText
 import httpx
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

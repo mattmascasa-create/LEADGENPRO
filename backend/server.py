@@ -1439,9 +1439,9 @@ async def delete_calendar_event(event_id: str, current_user: User = Depends(get_
         raise HTTPException(status_code=404, detail="Event not found")
     return {"message": "Event deleted"}
 
-@api_router.get("/users", response_model=List[User])
-async def get_users(current_user: User = Depends(get_current_user)):
-    """Get all team members"""
+@api_router.get("/team-members", response_model=List[User])
+async def get_team_members(current_user: User = Depends(get_current_user)):
+    """Get all team members (for calendar attendees, assignments, etc.)"""
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
     return [User(**user) for user in users]
 

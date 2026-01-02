@@ -27,9 +27,11 @@ const LeadsPage = () => {
   const [showCallModal, setShowCallModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [showDialer, setShowDialer] = useState(false);
   const [selectedLeadForCall, setSelectedLeadForCall] = useState(null);
   const [selectedLeadForEmail, setSelectedLeadForEmail] = useState(null);
   const [selectedLeadForMeeting, setSelectedLeadForMeeting] = useState(null);
+  const [selectedLeadForDialer, setSelectedLeadForDialer] = useState(null);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [selectMode, setSelectMode] = useState(false);
   const [formData, setFormData] = useState({

@@ -408,7 +408,7 @@ const BookingPage = () => {
                   </div>
                   <h2 className="text-3xl font-bold mb-4">You're All Set!</h2>
                   <p className="text-secondary mb-8">
-                    Your meeting has been scheduled. You'll receive a confirmation email shortly.
+                    Your meeting has been scheduled. {user.full_name} has been notified.
                   </p>
 
                   <div className="bg-slate-50 rounded-xl p-6 text-left max-w-sm mx-auto">
@@ -430,7 +430,7 @@ const BookingPage = () => {
                   </div>
 
                   <p className="text-sm text-secondary mt-8">
-                    A calendar invite has been sent to {bookingDetails.email}
+                    Please add this to your calendar. We look forward to meeting you!
                   </p>
                 </motion.div>
               )}

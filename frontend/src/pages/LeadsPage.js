@@ -648,6 +648,17 @@ const LeadsPage = () => {
         lead={selectedLeadForMeeting}
         onMeetingScheduled={fetchLeads}
       />
+
+      {/* Phone Dialer */}
+      <PhoneDialer
+        isOpen={showDialer}
+        onClose={() => {
+          setShowDialer(false);
+          setSelectedLeadForDialer(null);
+        }}
+        prefilledNumber={selectedLeadForDialer?.phone || ''}
+        leadInfo={selectedLeadForDialer}
+      />
     </DashboardLayout>
   );
 };

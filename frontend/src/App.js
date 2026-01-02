@@ -166,7 +166,25 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/call-analytics"
+            element={
+              <ProtectedRoute>
+                <CallAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
+        {/* AI Assistant Widget - Available on all pages */}
+        <AIAssistant />
       </BrowserRouter>
       <ToastContainer
         position="top-right"

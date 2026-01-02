@@ -409,6 +409,17 @@ const LeadsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Call Modal */}
+      <CallModal
+        isOpen={showCallModal}
+        onClose={() => {
+          setShowCallModal(false);
+          setSelectedLeadForCall(null);
+        }}
+        lead={selectedLeadForCall}
+        onCallLogged={fetchLeads}
+      />
     </DashboardLayout>
   );
 };

@@ -66,6 +66,18 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* Quick Call Button */}
+      <div className="px-4 pt-4">
+        <button
+          onClick={() => setShowDialer(true)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-green-500/20"
+          data-testid="quick-call-btn"
+        >
+          <PhoneCall className="w-5 h-5" />
+          <span>Quick Call</span>
+        </button>
+      </div>
+
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {filteredNavigation.map((item) => {

@@ -12,6 +12,7 @@ import OnboardingWizard from '@/pages/OnboardingWizard';
 import DashboardPage from '@/pages/DashboardPage';
 import PipelinePage from '@/pages/PipelinePage';
 import LeadsPage from '@/pages/LeadsPage';
+import LeadDetailPage from '@/pages/LeadDetailPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import SequencesPage from '@/pages/SequencesPage';
 import TemplatesPage from '@/pages/TemplatesPage';
@@ -85,6 +86,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <LeadsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leads/:id"
+            element={
+              <ProtectedRoute>
+                <LeadDetailPage />
               </ProtectedRoute>
             }
           />

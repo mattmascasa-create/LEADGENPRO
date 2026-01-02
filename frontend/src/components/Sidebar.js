@@ -19,7 +19,8 @@ import {
   FolderOpen,
   CalendarDays,
   Mic,
-  PhoneCall
+  PhoneCall,
+  HardDrive
 } from 'lucide-react';
 
 const Sidebar = () => {

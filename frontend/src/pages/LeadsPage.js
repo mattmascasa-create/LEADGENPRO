@@ -316,18 +316,100 @@ const LeadsPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+        {/* Search & Bulk Actions */}
+        <div className="mb-6 space-y-4">
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+              <input
+                type="text"
+                placeholder="Search leads..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <button
+              onClick={toggleSelectMode}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                selectMode 
+                  ? 'bg-primary text-white' 
+                  : 'border border-border hover:bg-slate-50'
+              }`}
+            >
+              <CheckSquare className="w-5 h-5" />
+              {selectMode ? 'Exit Selection' : 'Select Multiple'}
+            </button>
           </div>
+
+          {/* Bulk Actions Toolbar */}
+          {selectMode && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-border"
+            >
+              <button
+                onClick={selectAllLeads}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium hover:bg-slate-200 rounded transition-colors"
+              >
+                {selectedLeads.length === filteredLeads.length ? (
+                  <CheckSquare className="w-4 h-4 text-primary" />
+                ) : (
+                  <Square className="w-4 h-4" />
+                )}
+                {selectedLeads.length === filteredLeads.length ? 'Deselect All' : 'Select All'}
+              </button>
+              
+              <div className="h-6 w-px bg-border" />
+              
+              <span className="text-sm text-secondary">
+                {selectedLeads.length} of {filteredLeads.length} selected
+              </span>
+              
+              <div className="h-6 w-px bg-border" />
+              
+              <button
+                onClick={() => {
+                  if (selectedLeads.length === 0) {
+                    toast.error('Please select at least one lead');
+                    return;
+                  }
+                  setShowEmailModal(true);
+                }}
+                disabled={selectedLeads.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                Email Selected ({selectedLeads.length})
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (selectedLeads.length === 0) {
+                    toast.error('Please select at least one lead');
+                    return;
+                  }
+                  exportLeads(selectedLeads);
+                }}
+                disabled={selectedLeads.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export Selected
+              </button>
+              
+              <button
+                onClick={() => {
+                  setSelectMode(false);
+                  setSelectedLeads([]);
+                }}
+                className="ml-auto p-2 hover:bg-slate-200 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
         </div>
 
         {/* Manual Add Form */}

@@ -26,6 +26,7 @@ const LeadDetailPage = () => {
   const [activeTab, setActiveTab] = useState('activity');
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
+  const [showCallModal, setShowCallModal] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [taskForm, setTaskForm] = useState({
     title: '',

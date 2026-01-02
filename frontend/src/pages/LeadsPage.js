@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -10,6 +11,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const LeadsPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -328,11 +330,15 @@ const LeadsPage = () => {
         {/* Leads Grid */}
         <div className="grid gap-4">
           {filteredLeads.map((lead) => (
-            <div key={lead.id} className="bg-white p-6 rounded-xl border border-border hover:border-primary transition-all duration-200">
+            <div 
+              key={lead.id} 
+              onClick={() => navigate(`/leads/${lead.id}`)}
+              className="bg-white p-6 rounded-xl border border-border hover:border-primary transition-all duration-200 cursor-pointer group"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-semibold text-foreground">
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                       {lead.first_name} {lead.last_name}
                     </h3>
                     {lead.assigned_to && (
@@ -340,6 +346,15 @@ const LeadsPage = () => {
                         Assigned
                       </span>
                     )}
+                    <span className={`px-2 py-1 text-xs font-semibold rounded capitalize ${
+                      lead.stage === 'prospecting' ? 'bg-slate-100 text-slate-700' :
+                      lead.stage === 'qualified' ? 'bg-blue-100 text-blue-700' :
+                      lead.stage === 'proposal' ? 'bg-yellow-100 text-yellow-700' :
+                      lead.stage === 'negotiation' ? 'bg-orange-100 text-orange-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {lead.stage}
+                    </span>
                   </div>
                   <div className="grid md:grid-cols-3 gap-3 text-sm text-secondary">
                     <div className="flex items-center gap-2">
@@ -358,9 +373,12 @@ const LeadsPage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold metric-value text-primary mb-1">{lead.score}</div>
-                  <div className="text-xs text-secondary">Lead Score</div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-2xl font-bold metric-value text-primary mb-1">{lead.score}</div>
+                    <div className="text-xs text-secondary">Lead Score</div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-secondary group-hover:text-primary transition-colors" />
                 </div>
               </div>
               {lead.ai_insights && (

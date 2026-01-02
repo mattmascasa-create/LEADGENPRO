@@ -107,8 +107,8 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - `/admin/users` - Admin user management
 
 ## Upcoming Tasks (P1)
-- [ ] OpenAI Whisper transcription for call recordings
-- [ ] Gong-like AI analysis (sentiment, talk-ratio, coaching)
+- [ ] Content Hub (Google Drive integration)
+- [ ] CRM Integrations (HubSpot, Salesforce)
 
 ## Future/Backlog (P2)
 - [ ] Content Hub (Google Drive integration)

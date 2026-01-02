@@ -37,7 +37,8 @@ const Sidebar = () => {
     { name: 'Sequences', href: '/sequences', icon: Mail },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Distribute Leads', href: '/admin/distribute', icon: UserCog, roles: ['admin'] },
+    { name: 'User Management', href: '/admin/users', icon: UserCog, roles: ['admin'] },
+    { name: 'Distribute Leads', href: '/admin/distribute', icon: FolderOpen, roles: ['admin'] },
   ];
 
   const handleLogout = () => {

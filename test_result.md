@@ -182,15 +182,18 @@ backend:
 
   - task: "Team Chat Channels"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Chat channels and messages endpoints exist but not tested"
+      - working: true
+        agent: "testing"
+        comment: "Team chat fully tested: GET /api/chat/channels (auto-creates default channels), POST /api/chat/messages (send), GET /api/chat/messages/{channel_id} (retrieve). Message threading and activity logging working"
 
   - task: "Bulk Import Leads"
     implemented: true

@@ -237,10 +237,11 @@ const OnboardingWizard = () => {
               </p>
               <button
                 onClick={handleComplete}
-                className="px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 inline-flex items-center gap-2"
+                disabled={isSubmitting}
+                className="px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Go to Dashboard
-                <ChevronRight className="w-5 h-5" />
+                {isSubmitting ? 'Setting up...' : 'Go to Dashboard'}
+                {!isSubmitting && <ChevronRight className="w-5 h-5" />}
               </button>
             </div>
           )}

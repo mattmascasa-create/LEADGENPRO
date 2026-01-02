@@ -38,6 +38,7 @@ const Sidebar = () => {
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
     { name: 'Leads', href: '/leads', icon: Users },
+    { name: 'Content Hub', href: '/content-hub', icon: HardDrive },
     { name: 'Sequences', href: '/sequences', icon: Mail },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },

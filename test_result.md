@@ -478,6 +478,42 @@ frontend:
         agent: "testing"
         comment: "❌ Team chat page inaccessible due to onboarding completion bug. Cannot test chat functionality because users cannot complete onboarding to access protected routes."
 
+  - task: "Team Calendar Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/CalendarPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Team Calendar page fully functional. Successfully tested: calendar loads with month/week/day/agenda views, view switching works, New Event button opens modal with complete form (title, type, start/end time, location, meeting link, attendees). Calendar displays properly with react-big-calendar integration. All core functionality working as expected."
+
+  - task: "Call Analytics Page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/CallAnalyticsPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Call Analytics page (Gong-like) fully functional. Successfully tested: 4 stats cards display (Total Calls: 2, Connect Rate: 100%, Avg Duration: 2:30, Talk Time: 5m), AI Coaching Tips section with 3 tips, Recent Calls list with 2 call entries, pie chart for call outcomes. All Gong-like analytics features working perfectly."
+
+  - task: "AI Assistant Widget"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/AIAssistant.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ AI Assistant widget working correctly. Successfully tested: floating chat button visible in bottom-right corner on all pages, clicking opens chat window with 'LeadGen Assistant' header, chat interface displays properly with message history. Minor: message input field selector needs refinement but core functionality intact. Widget available globally across application."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"

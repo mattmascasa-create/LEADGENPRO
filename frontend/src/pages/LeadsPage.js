@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight, PhoneCall } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import CallModal from '@/components/CallModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -20,6 +21,8 @@ const LeadsPage = () => {
   const [importing, setImporting] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [selectedLeadForCall, setSelectedLeadForCall] = useState(null);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',

@@ -481,78 +481,132 @@ const LeadsPage = () => {
 
         {/* Leads Grid */}
         <div className="grid gap-4">
-          {filteredLeads.map((lead) => (
-            <div 
-              key={lead.id} 
-              onClick={() => navigate(`/leads/${lead.id}`)}
-              className="bg-white p-6 rounded-xl border border-border hover:border-primary transition-all duration-200 cursor-pointer group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {lead.first_name} {lead.last_name}
-                    </h3>
-                    {lead.assigned_to && (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
-                        Assigned
-                      </span>
-                    )}
-                    <span className={`px-2 py-1 text-xs font-semibold rounded capitalize ${
-                      lead.stage === 'prospecting' ? 'bg-slate-100 text-slate-700' :
-                      lead.stage === 'qualified' ? 'bg-blue-100 text-blue-700' :
-                      lead.stage === 'proposal' ? 'bg-yellow-100 text-yellow-700' :
-                      lead.stage === 'negotiation' ? 'bg-orange-100 text-orange-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {lead.stage}
-                    </span>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-3 text-sm text-secondary">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {lead.email}
-                    </div>
-                    {lead.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        {lead.phone}
+          {filteredLeads.map((lead) => {
+            const isSelected = selectedLeads.find(l => l.id === lead.id);
+            return (
+              <div 
+                key={lead.id} 
+                onClick={() => {
+                  if (selectMode) {
+                    toggleLeadSelection(lead);
+                  } else {
+                    navigate(`/leads/${lead.id}`);
+                  }
+                }}
+                className={`bg-white p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer group ${
+                  isSelected 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  {/* Checkbox for selection mode */}
+                  {selectMode && (
+                    <div className="mr-4 flex items-center">
+                      <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                        isSelected ? 'bg-primary border-primary' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <CheckSquare className="w-4 h-4 text-white" />}
                       </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4" />
-                      {lead.company}
+                    </div>
+                  )}
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {lead.first_name} {lead.last_name}
+                      </h3>
+                      {lead.assigned_to && (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                          Assigned
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 text-xs font-semibold rounded capitalize ${
+                        lead.stage === 'prospecting' ? 'bg-slate-100 text-slate-700' :
+                        lead.stage === 'qualified' ? 'bg-blue-100 text-blue-700' :
+                        lead.stage === 'proposal' ? 'bg-yellow-100 text-yellow-700' :
+                        lead.stage === 'negotiation' ? 'bg-orange-100 text-orange-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {lead.stage}
+                      </span>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-3 text-sm text-secondary">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {lead.email}
+                      </div>
+                      {lead.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          {lead.phone}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4" />
+                        {lead.company}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {lead.phone && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedLeadForCall(lead);
-                        setShowCallModal(true);
-                      }}
-                      className="p-2 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
-                      title="Call Lead"
-                    >
-                      <PhoneCall className="w-5 h-5 text-green-600" />
-                    </button>
-                  )}
-                  <div className="text-right">
-                    <div className="text-2xl font-bold metric-value text-primary mb-1">{lead.score}</div>
-                    <div className="text-xs text-secondary">Lead Score</div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Action Buttons */}
+                    {!selectMode && (
+                      <>
+                        {lead.phone && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedLeadForCall(lead);
+                              setShowCallModal(true);
+                            }}
+                            className="p-2 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                            title="Call Lead"
+                          >
+                            <PhoneCall className="w-5 h-5 text-green-600" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLeadForEmail(lead);
+                            setShowEmailModal(true);
+                          }}
+                          className="p-2 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+                          title="Email Lead"
+                        >
+                          <Mail className="w-5 h-5 text-blue-600" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLeadForMeeting(lead);
+                            setShowMeetingModal(true);
+                          }}
+                          className="p-2 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors"
+                          title="Schedule Meeting"
+                        >
+                          <Calendar className="w-5 h-5 text-purple-600" />
+                        </button>
+                      </>
+                    )}
+                    <div className="text-right ml-2">
+                      <div className="text-2xl font-bold metric-value text-primary mb-1">{lead.score}</div>
+                      <div className="text-xs text-secondary">Lead Score</div>
+                    </div>
+                    {!selectMode && (
+                      <ChevronRight className="w-5 h-5 text-secondary group-hover:text-primary transition-colors" />
+                    )}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-secondary group-hover:text-primary transition-colors" />
                 </div>
+                {lead.ai_insights && (
+                  <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm text-foreground">{lead.ai_insights}</p>
+                  </div>
+                )}
               </div>
-              {lead.ai_insights && (
-                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <p className="text-sm text-foreground">{lead.ai_insights}</p>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
           {filteredLeads.length === 0 && (
             <p className="text-center text-secondary py-12">No leads found</p>
           )}

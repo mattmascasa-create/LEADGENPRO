@@ -661,7 +661,7 @@ async def scrape_website(
         emails = list(set([e for e in emails if not e.endswith(('.png', '.jpg', '.gif'))]))[:20]
         
         # Extract phone numbers
-        phone_pattern = r'\\+?1?\\s*\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
+        phone_pattern = r'\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}'
         phones = re.findall(phone_pattern, html)
         phones = list(set(phones))[:10]
         

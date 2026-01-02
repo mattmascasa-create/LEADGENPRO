@@ -1123,6 +1123,209 @@ async def send_message(msg_data: ChatMessageCreate, current_user: User = Depends
     
     return message
 
+# ==================== Voice/Call Endpoints ====================
+
+@api_router.post("/voice/token")
+async def generate_voice_token(request: VoiceTokenRequest, current_user: User = Depends(get_current_user)):
+    """Generate Twilio access token for browser-based calling"""
+    if not all([TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET]):
+        raise HTTPException(status_code=500, detail="Twilio is not configured")
+    
+    try:
+        # Create access token with identity
+        token = AccessToken(
+            TWILIO_ACCOUNT_SID,
+            TWILIO_API_KEY,
+            TWILIO_API_SECRET,
+            identity=request.identity,
+            ttl=3600  # 1 hour
+        )
+        
+        # Add Voice grant
+        voice_grant = VoiceGrant(
+            outgoing_application_sid=None,
+            incoming_allow=True
+        )
+        token.add_grant(voice_grant)
+        
+        return {
+            "success": True,
+            "token": token.to_jwt(),
+            "identity": request.identity,
+            "expires_in": 3600
+        }
+    except Exception as e:
+        logging.error(f"Error generating voice token: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/voice/call")
+async def initiate_call(
+    phone_number: str,
+    lead_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Initiate an outbound call through Twilio"""
+    if not twilio_client:
+        raise HTTPException(status_code=500, detail="Twilio is not configured")
+    
+    try:
+        # Format phone number to E.164
+        formatted_number = phone_number
+        if not formatted_number.startswith('+'):
+            # Assume US number if no country code
+            formatted_number = '+1' + re.sub(r'\D', '', formatted_number)
+        
+        # Create the call
+        call = twilio_client.calls.create(
+            to=formatted_number,
+            from_=TWILIO_PHONE_NUMBER,
+            twiml='<Response><Say>Connecting you now. Please hold.</Say><Dial>' + formatted_number + '</Dial></Response>',
+            timeout=60
+        )
+        
+        # Log the call initiation activity
+        activity = Activity(
+            type="call_initiated",
+            description=f"Initiated call to {formatted_number}",
+            lead_id=lead_id,
+            user_id=current_user.id,
+            metadata={"call_sid": call.sid, "phone_number": formatted_number}
+        )
+        activity_doc = activity.model_dump()
+        activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+        await db.activities.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "call_sid": call.sid,
+            "status": call.status,
+            "to": formatted_number,
+            "from": TWILIO_PHONE_NUMBER
+        }
+    except Exception as e:
+        logging.error(f"Error initiating call: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/voice/call/{call_sid}/status")
+async def get_call_status(call_sid: str, current_user: User = Depends(get_current_user)):
+    """Get the status of an active call"""
+    if not twilio_client:
+        raise HTTPException(status_code=500, detail="Twilio is not configured")
+    
+    try:
+        call = twilio_client.calls(call_sid).fetch()
+        return {
+            "success": True,
+            "call_sid": call.sid,
+            "status": call.status,
+            "duration": call.duration,
+            "direction": call.direction,
+            "start_time": call.start_time.isoformat() if call.start_time else None,
+            "end_time": call.end_time.isoformat() if call.end_time else None
+        }
+    except Exception as e:
+        logging.error(f"Error getting call status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/voice/call/{call_sid}/end")
+async def end_call(call_sid: str, current_user: User = Depends(get_current_user)):
+    """End an active call"""
+    if not twilio_client:
+        raise HTTPException(status_code=500, detail="Twilio is not configured")
+    
+    try:
+        call = twilio_client.calls(call_sid).update(status="completed")
+        return {
+            "success": True,
+            "call_sid": call.sid,
+            "status": call.status
+        }
+    except Exception as e:
+        logging.error(f"Error ending call: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/calls/log", response_model=CallLog)
+async def log_call(call_data: CallLogCreate, current_user: User = Depends(get_current_user)):
+    """Log call outcome and details"""
+    call_log = CallLog(
+        **call_data.model_dump(),
+        agent_id=current_user.id
+    )
+    
+    doc = call_log.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    if doc.get('started_at'):
+        doc['started_at'] = doc['started_at'].isoformat()
+    if doc.get('ended_at'):
+        doc['ended_at'] = doc['ended_at'].isoformat()
+    
+    await db.call_logs.insert_one(doc)
+    
+    # Update lead's last_contacted timestamp
+    await db.leads.update_one(
+        {"id": call_data.lead_id},
+        {"$set": {"last_contacted": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log activity
+    outcome_desc = {
+        "connected": "Connected - spoke with contact",
+        "voicemail": "Left voicemail",
+        "no_answer": "No answer",
+        "busy": "Line was busy",
+        "wrong_number": "Wrong number",
+        "declined": "Contact declined to speak"
+    }
+    activity = Activity(
+        type="call_logged",
+        description=f"Call logged: {outcome_desc.get(call_data.outcome, call_data.outcome)} ({call_data.duration}s)",
+        lead_id=call_data.lead_id,
+        user_id=current_user.id,
+        metadata={
+            "outcome": call_data.outcome,
+            "duration": call_data.duration,
+            "call_sid": call_data.call_sid
+        }
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return call_log
+
+@api_router.get("/calls/logs", response_model=List[CallLog])
+async def get_call_logs(lead_id: Optional[str] = None, limit: int = 50, current_user: User = Depends(get_current_user)):
+    """Get call logs, optionally filtered by lead"""
+    query = {}
+    if lead_id:
+        query["lead_id"] = lead_id
+    
+    logs = await db.call_logs.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return [CallLog(**log) for log in logs]
+
+@api_router.get("/calls/stats")
+async def get_call_stats(current_user: User = Depends(get_current_user)):
+    """Get call statistics for the current user"""
+    query = {"agent_id": current_user.id}
+    
+    logs = await db.call_logs.find(query, {"_id": 0}).to_list(1000)
+    
+    total_calls = len(logs)
+    total_duration = sum(log.get("duration", 0) for log in logs)
+    
+    outcome_counts = {}
+    for log in logs:
+        outcome = log.get("outcome", "unknown")
+        outcome_counts[outcome] = outcome_counts.get(outcome, 0) + 1
+    
+    return {
+        "total_calls": total_calls,
+        "total_duration_seconds": total_duration,
+        "average_duration_seconds": total_duration // total_calls if total_calls > 0 else 0,
+        "outcomes": outcome_counts,
+        "connect_rate": round((outcome_counts.get("connected", 0) / total_calls * 100) if total_calls > 0 else 0, 1)
+    }
+
 app.include_router(api_router)
 
 app.add_middleware(

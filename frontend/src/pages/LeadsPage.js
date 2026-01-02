@@ -8,6 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import CallModal from '@/components/CallModal';
 import EmailModal from '@/components/EmailModal';
 import MeetingModal from '@/components/MeetingModal';
+import PhoneDialer from '@/components/PhoneDialer';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;

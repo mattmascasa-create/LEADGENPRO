@@ -366,17 +366,25 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Registration"
-    - "User Login"
+    - "Onboarding Wizard"
     - "Pipeline/Kanban Board with Drag-and-Drop"
-    - "Lead CRUD Operations"
-    - "Tasks Management"
-  stuck_tasks: []
+    - "Dashboard Page"
+    - "Leads Page"
+    - "Tasks Page"
+  stuck_tasks:
+    - "Onboarding Wizard"
+    - "Pipeline/Kanban Board with Drag-and-Drop"
+    - "Dashboard Page"
+    - "Leads Page"
+    - "Tasks Page"
+    - "Team Chat Page"
   test_all: false
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
     message: "Fixed critical backend syntax error and implemented Kanban drag-and-drop. Please test: 1) Auth flow (register/login), 2) Pipeline drag-and-drop functionality, 3) Lead CRUD operations, 4) Tasks endpoints. Test credentials to create: email=test@example.com, password=Test123!"
   - agent: "testing"
     message: "✅ COMPREHENSIVE BACKEND TESTING COMPLETED - All 8 backend tasks tested successfully with 100% pass rate. Fixed regex issue in website scraper. All APIs working: Auth (register/login/me), Lead CRUD + stage updates, Tasks management, Team chat, Bulk import, Website scraper, Stats, AI insights. Backend is production-ready."
+  - agent: "testing"
+    message: "❌ CRITICAL FRONTEND ISSUE FOUND: Onboarding completion is broken. Users can register and login successfully, but cannot complete onboarding wizard. The final step shows 'Setup complete!' but doesn't redirect to dashboard. This blocks access to ALL protected routes (Pipeline, Dashboard, Leads, Tasks). Root cause: PUT /api/auth/onboarding API call failing or navigation logic broken. URGENT FIX NEEDED - this prevents testing of Pipeline Kanban drag-and-drop feature."

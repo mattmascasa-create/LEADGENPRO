@@ -322,14 +322,16 @@ const TeamChat = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-40"
-        data-testid="team-chat-btn"
-      >
-        <MessageSquare className="w-6 h-6" />
-      </button>
+      {/* Floating Chat Button - Hidden when panel is open */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-40"
+          data-testid="team-chat-btn"
+        >
+          <MessageSquare className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Chat Panel */}
       <AnimatePresence>
@@ -339,7 +341,7 @@ const TeamChat = () => {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 w-[850px] h-[650px] bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-40 flex"
+            className="fixed bottom-24 right-6 w-[850px] h-[650px] bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex"
             data-testid="team-chat-panel"
           >
             {/* Sidebar */}

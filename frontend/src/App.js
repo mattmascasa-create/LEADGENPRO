@@ -225,6 +225,8 @@ function AppContent() {
         </Routes>
         {/* AI Assistant Widget - Available on all pages */}
         <AIAssistant />
+        {/* Team Chat Widget - Available on all pages */}
+        <TeamChat />
       </BrowserRouter>
       <ToastContainer
         position="top-right"

@@ -38,6 +38,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [x] Meeting scheduling from lead records
 - [x] Activity history timeline per lead
 - [x] Bulk email selection
+- [x] **Screen Sharing** - VideoMeetingRoom component with WebRTC screen sharing
 
 ### Collaboration & Productivity
 - [x] Team Calendar (fullcalendar.io integration)
@@ -48,58 +49,81 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Accessible via `/book/:userId`
   - **Email notifications** via Resend when bookings are made
 - [x] Task management (Outreach-like)
-- [x] Team messaging with channels
+- [x] **Enhanced Team Messaging** (Slack-like):
+  - Public channels (#general, #sales, #leads)
+  - Direct messaging to team members
+  - @mentions with autocomplete
+  - File attachment UI
+  - Read receipts (delivered/read checkmarks)
+  - Threaded conversations UI
+  - Calendly-like availability viewing for team members
+  - Copy booking link for any team member
 - [x] Call lists for employees
 
 ### AI Features
-- [x] AI Copilot/Assistant (floating chatbot widget)
+- [x] **AI Sales Coach** (floating chatbot widget) with:
+  - Chat tab for Q&A with quick questions
+  - **Next Actions tab** - Proactive AI suggestions including:
+    - Time-based suggestions (prime call time, email sweet spot)
+    - Stats-based suggestions (leads needing follow-up, hot leads, tasks due)
+    - Today's snapshot with key metrics
+    - Motivational pro tips
+  - Dark theme, positioned bottom-left
+- [x] AI Copilot for onboarding (Getting Started Guide)
 - [x] AI-powered lead insights
 - [x] Call Analytics page (Gong-like dashboard)
 - [x] **OpenAI Whisper Transcription** - Transcribe call recordings to text
 - [x] **Gong-like AI Analysis** - Detailed call analysis including:
   - Overall call score (0-100)
-  - Sentiment analysis (overall, customer, progression)
+  - Sentiment analysis
   - Talk ratio analysis
   - Question quality assessment
-  - Customer signals (buying signals, objections, concerns)
+  - Customer signals detection
   - Next steps tracking
-  - AI coaching insights (strengths, improvements, priority action)
-  - Call summary
+  - AI coaching insights
 
-## Implementation Status
+### Reporting
+- [x] **Advanced Reporting Dashboard** (`/reports`):
+  - Key metrics: Total Leads, Qualified, Won Deals, Conversion Rate, Avg Deal Size, Pipeline Value
+  - Activity Trend chart (area chart)
+  - Pipeline Distribution chart (pie chart)
+  - Daily Performance chart (bar chart)
+  - Lead Sources breakdown
+  - Call Performance stats
+  - Email Campaign performance table
+  - Date range selector (7d, 30d, 90d)
+  - Export button
 
-### Completed Features (January 2, 2026)
-1. **Booking System (Calendly-like)**
-   - Public booking page at `/book/:userId`
-   - Available time slot fetching based on calendar
-   - Booking creates calendar event + lead if new
-   - 30-minute meeting slots, 9 AM - 5 PM
-   - **Email notifications** to employees when bookings are made (via Resend)
-   - **Guest confirmation emails** with meeting details and preparation tips
+## Implementation Status - January 3, 2026
 
-2. **Admin User Management**
-   - `/admin/users` page for admins
-   - Create users with all required fields
-   - Edit user details (name, role, department, phone)
-   - Delete users (with self-deletion prevention)
-   - Copy booking link for each user
+### Completed This Session
+1. **Advanced Reporting Dashboard**
+   - Created `/reports` route and `AdvancedReportingPage.js`
+   - Added to sidebar navigation
+   - Comprehensive charts using recharts library
+   - Real-time data from API endpoints
 
-3. **OpenAI Whisper Transcription**
-   - `/api/calls/{call_id}/transcribe` endpoint
-   - Transcribes Twilio call recordings to text
-   - Stores transcript with optional segment timestamps
-   - Uses whisper-1 model via Emergent LLM Key
+2. **Enhanced Team Chat**
+   - @mentions with autocomplete (type @ to see team members)
+   - File attachment UI (image and document support)
+   - Read receipts with checkmarks (delivered/read)
+   - Threaded conversations UI
+   - Calendly-like availability modal for team members
+   - Copy booking link functionality
+   - Meeting scheduler integration
 
-4. **Gong-like AI Analysis**
-   - `/api/calls/{call_id}/analyze` endpoint
-   - Comprehensive call scoring (0-100)
-   - Sentiment analysis (overall, customer, progression)
-   - Talk ratio assessment (balanced/rep_dominated/customer_dominated)
-   - Question quality tracking (total, open-ended, discovery)
-   - Customer signals detection (buying signals, objections, concerns)
-   - Next steps tracking
-   - AI coaching insights with priority action
-   - Call summary generation
+3. **AI Sales Coach Enhancement**
+   - Added "Next Actions" tab with proactive suggestions
+   - Time-based productivity tips
+   - Stats-based action items (follow-ups, hot leads)
+   - Today's snapshot with key metrics
+   - Fixed widget positioning to avoid overlap with AI Copilot
+
+4. **UI/UX Fixes**
+   - Fixed AI Sales Coach and AI Copilot overlap issue
+   - AI Copilot moved to bottom-28 left-6 (smaller, above)
+   - AI Sales Coach at bottom-8 left-6 (main widget)
+   - Team Chat remains at bottom-right
 
 ### Backend Endpoints
 - `/api/booking/{user_id}` - Get user info for booking
@@ -107,35 +131,49 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - `/api/booking/{user_id}/book` - Create booking
 - `/api/admin/users` - CRUD for user management
 - `/api/team-members` - List team members
+- `/api/stats` - Dashboard statistics
+- `/api/calls/stats` - Call statistics
+- `/api/email/campaigns` - Email campaign data
 
 ### Frontend Routes
 - `/book/:userId` - Public booking page
 - `/admin/users` - Admin user management
+- `/reports` - Advanced Reporting Dashboard
+- `/meetings` - Meetings management with VideoMeetingRoom
 
-## Upcoming Tasks (P1)
-- [ ] Content Hub (Google Drive integration)
-- [ ] CRM Integrations (HubSpot, Salesforce)
+## Blocked Items
+- **Email Notifications (Resend)** - In sandbox mode, can only send to verified emails. User needs to verify domain in Resend dashboard.
+
+## Paused Items
+- **Google Drive Content Hub** - OAuth flow paused by user request
 
 ## Future/Backlog (P2)
-- [ ] Screen sharing for meetings
-- [ ] Team messaging enhancements
-- [ ] Advanced reporting dashboard
+- [ ] Connect AI Email "Generate" button to LLM
+- [ ] CRM Integrations (HubSpot/Salesforce placeholders)
+- [ ] Backend refactoring (server.py is 2500+ lines)
 
 ## Technical Architecture
 
 ### Tech Stack
-- **Frontend**: React, Tailwind CSS, react-router-dom, lucide-react, recharts
+- **Frontend**: React, Tailwind CSS, react-router-dom, lucide-react, recharts, framer-motion
 - **Backend**: FastAPI, MongoDB (pymongo), JWT auth
 - **Integrations**: Twilio (VoIP), Emergent LLM Key (AI features, Whisper STT), Resend (email notifications)
 
 ### Key Files
 - `/app/backend/server.py` - All API endpoints
+- `/app/frontend/src/pages/AdvancedReportingPage.js` - Reporting dashboard
+- `/app/frontend/src/components/TeamChat.js` - Enhanced team messaging
+- `/app/frontend/src/components/AIAssistant.js` - AI Sales Coach with Next Actions
+- `/app/frontend/src/components/VideoMeetingRoom.js` - Screen sharing component
 - `/app/frontend/src/pages/BookingPage.js` - Public booking UI
 - `/app/frontend/src/pages/AdminUsersPage.js` - Admin user management
-- `/app/frontend/src/pages/CalendarPage.js` - Team calendar
-- `/app/frontend/src/pages/CallAnalyticsPage.js` - Gong-like call analytics with transcription
-- `/app/frontend/src/components/PhoneDialer.js` - Physical dialer for making calls
+- `/app/frontend/src/components/PhoneDialer.js` - Physical dialer
 
 ## Test Credentials
 - Admin: `admin@test.com` / `admin123`
-- Test User ID for booking: `9a23a45f-4d64-44fb-980f-f6e06816c8f4`
+
+## 3rd Party Integrations
+- **Twilio Voice**: Implemented and verified
+- **OpenAI Whisper**: Implemented via `emergentintegrations`
+- **Resend**: Implemented but blocked by sandbox mode
+- **Google Drive**: Partially implemented, paused

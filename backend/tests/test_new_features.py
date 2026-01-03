@@ -12,7 +12,7 @@ import os
 import sys
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://salesautomation-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://teamsales.preview.emergentagent.com/api"
 
 class NewFeaturesTester:
     def __init__(self):

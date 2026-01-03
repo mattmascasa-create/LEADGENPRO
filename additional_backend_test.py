@@ -12,7 +12,7 @@ import csv
 import os
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://salesautomation-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://teamsales.preview.emergentagent.com/api"
 
 class AdditionalTester:
     def __init__(self):

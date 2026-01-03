@@ -202,6 +202,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/ai-email"
+            element={
+              <ProtectedRoute>
+                <AIEmailPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Public booking page - no auth required */}
           <Route path="/book/:userId" element={<BookingPage />} />
         </Routes>

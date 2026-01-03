@@ -81,10 +81,10 @@ const AIAssistant = () => {
 
   return (
     <>
-      {/* Floating Button - dark, visible, positioned above Emergent badge */}
+      {/* Floating Button - dark, visible, positioned on LEFT side to avoid Team Chat conflict */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-32 right-6 z-40 w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:shadow-slate-500/30 hover:scale-105 transition-all border border-slate-700 ${isOpen ? 'hidden' : ''}`}
+        className={`fixed bottom-8 left-6 z-40 w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:shadow-slate-500/30 hover:scale-105 transition-all border border-slate-700 ${isOpen ? 'hidden' : ''}`}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         data-testid="ai-assistant-btn"
@@ -95,14 +95,14 @@ const AIAssistant = () => {
         </div>
       </motion.button>
 
-      {/* Chat Window */}
+      {/* Chat Window - positioned on LEFT side */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-32 right-6 z-50 w-96 h-[520px] bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700"
+            className="fixed bottom-8 left-6 z-50 w-96 h-[520px] bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700"
             data-testid="ai-assistant-panel"
           >
             {/* Header */}

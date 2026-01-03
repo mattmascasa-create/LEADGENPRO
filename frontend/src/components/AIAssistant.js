@@ -81,12 +81,13 @@ const AIAssistant = () => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - positioned to avoid Emergent badge */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-r from-primary to-accent rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow ${isOpen ? 'hidden' : ''}`}
+        className={`fixed bottom-24 right-6 z-40 w-14 h-14 bg-gradient-to-r from-primary to-accent rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow ${isOpen ? 'hidden' : ''}`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        data-testid="ai-assistant-btn"
       >
         <MessageCircle className="w-6 h-6" />
       </motion.button>
@@ -98,7 +99,8 @@ const AIAssistant = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-border"
+            className="fixed bottom-24 right-6 z-50 w-96 h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-border"
+            data-testid="ai-assistant-panel"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary to-accent p-4 text-white">

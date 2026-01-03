@@ -81,15 +81,18 @@ const AIAssistant = () => {
 
   return (
     <>
-      {/* Floating Button - positioned to avoid Emergent badge */}
+      {/* Floating Button - dark, visible, positioned above Emergent badge */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-24 right-6 z-40 w-14 h-14 bg-gradient-to-r from-primary to-accent rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-xl transition-shadow ${isOpen ? 'hidden' : ''}`}
-        whileHover={{ scale: 1.05 }}
+        className={`fixed bottom-32 right-6 z-40 w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:shadow-slate-500/30 hover:scale-105 transition-all border border-slate-700 ${isOpen ? 'hidden' : ''}`}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         data-testid="ai-assistant-btn"
       >
-        <MessageCircle className="w-6 h-6" />
+        <div className="relative">
+          <MessageCircle className="w-7 h-7" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse border-2 border-slate-900"></span>
+        </div>
       </motion.button>
 
       {/* Chat Window */}
@@ -99,7 +102,7 @@ const AIAssistant = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-50 w-96 h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-border"
+            className="fixed bottom-32 right-6 z-50 w-96 h-[520px] bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700"
             data-testid="ai-assistant-panel"
           >
             {/* Header */}

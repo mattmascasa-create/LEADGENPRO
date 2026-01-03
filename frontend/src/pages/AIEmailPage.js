@@ -578,7 +578,7 @@ const AIEmailPage = () => {
                   </div>
                   <div className="px-4 py-2 bg-slate-50 border-t border-border">
                     <button
-                      onClick={() => useTemplate(template)}
+                      onClick={() => applyTemplate(template)}
                       className="w-full py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     >
                       Use This Template

@@ -20,7 +20,8 @@ import {
   CalendarDays,
   Mic,
   PhoneCall,
-  HardDrive
+  HardDrive,
+  Wand2
 } from 'lucide-react';
 
 const Sidebar = () => {

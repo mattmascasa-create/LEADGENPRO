@@ -558,7 +558,7 @@ const AIEmailPage = () => {
                       </div>
                       <div className="flex gap-1">
                         <button
-                          onClick={() => useTemplate(template)}
+                          onClick={() => applyTemplate(template)}
                           className="p-1.5 hover:bg-slate-100 rounded-lg"
                           title="Use Template"
                         >

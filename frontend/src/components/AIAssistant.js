@@ -106,20 +106,20 @@ const AIAssistant = () => {
             data-testid="ai-assistant-panel"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-accent p-4 text-white">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-4 text-white border-b border-slate-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <Bot className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">LeadGen Assistant</h3>
-                    <p className="text-xs text-white/80">Always here to help</p>
+                    <h3 className="font-semibold">AI Sales Coach</h3>
+                    <p className="text-xs text-slate-400">Powered by AI</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -127,7 +127,7 @@ const AIAssistant = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-800">
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
@@ -135,15 +135,15 @@ const AIAssistant = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === 'user' ? 'bg-primary text-white' : 'bg-accent/10 text-accent'
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-purple-400'
                   }`}>
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                   </div>
-                  <div className={`max-w-[80%] p-3 rounded-2xl ${
+                  <div className={`max-w-[80%] p-3 rounded-xl ${
                     msg.role === 'user' 
-                      ? 'bg-primary text-white rounded-tr-sm' 
-                      : 'bg-white text-foreground rounded-tl-sm shadow-sm border border-border'
+                      ? 'bg-blue-600 text-white rounded-tr-sm' 
+                      : 'bg-slate-700 text-slate-100 rounded-tl-sm'
                   }`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
@@ -151,14 +151,14 @@ const AIAssistant = () => {
               ))}
               {isLoading && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-accent" />
+                  <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
                   </div>
-                  <div className="bg-white p-3 rounded-2xl rounded-tl-sm shadow-sm border border-border">
+                  <div className="bg-slate-700 p-3 rounded-xl rounded-tl-sm">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -168,8 +168,8 @@ const AIAssistant = () => {
 
             {/* Quick Actions */}
             {messages.length <= 2 && (
-              <div className="p-3 border-t border-border bg-white">
-                <p className="text-xs text-secondary mb-2 flex items-center gap-1">
+              <div className="p-3 border-t border-slate-700 bg-slate-800">
+                <p className="text-xs text-slate-400 mb-2 flex items-center gap-1">
                   <Lightbulb className="w-3 h-3" />
                   Quick questions:
                 </p>

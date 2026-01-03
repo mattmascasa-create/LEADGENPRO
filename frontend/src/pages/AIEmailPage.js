@@ -179,7 +179,7 @@ const AIEmailPage = () => {
     }
   };
 
-  const useTemplate = (template) => {
+  const applyTemplate = (template) => {
     setEmailData(prev => ({
       ...prev,
       subject: template.subject,

@@ -2500,6 +2500,238 @@ Return ONLY valid JSON, no additional text."""
 
 # ==================== Google Drive Integration ====================
 
+# ==================== AI Email Automation Endpoints ====================
+
+@api_router.get("/email/templates")
+async def get_email_templates(current_user: User = Depends(get_current_user)):
+    """Get all email templates"""
+    templates = await db.email_templates.find({}, {"_id": 0}).to_list(100)
+    return templates
+
+@api_router.post("/email/templates")
+async def create_email_template(template: EmailTemplate, current_user: User = Depends(get_current_user)):
+    """Create a new email template"""
+    template.created_by = current_user.id
+    doc = template.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.email_templates.insert_one(doc)
+    return {"success": True, "template": template}
+
+@api_router.delete("/email/templates/{template_id}")
+async def delete_email_template(template_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an email template"""
+    await db.email_templates.delete_one({"id": template_id})
+    return {"success": True}
+
+@api_router.get("/email/campaigns")
+async def get_email_campaigns(current_user: User = Depends(get_current_user)):
+    """Get all email campaigns"""
+    campaigns = await db.email_campaigns.find({}, {"_id": 0}).to_list(100)
+    return campaigns
+
+@api_router.get("/email/scheduled")
+async def get_scheduled_emails(current_user: User = Depends(get_current_user)):
+    """Get all scheduled emails"""
+    emails = await db.scheduled_emails.find({"status": "pending"}, {"_id": 0}).to_list(100)
+    return emails
+
+@api_router.delete("/email/scheduled/{email_id}")
+async def cancel_scheduled_email(email_id: str, current_user: User = Depends(get_current_user)):
+    """Cancel a scheduled email"""
+    await db.scheduled_emails.update_one(
+        {"id": email_id},
+        {"$set": {"status": "cancelled"}}
+    )
+    return {"success": True}
+
+class EmailGenerateRequest(BaseModel):
+    prompt: str
+    context: str = "single_email"
+    lead_count: int = 0
+
+@api_router.post("/email/generate")
+async def generate_email_with_ai(request: EmailGenerateRequest, current_user: User = Depends(get_current_user)):
+    """Generate email content using AI"""
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"email-gen-{uuid.uuid4().hex[:8]}",
+            system_message="""You are an expert email copywriter specializing in B2B sales and marketing emails.
+            Write compelling, personalized emails that:
+            - Have attention-grabbing subject lines
+            - Are concise and value-focused
+            - Include clear calls to action
+            - Sound natural and not salesy
+            - Use personalization variables like {{first_name}}, {{company}}, {{title}} where appropriate"""
+        ).with_model("openai", "gpt-4o")
+        
+        prompt = f"""Write a professional sales email based on this request: {request.prompt}
+        
+        {"This will be sent to " + str(request.lead_count) + " recipients, so include personalization variables." if request.lead_count > 1 else ""}
+        
+        Return your response in this exact JSON format:
+        {{
+            "subject": "Your subject line here",
+            "body": "Your email body here"
+        }}
+        
+        Return ONLY the JSON, no other text."""
+        
+        message = UserMessage(text=prompt)
+        response = await chat.send_message(message)
+        
+        # Parse response
+        clean_response = response.strip()
+        if clean_response.startswith("```json"):
+            clean_response = clean_response[7:]
+        if clean_response.startswith("```"):
+            clean_response = clean_response[3:]
+        if clean_response.endswith("```"):
+            clean_response = clean_response[:-3]
+        
+        email_content = json.loads(clean_response.strip())
+        return email_content
+        
+    except Exception as e:
+        logging.error(f"Email generation error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate email")
+
+class BulkEmailRequest(BaseModel):
+    lead_ids: List[str]
+    subject: str
+    body: str
+    ai_personalize: bool = False
+    schedule_time: Optional[str] = None
+    follow_up: Optional[dict] = None
+
+@api_router.post("/email/send-bulk")
+async def send_bulk_email(request: BulkEmailRequest, current_user: User = Depends(get_current_user)):
+    """Send bulk emails to selected leads"""
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=400, detail="Email service not configured")
+    
+    # Get lead details
+    leads = await db.leads.find({"id": {"$in": request.lead_ids}}, {"_id": 0}).to_list(100)
+    
+    if not leads:
+        raise HTTPException(status_code=400, detail="No valid leads found")
+    
+    # Create campaign record
+    campaign = EmailCampaign(
+        subject=request.subject,
+        body=request.body,
+        sent_count=len(leads),
+        created_by=current_user.id
+    )
+    
+    campaign_doc = campaign.model_dump()
+    campaign_doc['created_at'] = campaign_doc['created_at'].isoformat()
+    await db.email_campaigns.insert_one(campaign_doc)
+    
+    # If scheduled, save for later
+    if request.schedule_time:
+        scheduled = ScheduledEmail(
+            subject=request.subject,
+            body=request.body,
+            recipient_ids=request.lead_ids,
+            recipient_count=len(leads),
+            scheduled_time=datetime.fromisoformat(request.schedule_time),
+            campaign_id=campaign.id,
+            created_by=current_user.id
+        )
+        scheduled_doc = scheduled.model_dump()
+        scheduled_doc['created_at'] = scheduled_doc['created_at'].isoformat()
+        scheduled_doc['scheduled_time'] = scheduled_doc['scheduled_time'].isoformat()
+        await db.scheduled_emails.insert_one(scheduled_doc)
+        
+        return {
+            "success": True,
+            "sent_count": 0,
+            "scheduled_count": len(leads),
+            "scheduled_time": request.schedule_time
+        }
+    
+    # Send emails immediately
+    sent_count = 0
+    failed_count = 0
+    
+    for lead in leads:
+        try:
+            # Personalize email
+            personalized_subject = request.subject
+            personalized_body = request.body
+            
+            # Replace variables
+            replacements = {
+                "{{first_name}}": lead.get("first_name", ""),
+                "{{last_name}}": lead.get("last_name", ""),
+                "{{company}}": lead.get("company", ""),
+                "{{title}}": lead.get("title", ""),
+                "{{email}}": lead.get("email", "")
+            }
+            
+            for var, value in replacements.items():
+                personalized_subject = personalized_subject.replace(var, value)
+                personalized_body = personalized_body.replace(var, value)
+            
+            # Send email via Resend
+            email_params = {
+                "from": SENDER_EMAIL,
+                "to": [lead.get("email")],
+                "subject": personalized_subject,
+                "html": f"<div style='font-family: Arial, sans-serif; line-height: 1.6;'>{personalized_body.replace(chr(10), '<br>')}</div>"
+            }
+            
+            await asyncio.to_thread(resend.Emails.send, email_params)
+            sent_count += 1
+            
+            # Log activity
+            activity = Activity(
+                type="email_sent",
+                description=f"Sent bulk email: {personalized_subject}",
+                lead_id=lead.get("id"),
+                user_id=current_user.id,
+                metadata={"campaign_id": campaign.id, "subject": personalized_subject}
+            )
+            activity_doc = activity.model_dump()
+            activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+            await db.activities.insert_one(activity_doc)
+            
+        except Exception as e:
+            logging.error(f"Failed to send email to {lead.get('email')}: {e}")
+            failed_count += 1
+    
+    # Schedule follow-ups if enabled
+    if request.follow_up and sent_count > 0:
+        follow_up_days = request.follow_up.get("days", 3)
+        follow_up_count = request.follow_up.get("count", 2)
+        
+        for i in range(1, follow_up_count + 1):
+            follow_up_time = datetime.now(timezone.utc) + timedelta(days=follow_up_days * i)
+            
+            scheduled = ScheduledEmail(
+                subject=f"Re: {request.subject}",
+                body=f"Following up on my previous email...\n\n{request.body}",
+                recipient_ids=request.lead_ids,
+                recipient_count=len(leads),
+                scheduled_time=follow_up_time,
+                campaign_id=campaign.id,
+                created_by=current_user.id
+            )
+            scheduled_doc = scheduled.model_dump()
+            scheduled_doc['created_at'] = scheduled_doc['created_at'].isoformat()
+            scheduled_doc['scheduled_time'] = scheduled_doc['scheduled_time'].isoformat()
+            await db.scheduled_emails.insert_one(scheduled_doc)
+    
+    return {
+        "success": True,
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+        "campaign_id": campaign.id
+    }
+
+# ==================== Google Drive OAuth ====================
+
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 GOOGLE_DRIVE_REDIRECT_URI = os.environ.get('GOOGLE_DRIVE_REDIRECT_URI')

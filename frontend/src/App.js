@@ -32,7 +32,6 @@ import MeetingsPage from '@/pages/MeetingsPage';
 
 // Components
 import AIAssistant from '@/components/AIAssistant';
-import TeamChat from '@/components/TeamChat';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';

@@ -35,6 +35,7 @@ const Sidebar = () => {
     { name: 'Calendar', href: '/calendar', icon: CalendarDays },
     { name: 'Call Lists', href: '/call-lists', icon: Phone, roles: ['employee', 'admin'] },
     { name: 'Call Analytics', href: '/call-analytics', icon: Mic },
+    { name: 'AI Email', href: '/ai-email', icon: Wand2 },
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Pipeline', href: '/pipeline', icon: GitBranch },

@@ -178,7 +178,7 @@ const AIAssistant = () => {
                     <button
                       key={idx}
                       onClick={() => handleQuickAction(action.query)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-medium transition-colors flex items-center gap-1"
+                      className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
                     >
                       <action.icon className="w-3 h-3" />
                       {action.label}
@@ -189,7 +189,7 @@ const AIAssistant = () => {
             )}
 
             {/* Input */}
-            <div className="p-4 border-t border-border bg-white">
+            <div className="p-4 border-t border-slate-700 bg-slate-900">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -203,13 +203,13 @@ const AIAssistant = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-2 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  className="flex-1 px-4 py-2 bg-slate-800 border border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-white placeholder-slate-400"
                   disabled={isLoading}
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send className="w-4 h-4" />
                 </button>

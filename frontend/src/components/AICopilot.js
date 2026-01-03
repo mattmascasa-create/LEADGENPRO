@@ -50,12 +50,13 @@ const AICopilot = () => {
 
   return (
     <>
-      {/* Floating Copilot Button */}
+      {/* Floating Copilot Button - Only show on first visit */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-br from-primary to-accent text-white rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-50"
+        className="fixed bottom-28 left-6 w-12 h-12 bg-gradient-to-br from-primary to-accent text-white rounded-full shadow-xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-40"
+        title="Getting Started Guide"
       >
-        <Bot className="w-7 h-7" />
+        <Bot className="w-6 h-6" />
       </button>
 
       {/* Copilot Panel */}
@@ -66,7 +67,7 @@ const AICopilot = () => {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 left-6 w-96 bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-50"
+            className="fixed bottom-44 left-6 w-96 bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-50"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary to-accent p-4 flex items-center justify-between">

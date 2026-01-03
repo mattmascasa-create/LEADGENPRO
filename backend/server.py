@@ -265,6 +265,40 @@ class AssistantChatRequest(BaseModel):
     message: str
     context: str = "general"
 
+# Email Models
+class EmailTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    subject: str
+    body: str
+    category: str = "outreach"
+    variables: List[str] = []
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EmailCampaign(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    body: str
+    sent_count: int = 0
+    opened_count: int = 0
+    clicked_count: int = 0
+    replied_count: int = 0
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ScheduledEmail(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    body: str
+    recipient_ids: List[str] = []
+    recipient_count: int = 0
+    scheduled_time: datetime
+    status: str = "pending"  # pending, sent, cancelled
+    campaign_id: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Stats(BaseModel):
     total_leads: int
     total_users: int

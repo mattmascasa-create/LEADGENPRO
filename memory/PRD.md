@@ -27,7 +27,12 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 
 ### Sales Workflow & Communication
 - [x] Click-to-call via Twilio VoIP
-- [x] **Physical Phone Dialer** - Dial any number with T9 keypad
+- [x] **Physical Phone Dialer** - Fully functional dial pad with:
+  - T9 keypad for entering any phone number
+  - Call recording toggle
+  - Live call timer
+  - Mute/Speaker/Recording controls during call
+  - End call button
 - [x] Call recording toggle
 - [x] Email modal from lead records
 - [x] Meeting scheduling from lead records

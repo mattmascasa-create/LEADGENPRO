@@ -471,9 +471,11 @@ const TeamChat = () => {
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                    data-testid="close-team-chat-btn"
+                    title="Close chat"
                   >
-                    <X className="w-5 h-5 text-secondary" />
+                    <X className="w-5 h-5 text-slate-600 hover:text-red-600" />
                   </button>
                 </div>
               </div>

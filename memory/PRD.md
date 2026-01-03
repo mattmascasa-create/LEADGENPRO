@@ -111,6 +111,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Calendly-like availability modal for team members
    - Copy booking link functionality
    - Meeting scheduler integration
+   - **Fixed**: Close/minimize button now works properly
 
 3. **AI Sales Coach Enhancement**
    - Added "Next Actions" tab with proactive suggestions
@@ -119,11 +120,14 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Today's snapshot with key metrics
    - Fixed widget positioning to avoid overlap with AI Copilot
 
-4. **UI/UX Fixes**
-   - Fixed AI Sales Coach and AI Copilot overlap issue
-   - AI Copilot moved to bottom-28 left-6 (smaller, above)
-   - AI Sales Coach at bottom-8 left-6 (main widget)
-   - Team Chat remains at bottom-right
+4. **AI Email Generation**
+   - Verified "Generate" button fully functional with LLM integration
+   - Creates professional sales emails with personalization variables
+
+5. **Bug Fixes**
+   - Fixed Team Chat widget not closing when X button clicked
+   - Removed duplicate TeamChat component rendering
+   - Fixed widget positioning and z-index issues
 
 ### Backend Endpoints
 - `/api/booking/{user_id}` - Get user info for booking

@@ -242,16 +242,16 @@ const AIAssistant = () => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Positioned above Team Chat on right side */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-8 left-6 z-40 w-16 h-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:shadow-slate-500/30 hover:scale-105 transition-all border border-slate-700 ${isOpen ? 'hidden' : ''}`}
+        className={`fixed bottom-44 right-6 z-40 w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:shadow-slate-500/30 hover:scale-105 transition-all border border-slate-700 ${isOpen ? 'hidden' : ''}`}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         data-testid="ai-assistant-btn"
       >
         <div className="relative">
-          <Sparkles className="w-7 h-7" />
+          <Sparkles className="w-6 h-6" />
           {smartSuggestions.filter(s => s.priority === 'high').length > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center animate-pulse border-2 border-slate-900">
               {smartSuggestions.filter(s => s.priority === 'high').length}

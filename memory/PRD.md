@@ -127,7 +127,8 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 5. **Bug Fixes**
    - Fixed Team Chat widget not closing when X button clicked
    - Removed duplicate TeamChat component rendering
-   - Fixed widget positioning and z-index issues
+   - **CRITICAL FIX**: Moved AI Assistant and AI Copilot buttons from left side (behind sidebar) to right side (visible and clickable)
+   - All 3 floating widgets (AI Copilot, AI Sales Coach, Team Chat) now properly positioned and accessible
 
 ### Backend Endpoints
 - `/api/booking/{user_id}` - Get user info for booking

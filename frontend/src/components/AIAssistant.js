@@ -260,14 +260,14 @@ const AIAssistant = () => {
         </div>
       </motion.button>
 
-      {/* Chat Window */}
+      {/* Chat Window - Positioned on right side */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-8 left-6 z-50 w-[420px] h-[580px] bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700"
+            className="fixed bottom-8 right-6 z-50 w-[420px] h-[580px] bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700"
             data-testid="ai-assistant-panel"
           >
             {/* Header */}

@@ -50,24 +50,25 @@ const AICopilot = () => {
 
   return (
     <>
-      {/* Floating Copilot Button - Only show on first visit */}
+      {/* Floating Copilot Button - Positioned above AI Assistant on right side */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-28 left-6 w-12 h-12 bg-gradient-to-br from-primary to-accent text-white rounded-full shadow-xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-40"
+        className="fixed bottom-[250px] right-6 w-11 h-11 bg-gradient-to-br from-primary to-accent text-white rounded-full shadow-xl hover:scale-110 transition-transform duration-200 flex items-center justify-center z-40"
         title="Getting Started Guide"
+        data-testid="ai-copilot-btn"
       >
-        <Bot className="w-6 h-6" />
+        <Bot className="w-5 h-5" />
       </button>
 
       {/* Copilot Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            initial={{ opacity: 0, x: 20, scale: 0.95 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -20, scale: 0.95 }}
+            exit={{ opacity: 0, x: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-44 left-6 w-96 bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-50"
+            className="fixed bottom-8 right-6 w-96 bg-white rounded-xl shadow-2xl border border-border overflow-hidden z-50"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary to-accent p-4 flex items-center justify-between">

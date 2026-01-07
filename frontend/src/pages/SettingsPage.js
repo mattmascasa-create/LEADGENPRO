@@ -3,7 +3,8 @@ import axios from 'axios';
 import { 
   Key, Plus, Copy, Trash2, Eye, EyeOff, Shield, 
   Settings, Phone, Bell, Link2, Code, CheckCircle,
-  AlertCircle, Loader2, RefreshCw, ExternalLink
+  AlertCircle, Loader2, RefreshCw, ExternalLink,
+  HardDrive, Calendar, Video, Mail, User as UserIcon
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import DashboardLayout from '@/components/DashboardLayout';

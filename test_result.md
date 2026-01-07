@@ -610,6 +610,54 @@ frontend:
         agent: "testing"
         comment: "✅ AI Assistant widget working correctly. Successfully tested: floating chat button visible in bottom-right corner on all pages, clicking opens chat window with 'LeadGen Assistant' header, chat interface displays properly with message history. Minor: message input field selector needs refinement but core functionality intact. Widget available globally across application."
 
+  - task: "Admin Dashboard Frontend"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/DashboardPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Admin Dashboard frontend implemented with company stats cards, pipeline chart, employee performance table, Set Goals button, Auto-Distribute Leads button. Role-based access shows Admin Portal badge for admin users. Needs frontend testing."
+
+  - task: "Employee Dashboard Frontend"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/DashboardPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Employee Dashboard frontend implemented with personal goals progress bars, admin notes section, my leads list, tasks list. Role-based access shows Employee Portal badge for non-admin users. Needs frontend testing."
+
+  - task: "Role-based Sidebar Navigation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/Sidebar.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Role-based sidebar implemented. Admin users see Admin Portal badge with full navigation (User Management, Distribute Leads). Employee users see Employee Portal badge with limited navigation (My Dashboard, My Leads, Calendar, Tasks, Meetings). Needs frontend testing."
+
+  - task: "Team Chat Close Button Enhancement"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/TeamChat.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Team Chat minimize/close button made more visible with red background and border styling. Enhanced visibility for better UX. Needs frontend testing."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"

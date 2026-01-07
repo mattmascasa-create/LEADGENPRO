@@ -124,7 +124,23 @@ function AppContent() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <SmartDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/employee-dashboard"
+            element={
+              <ProtectedRoute>
+                <EmployeeDashboardPage />
               </ProtectedRoute>
             }
           />

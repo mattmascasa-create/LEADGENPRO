@@ -1491,90 +1491,276 @@ async def initiate_call(
     request: InitiateCallRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Initiate an outbound call through Twilio - Click-to-Call style
+    """Initiate a Click-to-Call - calls agent first, then bridges to lead
     
-    This creates an outbound call that:
-    1. Calls the destination number directly
-    2. When answered, connects the call
-    3. Records if enabled
+    Flow:
+    1. Twilio calls the agent's phone number
+    2. When agent answers, plays a prompt
+    3. Agent presses 1 to connect
+    4. Twilio then calls the lead and bridges both parties
     """
     if not twilio_client:
         raise HTTPException(status_code=500, detail="Twilio is not configured")
     
+    # Get agent's phone number from profile or request
+    agent_phone = request.agent_phone or current_user.phone
+    if not agent_phone:
+        raise HTTPException(
+            status_code=400, 
+            detail="Please set your phone number in your profile settings to use Click-to-Call"
+        )
+    
     try:
-        # Format phone number to E.164
-        formatted_number = request.to_number
-        if not formatted_number.startswith('+'):
-            digits = re.sub(r'\D', '', formatted_number)
+        # Format destination phone number to E.164
+        formatted_lead_number = request.to_number
+        if not formatted_lead_number.startswith('+'):
+            digits = re.sub(r'\D', '', formatted_lead_number)
             if len(digits) == 10:
-                formatted_number = '+1' + digits
+                formatted_lead_number = '+1' + digits
             elif len(digits) == 11 and digits.startswith('1'):
-                formatted_number = '+' + digits
+                formatted_lead_number = '+' + digits
             else:
-                formatted_number = '+' + digits
+                formatted_lead_number = '+' + digits
+        
+        # Format agent phone number to E.164
+        formatted_agent_phone = agent_phone
+        if not formatted_agent_phone.startswith('+'):
+            digits = re.sub(r'\D', '', formatted_agent_phone)
+            if len(digits) == 10:
+                formatted_agent_phone = '+1' + digits
+            elif len(digits) == 11 and digits.startswith('1'):
+                formatted_agent_phone = '+' + digits
+            else:
+                formatted_agent_phone = '+' + digits
         
         # Get the callback URL base
         callback_base = os.environ.get('FRONTEND_URL', '').rstrip('/')
         
-        # Simple TwiML - just connect the call when answered
-        # No nested Dial - Twilio handles the connection
-        twiml = f'''<?xml version="1.0" encoding="UTF-8"?>
+        # Generate a unique call ID for this session
+        call_id = f"call_{uuid.uuid4().hex[:12]}"
+        
+        # Store the pending call info so we can retrieve it when agent answers
+        pending_call = {
+            "id": call_id,
+            "lead_number": formatted_lead_number,
+            "agent_id": current_user.id,
+            "agent_name": current_user.full_name,
+            "lead_id": request.lead_id,
+            "record": request.record,
+            "status": "calling_agent",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.pending_calls.insert_one(pending_call)
+        
+        # TwiML for when agent answers - prompt to connect
+        # Uses Gather to wait for keypress, then redirects to connect endpoint
+        agent_twiml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Amy">Hello, this is a call from LeadGen Pro.</Say>
-    <Pause length="30"/>
-    <Say voice="Polly.Amy">Thank you for your time. Goodbye.</Say>
+    <Say voice="Polly.Amy">You have an outbound call to connect. Press 1 to connect now, or hang up to cancel.</Say>
+    <Gather numDigits="1" action="{callback_base}/api/voice/connect/{call_id}" method="POST" timeout="10">
+        <Say voice="Polly.Amy">Press 1 to connect.</Say>
+    </Gather>
+    <Say voice="Polly.Amy">No input received. Goodbye.</Say>
 </Response>'''
         
-        # Create the call - Twilio calls the destination directly
+        # Create the call to the AGENT first
         call_params = {
-            'to': formatted_number,
+            'to': formatted_agent_phone,
             'from_': TWILIO_PHONE_NUMBER,
-            'twiml': twiml,
+            'twiml': agent_twiml,
             'timeout': 30,
-            'status_callback': f"{callback_base}/api/voice/events",
+            'status_callback': f"{callback_base}/api/voice/agent-status/{call_id}",
             'status_callback_event': ['initiated', 'ringing', 'answered', 'completed'],
-            'status_callback_method': 'POST',
-            'machine_detection': 'Enable',  # Detect voicemail
-            'machine_detection_timeout': 5
+            'status_callback_method': 'POST'
         }
-        
-        # Enable recording if requested
-        if request.record:
-            call_params['record'] = True
-            call_params['recording_status_callback'] = f"{callback_base}/api/voice/recording-callback"
-            call_params['recording_status_callback_method'] = 'POST'
-            call_params['recording_status_callback_event'] = ['completed']
         
         call = twilio_client.calls.create(**call_params)
         
-        # Store the active call record in database for tracking
-        active_call = {
-            "id": f"call_{uuid.uuid4().hex[:12]}",
-            "call_sid": call.sid,
-            "lead_id": request.lead_id,
-            "agent_id": current_user.id,
-            "agent_name": current_user.full_name,
-            "to_number": formatted_number,
-            "from_number": TWILIO_PHONE_NUMBER,
-            "status": call.status,
-            "direction": "outbound",
-            "record": request.record,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.active_calls.insert_one(active_call)
+        # Update pending call with the agent call SID
+        await db.pending_calls.update_one(
+            {"id": call_id},
+            {"$set": {"agent_call_sid": call.sid}}
+        )
         
         # Log the call initiation activity
         activity = Activity(
             type="call_initiated",
-            description=f"Initiated {'recorded ' if request.record else ''}call to {formatted_number}",
+            description=f"Click-to-Call initiated to {formatted_lead_number}",
             lead_id=request.lead_id,
             user_id=current_user.id,
-            metadata={"call_sid": call.sid, "phone_number": formatted_number, "recorded": request.record}
+            metadata={
+                "call_id": call_id,
+                "agent_call_sid": call.sid, 
+                "lead_number": formatted_lead_number,
+                "recorded": request.record
+            }
         )
         activity_doc = activity.model_dump()
         activity_doc['created_at'] = activity_doc['created_at'].isoformat()
         await db.activities.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "call_id": call_id,
+            "call_sid": call.sid,
+            "status": "calling_agent",
+            "message": "Calling your phone now. Answer and press 1 to connect to the lead.",
+            "to": formatted_lead_number,
+            "from": TWILIO_PHONE_NUMBER,
+            "recording": request.record
+        }
+    except Exception as e:
+        logging.error(f"Error initiating call: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint to handle agent answering and connecting to lead
+@api_router.post("/voice/connect/{call_id}")
+async def connect_to_lead(call_id: str, request: Request):
+    """When agent presses 1, this connects them to the lead"""
+    try:
+        form_data = await request.form()
+        digits = form_data.get("Digits", "")
+        
+        # Get the pending call info
+        pending_call = await db.pending_calls.find_one({"id": call_id})
+        if not pending_call:
+            response = VoiceResponse()
+            response.say("Call session not found. Goodbye.", voice="Polly.Amy")
+            return Response(content=str(response), media_type="application/xml")
+        
+        if digits != "1":
+            response = VoiceResponse()
+            response.say("Call cancelled. Goodbye.", voice="Polly.Amy")
+            return Response(content=str(response), media_type="application/xml")
+        
+        callback_base = os.environ.get('FRONTEND_URL', '').rstrip('/')
+        lead_number = pending_call.get("lead_number")
+        should_record = pending_call.get("record", False)
+        
+        # Create TwiML to dial the lead
+        response = VoiceResponse()
+        response.say("Connecting you now. Please hold.", voice="Polly.Amy")
+        
+        dial = response.dial(
+            caller_id=TWILIO_PHONE_NUMBER,
+            timeout=45,
+            action=f"{callback_base}/api/voice/call-complete/{call_id}",
+            method="POST",
+            record="record-from-answer-dual" if should_record else "do-not-record"
+        )
+        dial.number(
+            lead_number,
+            status_callback=f"{callback_base}/api/voice/lead-status/{call_id}",
+            status_callback_event="initiated ringing answered completed",
+            status_callback_method="POST"
+        )
+        
+        # Update status
+        await db.pending_calls.update_one(
+            {"id": call_id},
+            {"$set": {"status": "connecting_to_lead"}}
+        )
+        
+        return Response(content=str(response), media_type="application/xml")
+    except Exception as e:
+        logging.error(f"Error connecting to lead: {e}")
+        response = VoiceResponse()
+        response.say("An error occurred. Please try again.", voice="Polly.Amy")
+        return Response(content=str(response), media_type="application/xml")
+
+# Handle call completion
+@api_router.post("/voice/call-complete/{call_id}")
+async def call_complete(call_id: str, request: Request):
+    """Handle when the bridged call ends"""
+    try:
+        form_data = await request.form()
+        dial_status = form_data.get("DialCallStatus", "")
+        dial_duration = form_data.get("DialCallDuration", "0")
+        recording_url = form_data.get("RecordingUrl", "")
+        
+        # Get pending call
+        pending_call = await db.pending_calls.find_one({"id": call_id})
+        
+        if pending_call:
+            # Create the call log
+            call_log = {
+                "id": call_id,
+                "call_sid": pending_call.get("agent_call_sid"),
+                "lead_id": pending_call.get("lead_id"),
+                "agent_id": pending_call.get("agent_id"),
+                "phone_number": pending_call.get("lead_number"),
+                "direction": "outbound",
+                "outcome": "connected" if dial_status == "completed" and int(dial_duration) > 0 else dial_status,
+                "duration": int(dial_duration),
+                "started_at": pending_call.get("created_at"),
+                "ended_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "recording_url": f"{recording_url}.mp3" if recording_url else None,
+                "notes": ""
+            }
+            await db.call_logs.insert_one(call_log)
+            
+            # Update lead's last_contacted
+            if pending_call.get("lead_id"):
+                await db.leads.update_one(
+                    {"id": pending_call.get("lead_id")},
+                    {"$set": {"last_contacted": datetime.now(timezone.utc).isoformat()}}
+                )
+            
+            # Clean up pending call
+            await db.pending_calls.delete_one({"id": call_id})
+        
+        response = VoiceResponse()
+        response.say("Call ended. Thank you for using LeadGen Pro.", voice="Polly.Amy")
+        return Response(content=str(response), media_type="application/xml")
+    except Exception as e:
+        logging.error(f"Error in call complete: {e}")
+        return Response(content="<Response></Response>", media_type="application/xml")
+
+# Handle agent call status updates
+@api_router.post("/voice/agent-status/{call_id}")
+async def agent_status_callback(call_id: str, request: Request):
+    """Handle status updates for the agent leg of the call"""
+    try:
+        form_data = await request.form()
+        call_status = form_data.get("CallStatus", "")
+        
+        await db.pending_calls.update_one(
+            {"id": call_id},
+            {"$set": {"agent_status": call_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # If agent didn't answer, clean up
+        if call_status in ["busy", "failed", "no-answer", "canceled"]:
+            await db.pending_calls.delete_one({"id": call_id})
+        
+        return {"status": "received"}
+    except Exception as e:
+        logging.error(f"Error in agent status: {e}")
+        return {"status": "error"}
+
+# Handle lead call status updates  
+@api_router.post("/voice/lead-status/{call_id}")
+async def lead_status_callback(call_id: str, request: Request):
+    """Handle status updates for the lead leg of the call"""
+    try:
+        form_data = await request.form()
+        call_status = form_data.get("CallStatus", "")
+        call_sid = form_data.get("CallSid", "")
+        
+        await db.pending_calls.update_one(
+            {"id": call_id},
+            {"$set": {
+                "lead_status": call_status,
+                "lead_call_sid": call_sid,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {"status": "received"}
+    except Exception as e:
+        logging.error(f"Error in lead status: {e}")
+        return {"status": "error"}
         
         return {
             "success": True,

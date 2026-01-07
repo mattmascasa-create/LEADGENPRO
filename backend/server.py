@@ -1607,6 +1607,13 @@ async def hangup_call(request: HangupRequest, current_user: User = Depends(get_c
     
     try:
         call = twilio_client.calls(request.call_sid).update(status="completed")
+        
+        # Update the call record in database
+        await db.active_calls.update_one(
+            {"call_sid": request.call_sid},
+            {"$set": {"status": "completed", "ended_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
         return {
             "success": True,
             "call_sid": call.sid,
@@ -1615,6 +1622,110 @@ async def hangup_call(request: HangupRequest, current_user: User = Depends(get_c
     except Exception as e:
         logging.error(f"Error hanging up call: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Twilio webhook for call status events
+@api_router.post("/voice/events")
+async def voice_status_callback(request: Request):
+    """Handle Twilio call status webhooks"""
+    try:
+        form_data = await request.form()
+        call_sid = form_data.get("CallSid")
+        call_status = form_data.get("CallStatus")
+        duration = form_data.get("CallDuration", "0")
+        
+        logging.info(f"Call status update - SID: {call_sid}, Status: {call_status}, Duration: {duration}")
+        
+        # Update the call record
+        update_data = {
+            "status": call_status,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        if call_status in ["completed", "busy", "failed", "no-answer", "canceled"]:
+            update_data["ended_at"] = datetime.now(timezone.utc).isoformat()
+            update_data["duration"] = int(duration)
+        
+        await db.active_calls.update_one(
+            {"call_sid": call_sid},
+            {"$set": update_data}
+        )
+        
+        # If call completed, create a call log entry
+        if call_status == "completed":
+            call_record = await db.active_calls.find_one({"call_sid": call_sid}, {"_id": 0})
+            if call_record:
+                call_log = {
+                    "id": f"log_{uuid.uuid4().hex[:12]}",
+                    "call_sid": call_sid,
+                    "lead_id": call_record.get("lead_id"),
+                    "agent_id": call_record.get("agent_id"),
+                    "phone_number": call_record.get("to_number"),
+                    "direction": "outbound",
+                    "outcome": "connected" if int(duration) > 0 else "no_answer",
+                    "duration": int(duration),
+                    "started_at": call_record.get("started_at"),
+                    "ended_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "recording_url": call_record.get("recording_url"),
+                    "notes": ""
+                }
+                await db.call_logs.insert_one(call_log)
+                
+                # Update lead's last_contacted
+                if call_record.get("lead_id"):
+                    await db.leads.update_one(
+                        {"id": call_record.get("lead_id")},
+                        {"$set": {"last_contacted": datetime.now(timezone.utc).isoformat()}}
+                    )
+        
+        return {"status": "received"}
+    except Exception as e:
+        logging.error(f"Error processing voice event: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Twilio webhook for recording status
+@api_router.post("/voice/recording-callback")
+async def recording_callback(request: Request):
+    """Handle Twilio recording completion webhook"""
+    try:
+        form_data = await request.form()
+        call_sid = form_data.get("CallSid")
+        recording_sid = form_data.get("RecordingSid")
+        recording_url = form_data.get("RecordingUrl")
+        recording_duration = form_data.get("RecordingDuration", "0")
+        recording_status = form_data.get("RecordingStatus")
+        
+        logging.info(f"Recording callback - Call SID: {call_sid}, Recording SID: {recording_sid}, Status: {recording_status}")
+        
+        if recording_status == "completed" and recording_url:
+            # Add .mp3 extension to the URL for easier playback
+            full_recording_url = f"{recording_url}.mp3"
+            
+            # Update the active call record
+            await db.active_calls.update_one(
+                {"call_sid": call_sid},
+                {"$set": {
+                    "recording_sid": recording_sid,
+                    "recording_url": full_recording_url,
+                    "recording_duration": int(recording_duration)
+                }}
+            )
+            
+            # Also update the call log if it exists
+            await db.call_logs.update_one(
+                {"call_sid": call_sid},
+                {"$set": {
+                    "recording_url": full_recording_url,
+                    "recording_duration": int(recording_duration)
+                }}
+            )
+            
+            logging.info(f"Recording saved for call {call_sid}: {full_recording_url}")
+        
+        return {"status": "received"}
+    except Exception as e:
+        logging.error(f"Error processing recording callback: {e}")
+        return {"status": "error", "message": str(e)}
 
 @api_router.post("/calls/log", response_model=CallLog)
 async def log_call(call_data: CallLogCreate, current_user: User = Depends(get_current_user)):

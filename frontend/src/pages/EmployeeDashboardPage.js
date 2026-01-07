@@ -103,7 +103,7 @@ const EmployeeDashboardPage = () => {
         <div className="bg-white rounded-xl border border-border p-6 mb-8">
           <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
-            Today's Goals
+            Today&apos;s Goals
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Calls Progress */}

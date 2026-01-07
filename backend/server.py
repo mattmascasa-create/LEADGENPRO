@@ -3500,6 +3500,575 @@ async def search_drive_files(
         logging.error(f"Failed to search files: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to search files: {str(e)}")
 
+# =============================================================================
+# PUBLIC API - External Integration Endpoints
+# =============================================================================
+# These endpoints allow external applications to integrate with LeadGen Pro
+# using API keys for authentication instead of JWT tokens.
+
+public_api = APIRouter(prefix="/public", tags=["Public API"])
+
+class APIKey(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    key: str
+    user_id: str
+    permissions: List[str] = ["read"]  # read, write, delete, admin
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_used: Optional[datetime] = None
+    is_active: bool = True
+
+class CreateAPIKeyRequest(BaseModel):
+    name: str
+    permissions: List[str] = ["read"]
+
+# API Key authentication dependency
+async def get_api_key_user(request: Request):
+    """Authenticate requests using API key in header"""
+    api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key required. Add X-API-Key header.")
+    
+    key_doc = await db.api_keys.find_one({"key": api_key, "is_active": True})
+    if not key_doc:
+        raise HTTPException(status_code=401, detail="Invalid or inactive API key")
+    
+    # Update last used timestamp
+    await db.api_keys.update_one(
+        {"key": api_key},
+        {"$set": {"last_used": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Get the user associated with this key
+    user = await db.users.find_one({"id": key_doc["user_id"]}, {"_id": 0, "hashed_password": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="API key user not found")
+    
+    return User(**user), key_doc.get("permissions", ["read"])
+
+# API Key Management (requires JWT auth)
+@api_router.post("/api-keys")
+async def create_api_key(request: CreateAPIKeyRequest, current_user: User = Depends(get_current_user)):
+    """Create a new API key for external integrations"""
+    import secrets
+    
+    api_key = APIKey(
+        name=request.name,
+        key=f"lgp_{secrets.token_urlsafe(32)}",
+        user_id=current_user.id,
+        permissions=request.permissions
+    )
+    
+    key_doc = api_key.model_dump()
+    key_doc['created_at'] = key_doc['created_at'].isoformat()
+    await db.api_keys.insert_one(key_doc)
+    
+    return {
+        "id": api_key.id,
+        "name": api_key.name,
+        "key": api_key.key,  # Only shown once!
+        "permissions": api_key.permissions,
+        "message": "Save this key securely - it won't be shown again!"
+    }
+
+@api_router.get("/api-keys")
+async def list_api_keys(current_user: User = Depends(get_current_user)):
+    """List all API keys for current user (keys are masked)"""
+    keys = await db.api_keys.find(
+        {"user_id": current_user.id},
+        {"_id": 0, "key": 0}  # Don't return the actual key
+    ).to_list(100)
+    
+    for key in keys:
+        key["key_preview"] = "lgp_****" + key.get("id", "")[-8:]
+    
+    return keys
+
+@api_router.delete("/api-keys/{key_id}")
+async def delete_api_key(key_id: str, current_user: User = Depends(get_current_user)):
+    """Deactivate an API key"""
+    result = await db.api_keys.update_one(
+        {"id": key_id, "user_id": current_user.id},
+        {"$set": {"is_active": False}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return {"message": "API key deactivated"}
+
+# =============================================================================
+# PUBLIC API ENDPOINTS - For External Integrations
+# =============================================================================
+
+@public_api.get("/health")
+async def public_health():
+    """Health check endpoint - no auth required"""
+    return {"status": "healthy", "service": "LeadGen Pro API", "version": "2.0"}
+
+@public_api.get("/leads")
+async def public_get_leads(
+    limit: int = 50,
+    offset: int = 0,
+    stage: Optional[str] = None,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Get leads via API key authentication"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    query = {}
+    if stage:
+        query["stage"] = stage
+    
+    leads = await db.leads.find(query, {"_id": 0}).skip(offset).limit(limit).to_list(limit)
+    total = await db.leads.count_documents(query)
+    
+    return {"leads": leads, "total": total, "limit": limit, "offset": offset}
+
+@public_api.get("/leads/{lead_id}")
+async def public_get_lead(lead_id: str, auth: tuple = Depends(get_api_key_user)):
+    """Get a specific lead by ID"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return lead
+
+class PublicLeadCreate(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    title: Optional[str] = None
+    source: str = "api"
+    notes: Optional[str] = None
+    custom_fields: Optional[Dict[str, Any]] = None
+
+@public_api.post("/leads")
+async def public_create_lead(lead_data: PublicLeadCreate, auth: tuple = Depends(get_api_key_user)):
+    """Create a new lead via API"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    lead = Lead(
+        first_name=lead_data.first_name,
+        last_name=lead_data.last_name,
+        email=lead_data.email,
+        phone=lead_data.phone,
+        company=lead_data.company,
+        title=lead_data.title,
+        source=lead_data.source,
+        notes=lead_data.notes,
+        assigned_to=user.id
+    )
+    
+    lead_doc = lead.model_dump()
+    lead_doc['created_at'] = lead_doc['created_at'].isoformat()
+    if lead_data.custom_fields:
+        lead_doc['custom_fields'] = lead_data.custom_fields
+    
+    await db.leads.insert_one(lead_doc)
+    
+    return {"id": lead.id, "message": "Lead created successfully"}
+
+@public_api.put("/leads/{lead_id}")
+async def public_update_lead(lead_id: str, updates: Dict[str, Any], auth: tuple = Depends(get_api_key_user)):
+    """Update a lead via API"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    # Remove protected fields
+    updates.pop("id", None)
+    updates.pop("_id", None)
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.leads.update_one({"id": lead_id}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    return {"message": "Lead updated successfully"}
+
+@public_api.delete("/leads/{lead_id}")
+async def public_delete_lead(lead_id: str, auth: tuple = Depends(get_api_key_user)):
+    """Delete a lead via API"""
+    user, permissions = auth
+    if "delete" not in permissions:
+        raise HTTPException(status_code=403, detail="Delete permission required")
+    
+    result = await db.leads.delete_one({"id": lead_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    return {"message": "Lead deleted successfully"}
+
+# Appointments/Meetings API
+class PublicAppointmentCreate(BaseModel):
+    title: str
+    lead_id: Optional[str] = None
+    lead_email: Optional[str] = None
+    lead_name: Optional[str] = None
+    scheduled_at: datetime
+    duration: int = 30  # minutes
+    meeting_type: str = "call"  # call, video, in_person
+    notes: Optional[str] = None
+    external_meeting_link: Optional[str] = None
+
+@public_api.get("/appointments")
+async def public_get_appointments(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Get appointments within a date range"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    query = {}
+    if start_date:
+        query["scheduled_at"] = {"$gte": start_date}
+    if end_date:
+        if "scheduled_at" in query:
+            query["scheduled_at"]["$lte"] = end_date
+        else:
+            query["scheduled_at"] = {"$lte": end_date}
+    
+    appointments = await db.appointments.find(query, {"_id": 0}).to_list(500)
+    return {"appointments": appointments}
+
+@public_api.post("/appointments")
+async def public_create_appointment(appt: PublicAppointmentCreate, auth: tuple = Depends(get_api_key_user)):
+    """Create a new appointment/meeting"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    appointment = {
+        "id": f"appt_{uuid.uuid4().hex[:12]}",
+        "title": appt.title,
+        "lead_id": appt.lead_id,
+        "lead_email": appt.lead_email,
+        "lead_name": appt.lead_name,
+        "employee_id": user.id,
+        "scheduled_at": appt.scheduled_at.isoformat(),
+        "duration": appt.duration,
+        "meeting_type": appt.meeting_type,
+        "notes": appt.notes,
+        "external_meeting_link": appt.external_meeting_link,
+        "status": "scheduled",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "source": "api"
+    }
+    
+    await db.appointments.insert_one(appointment)
+    
+    # Also create a calendar event
+    calendar_event = {
+        "id": f"evt_{uuid.uuid4().hex[:12]}",
+        "title": appt.title,
+        "start": appt.scheduled_at.isoformat(),
+        "end": (appt.scheduled_at + timedelta(minutes=appt.duration)).isoformat(),
+        "type": "meeting",
+        "lead_id": appt.lead_id,
+        "user_id": user.id,
+        "appointment_id": appointment["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.calendar_events.insert_one(calendar_event)
+    
+    return {"id": appointment["id"], "calendar_event_id": calendar_event["id"], "message": "Appointment created"}
+
+@public_api.delete("/appointments/{appointment_id}")
+async def public_cancel_appointment(appointment_id: str, auth: tuple = Depends(get_api_key_user)):
+    """Cancel an appointment"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    result = await db.appointments.update_one(
+        {"id": appointment_id},
+        {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    return {"message": "Appointment cancelled"}
+
+# Call Logs API
+@public_api.get("/calls")
+async def public_get_calls(
+    lead_id: Optional[str] = None,
+    limit: int = 50,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Get call logs"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    query = {}
+    if lead_id:
+        query["lead_id"] = lead_id
+    
+    calls = await db.call_logs.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return {"calls": calls}
+
+@public_api.post("/calls")
+async def public_log_call(
+    lead_id: str,
+    phone_number: str,
+    outcome: str,
+    duration: int = 0,
+    notes: Optional[str] = None,
+    recording_url: Optional[str] = None,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Log a call from an external system"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    call_log = {
+        "id": f"call_{uuid.uuid4().hex[:12]}",
+        "lead_id": lead_id,
+        "agent_id": user.id,
+        "phone_number": phone_number,
+        "direction": "outbound",
+        "outcome": outcome,
+        "duration": duration,
+        "notes": notes,
+        "recording_url": recording_url,
+        "source": "api",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.call_logs.insert_one(call_log)
+    
+    # Update lead's last_contacted
+    await db.leads.update_one(
+        {"id": lead_id},
+        {"$set": {"last_contacted": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"id": call_log["id"], "message": "Call logged successfully"}
+
+# Activities API
+@public_api.get("/activities/{lead_id}")
+async def public_get_activities(lead_id: str, limit: int = 50, auth: tuple = Depends(get_api_key_user)):
+    """Get activity timeline for a lead"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    activities = await db.activities.find(
+        {"lead_id": lead_id}, 
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return {"activities": activities}
+
+@public_api.post("/activities")
+async def public_create_activity(
+    lead_id: str,
+    type: str,
+    description: str,
+    metadata: Optional[Dict[str, Any]] = None,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Log an activity from an external system"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    activity = {
+        "id": f"act_{uuid.uuid4().hex[:12]}",
+        "type": type,
+        "description": description,
+        "lead_id": lead_id,
+        "user_id": user.id,
+        "metadata": metadata or {},
+        "source": "api",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.activities.insert_one(activity)
+    return {"id": activity["id"], "message": "Activity logged"}
+
+# Tasks API
+@public_api.get("/tasks")
+async def public_get_tasks(
+    status: Optional[str] = None,
+    lead_id: Optional[str] = None,
+    auth: tuple = Depends(get_api_key_user)
+):
+    """Get tasks"""
+    user, permissions = auth
+    if "read" not in permissions:
+        raise HTTPException(status_code=403, detail="Read permission required")
+    
+    query = {}
+    if status:
+        query["completed"] = status == "completed"
+    if lead_id:
+        query["lead_id"] = lead_id
+    
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(500)
+    return {"tasks": tasks}
+
+class PublicTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    lead_id: Optional[str] = None
+    due_date: Optional[datetime] = None
+    priority: str = "medium"
+
+@public_api.post("/tasks")
+async def public_create_task(task_data: PublicTaskCreate, auth: tuple = Depends(get_api_key_user)):
+    """Create a task from external system"""
+    user, permissions = auth
+    if "write" not in permissions:
+        raise HTTPException(status_code=403, detail="Write permission required")
+    
+    task = {
+        "id": f"task_{uuid.uuid4().hex[:12]}",
+        "title": task_data.title,
+        "description": task_data.description,
+        "lead_id": task_data.lead_id,
+        "assigned_to": user.id,
+        "due_date": task_data.due_date.isoformat() if task_data.due_date else None,
+        "priority": task_data.priority,
+        "completed": False,
+        "source": "api",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.tasks.insert_one(task)
+    return {"id": task["id"], "message": "Task created"}
+
+# Webhooks - Allow external systems to subscribe to events
+class WebhookSubscription(BaseModel):
+    url: str
+    events: List[str]  # lead.created, lead.updated, call.completed, appointment.created, etc.
+    secret: Optional[str] = None
+
+@public_api.post("/webhooks")
+async def create_webhook(webhook: WebhookSubscription, auth: tuple = Depends(get_api_key_user)):
+    """Subscribe to webhook events"""
+    user, permissions = auth
+    if "admin" not in permissions:
+        raise HTTPException(status_code=403, detail="Admin permission required for webhooks")
+    
+    import secrets as sec
+    webhook_doc = {
+        "id": f"wh_{uuid.uuid4().hex[:12]}",
+        "url": webhook.url,
+        "events": webhook.events,
+        "secret": webhook.secret or sec.token_urlsafe(32),
+        "user_id": user.id,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.webhooks.insert_one(webhook_doc)
+    return {
+        "id": webhook_doc["id"],
+        "secret": webhook_doc["secret"],
+        "message": "Webhook created. Use the secret to verify payloads."
+    }
+
+@public_api.get("/webhooks")
+async def list_webhooks(auth: tuple = Depends(get_api_key_user)):
+    """List webhook subscriptions"""
+    user, permissions = auth
+    webhooks = await db.webhooks.find(
+        {"user_id": user.id, "is_active": True},
+        {"_id": 0, "secret": 0}
+    ).to_list(100)
+    return {"webhooks": webhooks}
+
+@public_api.delete("/webhooks/{webhook_id}")
+async def delete_webhook(webhook_id: str, auth: tuple = Depends(get_api_key_user)):
+    """Delete a webhook subscription"""
+    user, permissions = auth
+    result = await db.webhooks.update_one(
+        {"id": webhook_id, "user_id": user.id},
+        {"$set": {"is_active": False}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    return {"message": "Webhook deleted"}
+
+# API Documentation endpoint
+@public_api.get("/docs")
+async def api_documentation():
+    """Get API documentation"""
+    return {
+        "name": "LeadGen Pro Public API",
+        "version": "2.0",
+        "base_url": "/api/public",
+        "authentication": {
+            "type": "API Key",
+            "header": "X-API-Key",
+            "description": "Create API keys in your LeadGen Pro dashboard under Settings"
+        },
+        "endpoints": {
+            "leads": {
+                "GET /leads": "List leads with pagination",
+                "GET /leads/{id}": "Get a specific lead",
+                "POST /leads": "Create a new lead",
+                "PUT /leads/{id}": "Update a lead",
+                "DELETE /leads/{id}": "Delete a lead"
+            },
+            "appointments": {
+                "GET /appointments": "List appointments",
+                "POST /appointments": "Create appointment/meeting",
+                "DELETE /appointments/{id}": "Cancel appointment"
+            },
+            "calls": {
+                "GET /calls": "Get call logs",
+                "POST /calls": "Log a call from external system"
+            },
+            "tasks": {
+                "GET /tasks": "Get tasks",
+                "POST /tasks": "Create a task"
+            },
+            "activities": {
+                "GET /activities/{lead_id}": "Get activity timeline",
+                "POST /activities": "Log an activity"
+            },
+            "webhooks": {
+                "GET /webhooks": "List webhook subscriptions",
+                "POST /webhooks": "Subscribe to events",
+                "DELETE /webhooks/{id}": "Unsubscribe"
+            }
+        },
+        "webhook_events": [
+            "lead.created",
+            "lead.updated", 
+            "lead.stage_changed",
+            "call.completed",
+            "appointment.created",
+            "appointment.cancelled",
+            "task.created",
+            "task.completed"
+        ],
+        "permissions": {
+            "read": "View data",
+            "write": "Create and update data",
+            "delete": "Delete data",
+            "admin": "Manage webhooks and settings"
+        }
+    }
+
+# Include public API router
+app.include_router(public_api, prefix="/api")
+
 app.include_router(api_router)
 
 app.add_middleware(

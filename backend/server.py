@@ -210,7 +210,7 @@ class CallOutcome(str):
 class CallLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    lead_id: str
+    lead_id: Optional[str] = None
     phone_number: str
     outcome: str
     duration: int = 0  # in seconds

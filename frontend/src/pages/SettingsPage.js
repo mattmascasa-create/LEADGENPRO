@@ -71,6 +71,43 @@ const SettingsPage = () => {
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
+  const fetchGoogleStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/google/status`, getAuthHeaders());
+      setGoogleStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch Google status');
+    }
+  };
+
+  const connectGoogle = async (services = 'drive,calendar') => {
+    setConnectingGoogle(true);
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/google/connect?services=${services}`,
+        getAuthHeaders()
+      );
+      if (response.data.auth_url) {
+        window.location.href = response.data.auth_url;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to initiate Google connection');
+      setConnectingGoogle(false);
+    }
+  };
+
+  const disconnectGoogle = async () => {
+    if (!window.confirm('Are you sure you want to disconnect your Google account?')) return;
+    
+    try {
+      await axios.post(`${API_URL}/api/google/disconnect`, {}, getAuthHeaders());
+      setGoogleStatus({ connected: false });
+      toast.success('Google account disconnected');
+    } catch (error) {
+      toast.error('Failed to disconnect Google account');
+    }
+  };
+
   const fetchApiKeys = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/api-keys`, getAuthHeaders());

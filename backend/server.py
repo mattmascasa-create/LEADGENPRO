@@ -86,6 +86,8 @@ class User(BaseModel):
     full_name: str
     role: str
     company: Optional[str] = None
+    phone: Optional[str] = None  # Agent's phone for click-to-call
+    department: Optional[str] = None
     onboarding_completed: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

@@ -1507,32 +1507,58 @@ async def initiate_call(
             else:
                 formatted_number = '+' + digits
         
-        # Create TwiML for connecting the call
-        # This will call the destination and connect it to the caller
-        twiml = f'''<Response>
-            <Say voice="alice">Connecting your call. Please hold.</Say>
-            <Dial callerId="{TWILIO_PHONE_NUMBER}" timeout="30">
-                <Number>{formatted_number}</Number>
-            </Dial>
-            <Say voice="alice">The call could not be completed. Goodbye.</Say>
-        </Response>'''
+        # Get the callback URL base
+        callback_base = os.environ.get('FRONTEND_URL', '').rstrip('/')
         
-        # Create the call with optional recording
+        # Create TwiML for the call
+        # The call will ring the destination directly
+        twiml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Amy">Connecting your call from LeadGen Pro. Please wait.</Say>
+    <Dial callerId="{TWILIO_PHONE_NUMBER}" timeout="45" action="{callback_base}/api/voice/dial-status" method="POST">
+        <Number statusCallbackEvent="initiated ringing answered completed" statusCallback="{callback_base}/api/voice/events" statusCallbackMethod="POST">
+            {formatted_number}
+        </Number>
+    </Dial>
+    <Say voice="Polly.Amy">We're sorry, but the person you're trying to reach is not available. Please try again later.</Say>
+</Response>'''
+        
+        # Create the call parameters
         call_params = {
             'to': formatted_number,
             'from_': TWILIO_PHONE_NUMBER,
             'twiml': twiml,
             'timeout': 60,
-            'status_callback': f"{os.environ.get('FRONTEND_URL', '')}/api/voice/events",
-            'status_callback_event': ['initiated', 'ringing', 'answered', 'completed']
+            'status_callback': f"{callback_base}/api/voice/events",
+            'status_callback_event': ['initiated', 'ringing', 'answered', 'completed'],
+            'status_callback_method': 'POST'
         }
         
         # Enable recording if requested
         if request.record:
             call_params['record'] = True
-            call_params['recording_status_callback'] = f"{os.environ.get('FRONTEND_URL', '')}/api/voice/recording-callback"
+            call_params['recording_status_callback'] = f"{callback_base}/api/voice/recording-callback"
+            call_params['recording_status_callback_method'] = 'POST'
+            call_params['recording_status_callback_event'] = ['completed']
         
         call = twilio_client.calls.create(**call_params)
+        
+        # Store the active call record in database for tracking
+        active_call = {
+            "id": f"call_{uuid.uuid4().hex[:12]}",
+            "call_sid": call.sid,
+            "lead_id": request.lead_id,
+            "agent_id": current_user.id,
+            "agent_name": current_user.full_name,
+            "to_number": formatted_number,
+            "from_number": TWILIO_PHONE_NUMBER,
+            "status": call.status,
+            "direction": "outbound",
+            "record": request.record,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.active_calls.insert_one(active_call)
         
         # Log the call initiation activity
         activity = Activity(
@@ -1549,6 +1575,7 @@ async def initiate_call(
         return {
             "success": True,
             "call_sid": call.sid,
+            "call_id": active_call["id"],
             "status": call.status,
             "to": formatted_number,
             "from": TWILIO_PHONE_NUMBER,
@@ -1557,6 +1584,44 @@ async def initiate_call(
     except Exception as e:
         logging.error(f"Error initiating call: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Handle dial status (what happens when the dial completes)
+@api_router.post("/voice/dial-status")
+async def dial_status_callback(request: Request):
+    """Handle dial completion status"""
+    try:
+        form_data = await request.form()
+        call_sid = form_data.get("CallSid")
+        dial_status = form_data.get("DialCallStatus")
+        dial_duration = form_data.get("DialCallDuration", "0")
+        
+        logging.info(f"Dial status - SID: {call_sid}, Status: {dial_status}, Duration: {dial_duration}")
+        
+        # Update the call record
+        await db.active_calls.update_one(
+            {"call_sid": call_sid},
+            {"$set": {
+                "dial_status": dial_status,
+                "dial_duration": int(dial_duration),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Return TwiML response
+        response = VoiceResponse()
+        if dial_status == "completed":
+            response.say("Call completed. Thank you for using LeadGen Pro.", voice="Polly.Amy")
+        elif dial_status == "busy":
+            response.say("The line is busy. Please try again later.", voice="Polly.Amy")
+        elif dial_status == "no-answer":
+            response.say("No answer. Please try again later.", voice="Polly.Amy")
+        elif dial_status == "failed":
+            response.say("The call could not be completed. Please check the number and try again.", voice="Polly.Amy")
+        
+        return Response(content=str(response), media_type="application/xml")
+    except Exception as e:
+        logging.error(f"Error processing dial status: {e}")
+        return Response(content="<Response></Response>", media_type="application/xml")
 
 @api_router.get("/voice/call/{call_sid}/status")
 async def get_call_status(call_sid: str, current_user: User = Depends(get_current_user)):

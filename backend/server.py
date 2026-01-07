@@ -3158,66 +3158,363 @@ async def send_bulk_email(request: BulkEmailRequest, current_user: User = Depend
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-GOOGLE_DRIVE_REDIRECT_URI = os.environ.get('GOOGLE_DRIVE_REDIRECT_URI')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', os.environ.get('GOOGLE_DRIVE_REDIRECT_URI'))
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 
-async def get_drive_service(user: User):
-    """Get Google Drive service with auto-refresh credentials"""
-    creds_doc = await db.drive_credentials.find_one({"user_id": user.id})
+# Google OAuth Scopes for different services
+GOOGLE_SCOPES = {
+    'drive': 'https://www.googleapis.com/auth/drive',
+    'calendar': 'https://www.googleapis.com/auth/calendar',
+    'meet': 'https://www.googleapis.com/auth/calendar.events',  # Meet uses Calendar API
+    'gmail_readonly': 'https://www.googleapis.com/auth/gmail.readonly',
+    'profile': 'https://www.googleapis.com/auth/userinfo.profile',
+    'email': 'https://www.googleapis.com/auth/userinfo.email'
+}
+
+async def get_google_credentials(user_id: str):
+    """Get Google credentials for a user"""
+    creds_doc = await db.google_credentials.find_one({"user_id": user_id})
     if not creds_doc:
         return None
     
-    # Create credentials object
     creds = Credentials(
         token=creds_doc["access_token"],
         refresh_token=creds_doc.get("refresh_token"),
-        token_uri=creds_doc["token_uri"],
-        client_id=creds_doc["client_id"],
-        client_secret=creds_doc["client_secret"],
-        scopes=creds_doc["scopes"]
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        scopes=creds_doc.get("scopes", [])
     )
     
     # Auto-refresh if expired
     if creds.expired and creds.refresh_token:
-        logging.info(f"Refreshing expired token for user {user.id}")
-        creds.refresh(GoogleRequest())
-        
-        # Update in database
-        await db.drive_credentials.update_one(
-            {"user_id": user.id},
-            {"$set": {
-                "access_token": creds.token,
-                "expiry": creds.expiry.isoformat() if creds.expiry else None,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
+        try:
+            creds.refresh(GoogleRequest())
+            await db.google_credentials.update_one(
+                {"user_id": user_id},
+                {"$set": {
+                    "access_token": creds.token,
+                    "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        except Exception as e:
+            logging.error(f"Failed to refresh Google token: {e}")
+            return None
     
+    return creds
+
+async def get_drive_service(user: User):
+    """Get Google Drive service with auto-refresh credentials"""
+    creds = await get_google_credentials(user.id)
+    if not creds:
+        return None
     return build('drive', 'v3', credentials=creds)
 
+async def get_calendar_service(user: User):
+    """Get Google Calendar service"""
+    creds = await get_google_credentials(user.id)
+    if not creds:
+        return None
+    return build('calendar', 'v3', credentials=creds)
+
+# =============================================================================
+# GOOGLE INTEGRATION ENDPOINTS
+# =============================================================================
+
+@api_router.get("/google/status")
+async def get_google_status(current_user: User = Depends(get_current_user)):
+    """Check which Google services are connected"""
+    creds_doc = await db.google_credentials.find_one({"user_id": current_user.id})
+    
+    if not creds_doc:
+        return {
+            "connected": False,
+            "services": {
+                "drive": False,
+                "calendar": False,
+                "meet": False
+            },
+            "message": "No Google account connected"
+        }
+    
+    scopes = creds_doc.get("scopes", [])
+    
+    return {
+        "connected": True,
+        "email": creds_doc.get("email"),
+        "name": creds_doc.get("name"),
+        "picture": creds_doc.get("picture"),
+        "connected_at": creds_doc.get("created_at"),
+        "services": {
+            "drive": GOOGLE_SCOPES['drive'] in scopes,
+            "calendar": GOOGLE_SCOPES['calendar'] in scopes,
+            "meet": GOOGLE_SCOPES['meet'] in scopes
+        }
+    }
+
+@api_router.get("/google/connect")
+async def connect_google(
+    services: str = "drive,calendar",  # Comma-separated: drive,calendar,meet
+    current_user: User = Depends(get_current_user)
+):
+    """Initiate Google OAuth flow for selected services"""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=400, 
+            detail="Google integration not configured. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to environment."
+        )
+    
+    # Build scopes based on requested services
+    requested_services = [s.strip() for s in services.split(',')]
+    scopes = [GOOGLE_SCOPES['profile'], GOOGLE_SCOPES['email']]  # Always include profile
+    
+    for service in requested_services:
+        if service in GOOGLE_SCOPES:
+            scopes.append(GOOGLE_SCOPES[service])
+    
+    # Store state for CSRF protection
+    state = f"{current_user.id}:{uuid.uuid4().hex[:16]}"
+    await db.oauth_states.insert_one({
+        "state": state,
+        "user_id": current_user.id,
+        "services": requested_services,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Build OAuth URL
+    oauth_url = (
+        "https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={GOOGLE_CLIENT_ID}&"
+        f"redirect_uri={GOOGLE_REDIRECT_URI}&"
+        "response_type=code&"
+        f"scope={' '.join(scopes)}&"
+        "access_type=offline&"
+        "prompt=consent&"
+        f"state={state}"
+    )
+    
+    return {"auth_url": oauth_url}
+
+@api_router.get("/google/callback")
+async def google_callback(code: str = None, state: str = None, error: str = None):
+    """Handle Google OAuth callback"""
+    if error:
+        return RedirectResponse(f"{FRONTEND_URL}/settings?error={error}")
+    
+    if not code or not state:
+        return RedirectResponse(f"{FRONTEND_URL}/settings?error=missing_params")
+    
+    # Verify state
+    state_doc = await db.oauth_states.find_one({"state": state})
+    if not state_doc:
+        return RedirectResponse(f"{FRONTEND_URL}/settings?error=invalid_state")
+    
+    user_id = state_doc["user_id"]
+    
+    # Clean up state
+    await db.oauth_states.delete_one({"state": state})
+    
+    try:
+        # Exchange code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code"
+        }
+        
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            async with session.post(token_url, data=token_data) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    logging.error(f"Token exchange failed: {error_text}")
+                    return RedirectResponse(f"{FRONTEND_URL}/settings?error=token_exchange_failed")
+                
+                tokens = await resp.json()
+        
+        access_token = tokens.get("access_token")
+        refresh_token = tokens.get("refresh_token")
+        expires_in = tokens.get("expires_in", 3600)
+        
+        # Get user info from Google
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            ) as resp:
+                if resp.status == 200:
+                    user_info = await resp.json()
+                else:
+                    user_info = {}
+        
+        # Decode the scopes from the token
+        scopes = tokens.get("scope", "").split(" ")
+        
+        # Store credentials
+        creds_doc = {
+            "user_id": user_id,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "scopes": scopes,
+            "email": user_info.get("email"),
+            "name": user_info.get("name"),
+            "picture": user_info.get("picture"),
+            "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert credentials
+        await db.google_credentials.update_one(
+            {"user_id": user_id},
+            {"$set": creds_doc},
+            upsert=True
+        )
+        
+        # Also update legacy drive_credentials for backward compatibility
+        await db.drive_credentials.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "user_id": user_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "scopes": scopes,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        return RedirectResponse(f"{FRONTEND_URL}/settings?google=connected")
+        
+    except Exception as e:
+        logging.error(f"Google OAuth error: {e}")
+        return RedirectResponse(f"{FRONTEND_URL}/settings?error=oauth_failed")
+
+@api_router.post("/google/disconnect")
+async def disconnect_google(current_user: User = Depends(get_current_user)):
+    """Disconnect Google account"""
+    await db.google_credentials.delete_one({"user_id": current_user.id})
+    await db.drive_credentials.delete_one({"user_id": current_user.id})
+    return {"message": "Google account disconnected"}
+
+# Google Calendar Integration
+@api_router.get("/google/calendar/events")
+async def get_google_calendar_events(
+    time_min: Optional[str] = None,
+    time_max: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get events from user's Google Calendar"""
+    service = await get_calendar_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected")
+    
+    try:
+        now = datetime.now(timezone.utc)
+        time_min = time_min or now.isoformat()
+        time_max = time_max or (now + timedelta(days=30)).isoformat()
+        
+        events_result = service.events().list(
+            calendarId='primary',
+            timeMin=time_min,
+            timeMax=time_max,
+            maxResults=100,
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        
+        events = events_result.get('items', [])
+        
+        return {"events": events}
+    except Exception as e:
+        logging.error(f"Failed to get calendar events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/google/calendar/events")
+async def create_google_calendar_event(
+    title: str,
+    start_time: datetime,
+    end_time: datetime,
+    description: Optional[str] = None,
+    attendees: Optional[List[str]] = None,
+    add_meet_link: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Create an event in user's Google Calendar with optional Meet link"""
+    service = await get_calendar_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected")
+    
+    try:
+        event = {
+            'summary': title,
+            'description': description,
+            'start': {
+                'dateTime': start_time.isoformat(),
+                'timeZone': 'UTC',
+            },
+            'end': {
+                'dateTime': end_time.isoformat(),
+                'timeZone': 'UTC',
+            }
+        }
+        
+        if attendees:
+            event['attendees'] = [{'email': email} for email in attendees]
+        
+        if add_meet_link:
+            event['conferenceData'] = {
+                'createRequest': {
+                    'requestId': uuid.uuid4().hex,
+                    'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+                }
+            }
+        
+        created_event = service.events().insert(
+            calendarId='primary',
+            body=event,
+            conferenceDataVersion=1 if add_meet_link else 0,
+            sendUpdates='all' if attendees else 'none'
+        ).execute()
+        
+        return {
+            "id": created_event.get('id'),
+            "html_link": created_event.get('htmlLink'),
+            "meet_link": created_event.get('hangoutLink'),
+            "message": "Event created successfully"
+        }
+    except Exception as e:
+        logging.error(f"Failed to create calendar event: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Legacy Drive endpoints (keep for backward compatibility)
 @api_router.get("/drive/status")
 async def get_drive_status(current_user: User = Depends(get_current_user)):
     """Check if Google Drive is connected for current user"""
-    creds_doc = await db.drive_credentials.find_one({"user_id": current_user.id})
+    creds_doc = await db.google_credentials.find_one({"user_id": current_user.id})
     
     if not creds_doc:
         return {"connected": False, "message": "Google Drive not connected"}
     
+    has_drive_scope = GOOGLE_SCOPES['drive'] in creds_doc.get("scopes", [])
+    
     return {
-        "connected": True,
-        "connected_at": creds_doc.get("updated_at"),
-        "scopes": creds_doc.get("scopes", [])
+        "connected": has_drive_scope,
+        "email": creds_doc.get("email") if has_drive_scope else None,
+        "connected_at": creds_doc.get("updated_at") if has_drive_scope else None
     }
 
 @api_router.get("/drive/connect")
 async def connect_drive(current_user: User = Depends(get_current_user)):
-    """Initiate Google Drive OAuth flow"""
-    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-        raise HTTPException(
-            status_code=400, 
-            detail="Google Drive integration not configured. Please add Google OAuth credentials."
-        )
-    
-    try:
+    """Redirect to unified Google connect with Drive scope"""
+    return await connect_google(services="drive", current_user=current_user)
         flow = Flow.from_client_config(
             {
                 "web": {

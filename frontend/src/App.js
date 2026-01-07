@@ -70,6 +70,40 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Admin-only route wrapper
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-primary text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!isAdminUser(user)) {
+    return <Navigate to="/employee-dashboard" replace />;
+  }
+  
+  return children;
+};
+
+// Smart Dashboard Router - routes to admin or employee dashboard based on role
+const SmartDashboard = () => {
+  const { user } = useAuth();
+  
+  if (isAdminUser(user)) {
+    return <AdminDashboardPage />;
+  }
+  
+  return <EmployeeDashboardPage />;
+};
+
 function AppContent() {
   return (
     <div className="App">

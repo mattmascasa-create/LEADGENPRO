@@ -77,7 +77,7 @@ const EmployeeDashboardPage = () => {
           <h1 className="text-4xl font-bold text-foreground mb-2">
             Welcome back, {user?.full_name?.split(' ')[0]}! 👋
           </h1>
-          <p className="text-secondary">Here's your daily overview and goals</p>
+          <p className="text-secondary">Here&apos;s your daily overview and goals</p>
         </div>
 
         {/* Admin Notes (if any) */}

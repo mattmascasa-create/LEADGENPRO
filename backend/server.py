@@ -69,6 +69,9 @@ SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
+# Admin emails - these users always have admin privileges
+ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com']
+
 # Create the main app
 app = FastAPI(title="LeadGen Pro API")
 api_router = APIRouter(prefix="/api")

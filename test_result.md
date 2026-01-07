@@ -345,6 +345,102 @@ backend:
         agent: "testing"
         comment: "Call analysis endpoint fully tested: GET /api/calls/{call_id}/analysis generates AI-powered analysis including sentiment (0.8), talk_ratio, topics, and coaching tips. Analysis generation working with proper JSON parsing and fallback handling."
 
+  - task: "Admin Dashboard Stats API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/admin/dashboard/stats tested successfully. Returns all required fields: total_employees, total_leads, calls_today, meetings_today, pipeline_stages, conversion_rate. Retrieved stats with 9 fields total. Admin portal dashboard API working perfectly."
+
+  - task: "Employee Performance API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/admin/employees/performance tested successfully. Returns list of employees with required metrics: calls_today, calls_total, meetings_today, leads_assigned, conversion_rate. Retrieved performance data for 2 employees. Admin employee management API working perfectly."
+
+  - task: "Check Admin Status API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/auth/check-admin tested successfully. Returns required fields: is_admin (boolean), role, email. Confirmed admin@test.com has is_admin=true. Role-based access control API working perfectly."
+
+  - task: "Employee Dashboard API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/employee/dashboard tested successfully. Returns all required sections: daily_goals, progress, admin_notes, my_leads_count, personal_stats. Retrieved dashboard with 6 sections total. Employee portal dashboard API working perfectly."
+
+  - task: "My Leads API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/employee/my-leads tested successfully. Returns list of leads assigned to current user. Retrieved 11 assigned leads for test employee. Employee lead management API working perfectly."
+
+  - task: "My Stats API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/employee/my-stats tested successfully. Returns required metrics: daily_calls, total_calls, conversion_rate, connect_rate. Retrieved personal stats with 7 metrics total. Employee analytics API working perfectly."
+
+  - task: "Set Daily Goals API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/admin/daily-goals tested successfully. Accepts employee_id, date, calls_target, meetings_target, emails_target, notes. Successfully set daily goals for test employee. Admin goal management API working perfectly."
+
+  - task: "Round Robin Distribution API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/admin/distribute-leads-roundrobin tested successfully. Distributes unassigned leads to all employees equally. Successfully distributed leads in round-robin fashion. Admin lead distribution API working perfectly."
+
 frontend:
   - task: "Landing Page"
     implemented: true

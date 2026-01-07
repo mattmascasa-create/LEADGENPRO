@@ -666,11 +666,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Onboarding Wizard"
-    - "Pipeline/Kanban Board with Drag-and-Drop"
-    - "Dashboard Page"
-    - "Leads Page"
-    - "Tasks Page"
+    - "Admin Dashboard Frontend"
+    - "Employee Dashboard Frontend"
+    - "Role-based Sidebar Navigation"
+    - "Team Chat Close Button Enhancement"
   stuck_tasks:
     - "Onboarding Wizard"
     - "Pipeline/Kanban Board with Drag-and-Drop"
@@ -679,11 +678,19 @@ test_plan:
     - "Tasks Page"
     - "Team Chat Page"
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
   completed_new_features:
     - "Team Calendar Page"
     - "Call Analytics Page"
     - "AI Assistant Widget"
+    - "Admin Dashboard Stats API"
+    - "Employee Performance API"
+    - "Check Admin Status API"
+    - "Employee Dashboard API"
+    - "My Leads API"
+    - "My Stats API"
+    - "Set Daily Goals API"
+    - "Round Robin Distribution API"
 
 agent_communication:
   - agent: "main"

@@ -1801,13 +1801,29 @@ async def lead_status_callback(call_id: str, request: Request):
     except Exception as e:
         logging.error(f"Error in lead status: {e}")
         return {"status": "error"}
-        
-        return {
-            "success": True,
-            "call_sid": call.sid,
-            "call_id": active_call["id"],
-            "status": call.status,
-            "to": formatted_number,
+
+# Get pending call status for frontend polling
+@api_router.get("/voice/pending/{call_id}")
+async def get_pending_call_status(call_id: str, current_user: User = Depends(get_current_user)):
+    """Get the status of a pending click-to-call"""
+    pending_call = await db.pending_calls.find_one({"id": call_id}, {"_id": 0})
+    if not pending_call:
+        # Check if call was completed and logged
+        call_log = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+        if call_log:
+            return {
+                "status": "completed",
+                "duration": call_log.get("duration", 0),
+                "outcome": call_log.get("outcome")
+            }
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    return {
+        "status": pending_call.get("status", "unknown"),
+        "agent_status": pending_call.get("agent_status"),
+        "lead_status": pending_call.get("lead_status"),
+        "duration": 0
+    }
             "from": TWILIO_PHONE_NUMBER,
             "recording": request.record
         }

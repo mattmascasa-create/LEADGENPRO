@@ -4293,6 +4293,420 @@ async def api_documentation():
         }
     }
 
+# ==================== Admin/Employee Portal Endpoints ====================
+
+# Models for Employee Dashboard
+class DailyGoal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    date: str  # YYYY-MM-DD format
+    calls_target: int = 20
+    meetings_target: int = 3
+    emails_target: int = 10
+    notes: Optional[str] = None  # Admin notes for the employee
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DailyGoalCreate(BaseModel):
+    employee_id: str
+    date: str
+    calls_target: int = 20
+    meetings_target: int = 3
+    emails_target: int = 10
+    notes: Optional[str] = None
+
+class EmployeePerformance(BaseModel):
+    employee_id: str
+    employee_name: str
+    department: Optional[str] = None
+    calls_today: int = 0
+    calls_total: int = 0
+    meetings_today: int = 0
+    meetings_total: int = 0
+    leads_assigned: int = 0
+    leads_converted: int = 0
+    conversion_rate: float = 0.0
+    last_activity: Optional[datetime] = None
+
+def is_admin_user(user: User) -> bool:
+    """Check if user is an admin (by role or email)"""
+    return user.role == "admin" or user.email in ADMIN_EMAILS
+
+@api_router.get("/admin/dashboard/stats")
+async def admin_dashboard_stats(current_user: User = Depends(get_current_user)):
+    """Get admin dashboard statistics - full company overview"""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get all employees
+    employees = await db.users.find({"role": {"$in": ["employee", "manager"]}}, {"_id": 0, "password": 0}).to_list(1000)
+    
+    # Calculate company-wide stats
+    total_leads = await db.leads.count_documents({})
+    total_calls = await db.call_logs.count_documents({})
+    total_meetings = await db.appointments.count_documents({})
+    
+    # Get today's date for daily stats
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_start = datetime.strptime(today, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    today_end = today_start + timedelta(days=1)
+    
+    calls_today = await db.call_logs.count_documents({
+        "created_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    meetings_today = await db.appointments.count_documents({
+        "scheduled_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    # Get leads by stage for pipeline overview
+    pipeline_stages = {}
+    for stage in ["prospecting", "qualified", "proposal", "negotiation", "closed"]:
+        count = await db.leads.count_documents({"stage": stage})
+        pipeline_stages[stage] = count
+    
+    # Calculate conversion rate
+    closed_leads = await db.leads.count_documents({"stage": "closed"})
+    conversion_rate = (closed_leads / total_leads * 100) if total_leads > 0 else 0
+    
+    return {
+        "total_employees": len(employees),
+        "total_leads": total_leads,
+        "total_calls": total_calls,
+        "total_meetings": total_meetings,
+        "calls_today": calls_today,
+        "meetings_today": meetings_today,
+        "pipeline_stages": pipeline_stages,
+        "conversion_rate": round(conversion_rate, 1),
+        "active_leads": total_leads - closed_leads
+    }
+
+@api_router.get("/admin/employees/performance")
+async def get_employees_performance(current_user: User = Depends(get_current_user)):
+    """Get performance metrics for all employees (Admin only)"""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get all employees (including managers)
+    employees = await db.users.find(
+        {"role": {"$in": ["employee", "manager"]}}, 
+        {"_id": 0, "password": 0}
+    ).to_list(1000)
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_start = datetime.strptime(today, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    today_end = today_start + timedelta(days=1)
+    
+    performance_data = []
+    for emp in employees:
+        emp_id = emp['id']
+        
+        # Get calls stats
+        calls_today = await db.call_logs.count_documents({
+            "agent_id": emp_id,
+            "created_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+        })
+        calls_total = await db.call_logs.count_documents({"agent_id": emp_id})
+        
+        # Get meetings stats
+        meetings_today = await db.appointments.count_documents({
+            "employee_id": emp_id,
+            "scheduled_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+        })
+        meetings_total = await db.appointments.count_documents({"employee_id": emp_id})
+        
+        # Get leads stats
+        leads_assigned = await db.leads.count_documents({"assigned_to": emp_id})
+        leads_converted = await db.leads.count_documents({"assigned_to": emp_id, "stage": "closed"})
+        
+        # Get last activity
+        last_activity = await db.activities.find_one(
+            {"user_id": emp_id}, 
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        
+        performance_data.append({
+            "employee_id": emp_id,
+            "employee_name": emp.get('full_name', 'Unknown'),
+            "email": emp.get('email', ''),
+            "department": emp.get('department'),
+            "role": emp.get('role', 'employee'),
+            "calls_today": calls_today,
+            "calls_total": calls_total,
+            "meetings_today": meetings_today,
+            "meetings_total": meetings_total,
+            "leads_assigned": leads_assigned,
+            "leads_converted": leads_converted,
+            "conversion_rate": round((leads_converted / leads_assigned * 100) if leads_assigned > 0 else 0, 1),
+            "last_activity": last_activity.get('created_at') if last_activity else None
+        })
+    
+    # Sort by calls today (descending)
+    performance_data.sort(key=lambda x: x['calls_today'], reverse=True)
+    
+    return performance_data
+
+@api_router.post("/admin/daily-goals")
+async def set_daily_goals(goal_data: DailyGoalCreate, current_user: User = Depends(get_current_user)):
+    """Set daily goals for an employee (Admin only)"""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check if employee exists
+    employee = await db.users.find_one({"id": goal_data.employee_id})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Upsert daily goal (update if exists, create if not)
+    goal = DailyGoal(
+        employee_id=goal_data.employee_id,
+        date=goal_data.date,
+        calls_target=goal_data.calls_target,
+        meetings_target=goal_data.meetings_target,
+        emails_target=goal_data.emails_target,
+        notes=goal_data.notes,
+        created_by=current_user.id
+    )
+    
+    doc = goal.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    # Upsert based on employee_id and date
+    await db.daily_goals.update_one(
+        {"employee_id": goal_data.employee_id, "date": goal_data.date},
+        {"$set": doc},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Daily goals set successfully", "goal": goal}
+
+@api_router.get("/admin/daily-goals/{employee_id}")
+async def get_employee_daily_goals(employee_id: str, date: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get daily goals for an employee (Admin only)"""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = {"employee_id": employee_id}
+    if date:
+        query["date"] = date
+    
+    goals = await db.daily_goals.find(query, {"_id": 0}).sort("date", -1).to_list(30)
+    return goals
+
+@api_router.post("/admin/distribute-leads-roundrobin")
+async def distribute_leads_roundrobin(
+    lead_ids: Optional[List[str]] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Distribute leads to employees using round-robin (Admin only)"""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get all active employees
+    employees = await db.users.find(
+        {"role": {"$in": ["employee", "manager"]}}, 
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if not employees:
+        raise HTTPException(status_code=400, detail="No employees found")
+    
+    # Get leads to distribute
+    if lead_ids:
+        query = {"id": {"$in": lead_ids}, "assigned_to": None}
+    else:
+        query = {"assigned_to": None}
+    
+    leads = await db.leads.find(query, {"_id": 0}).to_list(10000)
+    
+    if not leads:
+        raise HTTPException(status_code=404, detail="No unassigned leads found")
+    
+    # Round-robin distribution
+    distributed = []
+    employee_ids = [emp['id'] for emp in employees]
+    
+    for i, lead in enumerate(leads):
+        employee_idx = i % len(employee_ids)
+        employee_id = employee_ids[employee_idx]
+        
+        await db.leads.update_one(
+            {"id": lead['id']},
+            {
+                "$set": {
+                    "assigned_to": employee_id,
+                    "assigned_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        emp_name = next((e['full_name'] for e in employees if e['id'] == employee_id), 'Unknown')
+        distributed.append({
+            "lead_id": lead['id'],
+            "lead_name": f"{lead.get('first_name', '')} {lead.get('last_name', '')}",
+            "employee_id": employee_id,
+            "employee_name": emp_name
+        })
+    
+    return {
+        "success": True,
+        "message": f"Distributed {len(distributed)} leads to {len(employees)} employees using round-robin",
+        "total_distributed": len(distributed),
+        "distributions": distributed[:50]
+    }
+
+# Employee Dashboard Endpoints
+@api_router.get("/employee/dashboard")
+async def employee_dashboard(current_user: User = Depends(get_current_user)):
+    """Get employee's personal dashboard data"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_start = datetime.strptime(today, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    today_end = today_start + timedelta(days=1)
+    
+    # Get daily goals and admin notes
+    daily_goal = await db.daily_goals.find_one(
+        {"employee_id": current_user.id, "date": today},
+        {"_id": 0}
+    )
+    
+    # Set default goals if none exist
+    if not daily_goal:
+        daily_goal = {
+            "calls_target": 20,
+            "meetings_target": 3,
+            "emails_target": 10,
+            "notes": None
+        }
+    
+    # Get actual progress
+    calls_made = await db.call_logs.count_documents({
+        "agent_id": current_user.id,
+        "created_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    meetings_scheduled = await db.appointments.count_documents({
+        "employee_id": current_user.id,
+        "scheduled_at": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    # Get leads assigned to this employee
+    my_leads = await db.leads.find(
+        {"assigned_to": current_user.id, "stage": {"$ne": "closed"}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Get today's tasks
+    my_tasks = await db.tasks.find(
+        {"assigned_to": current_user.id, "completed": False},
+        {"_id": 0}
+    ).sort("due_date", 1).to_list(50)
+    
+    # Calculate personal stats
+    total_calls = await db.call_logs.count_documents({"agent_id": current_user.id})
+    total_leads_assigned = await db.leads.count_documents({"assigned_to": current_user.id})
+    leads_converted = await db.leads.count_documents({"assigned_to": current_user.id, "stage": "closed"})
+    
+    return {
+        "daily_goals": daily_goal,
+        "progress": {
+            "calls_made": calls_made,
+            "calls_target": daily_goal.get('calls_target', 20),
+            "meetings_scheduled": meetings_scheduled,
+            "meetings_target": daily_goal.get('meetings_target', 3)
+        },
+        "admin_notes": daily_goal.get('notes'),
+        "my_leads_count": len(my_leads),
+        "pending_tasks_count": len(my_tasks),
+        "personal_stats": {
+            "total_calls": total_calls,
+            "total_leads": total_leads_assigned,
+            "leads_converted": leads_converted,
+            "conversion_rate": round((leads_converted / total_leads_assigned * 100) if total_leads_assigned > 0 else 0, 1)
+        }
+    }
+
+@api_router.get("/employee/my-leads")
+async def get_my_leads(
+    status: Optional[str] = None,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get leads assigned to the current employee"""
+    query = {"assigned_to": current_user.id}
+    if status:
+        query["status"] = status
+    
+    leads = await db.leads.find(query, {"_id": 0}).limit(limit).to_list(limit)
+    return leads
+
+@api_router.get("/employee/my-tasks")
+async def get_my_tasks(
+    completed: Optional[bool] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get tasks assigned to the current employee"""
+    query = {"assigned_to": current_user.id}
+    if completed is not None:
+        query["completed"] = completed
+    
+    tasks = await db.tasks.find(query, {"_id": 0}).sort("due_date", 1).to_list(100)
+    return tasks
+
+@api_router.get("/employee/my-stats")
+async def get_my_stats(current_user: User = Depends(get_current_user)):
+    """Get personal performance statistics for the employee"""
+    # Get weekly data
+    week_start = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    # Calls by day for the last 7 days
+    daily_calls = []
+    for i in range(7):
+        day = datetime.now(timezone.utc) - timedelta(days=6-i)
+        day_str = day.strftime("%Y-%m-%d")
+        day_start = datetime.strptime(day_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        day_end = day_start + timedelta(days=1)
+        
+        count = await db.call_logs.count_documents({
+            "agent_id": current_user.id,
+            "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
+        })
+        daily_calls.append({"day": day.strftime("%a"), "calls": count})
+    
+    # Overall stats
+    total_calls = await db.call_logs.count_documents({"agent_id": current_user.id})
+    total_meetings = await db.appointments.count_documents({"employee_id": current_user.id})
+    leads_assigned = await db.leads.count_documents({"assigned_to": current_user.id})
+    leads_converted = await db.leads.count_documents({"assigned_to": current_user.id, "stage": "closed"})
+    
+    # Get call outcomes
+    connected_calls = await db.call_logs.count_documents({
+        "agent_id": current_user.id,
+        "outcome": "connected"
+    })
+    
+    return {
+        "daily_calls": daily_calls,
+        "total_calls": total_calls,
+        "total_meetings": total_meetings,
+        "leads_assigned": leads_assigned,
+        "leads_converted": leads_converted,
+        "conversion_rate": round((leads_converted / leads_assigned * 100) if leads_assigned > 0 else 0, 1),
+        "connect_rate": round((connected_calls / total_calls * 100) if total_calls > 0 else 0, 1)
+    }
+
+# Check if user is admin helper endpoint
+@api_router.get("/auth/check-admin")
+async def check_admin_status(current_user: User = Depends(get_current_user)):
+    """Check if current user has admin privileges"""
+    return {
+        "is_admin": is_admin_user(current_user),
+        "role": current_user.role,
+        "email": current_user.email
+    }
+
 # Include public API router
 app.include_router(public_api, prefix="/api")
 

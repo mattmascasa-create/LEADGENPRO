@@ -21,6 +21,8 @@ const SettingsPage = () => {
   const [newKeyPermissions, setNewKeyPermissions] = useState(['read']);
   const [createdKey, setCreatedKey] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState(null);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     phone: '',
@@ -44,7 +46,25 @@ const SettingsPage = () => {
     if (activeTab === 'api') {
       fetchApiKeys();
     }
+    if (activeTab === 'integrations') {
+      fetchGoogleStatus();
+    }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Check for Google connection result from URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google') === 'connected') {
+      toast.success('Google account connected successfully!');
+      setActiveTab('integrations');
+      fetchGoogleStatus();
+      window.history.replaceState({}, '', '/settings');
+    }
+    if (params.get('error')) {
+      toast.error(`Google connection failed: ${params.get('error')}`);
+      window.history.replaceState({}, '', '/settings');
+    }
+  }, []);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');

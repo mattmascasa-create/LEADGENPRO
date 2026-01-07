@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { 
   Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, 
-  Delete, X, Loader2, Clock, User, Circle
+  Delete, X, Loader2, Clock, User, Circle, PhoneCall,
+  PhoneIncoming, PhoneMissed, CheckCircle, AlertCircle,
+  FileText, Save, MessageSquare
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,9 +18,18 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isRecording, setIsRecording] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
-  const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, connected, ended
+  const [callStatus, setCallStatus] = useState('idle'); // idle, connecting, ringing, connected, ended, failed
   const [callSid, setCallSid] = useState(null);
+  const [callId, setCallId] = useState(null);
+  const [showOutcomeModal, setShowOutcomeModal] = useState(false);
+  const [callNotes, setCallNotes] = useState('');
+  const [selectedOutcome, setSelectedOutcome] = useState('');
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const [recentCalls, setRecentCalls] = useState([]);
+  const [showRecentCalls, setShowRecentCalls] = useState(false);
+  
   const timerRef = useRef(null);
+  const statusPollRef = useRef(null);
 
   useEffect(() => {
     if (prefilledNumber) {
@@ -27,7 +38,13 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
   }, [prefilledNumber]);
 
   useEffect(() => {
-    if (callStatus === 'connected') {
+    if (isOpen) {
+      fetchRecentCalls();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (callStatus === 'connected' || callStatus === 'ringing') {
       timerRef.current = setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
@@ -43,22 +60,51 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
     };
   }, [callStatus]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (statusPollRef.current) {
+        clearInterval(statusPollRef.current);
+      }
+    };
+  }, []);
+
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const formatPhoneDisplay = (number) => {
+    const digits = number.replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+    } else if (digits.length === 11 && digits.startsWith('1')) {
+      return `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+    }
+    return number;
+  };
+
   const dialPadButtons = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['*', '0', '#']
+    [{ digit: '1', letters: '' }, { digit: '2', letters: 'ABC' }, { digit: '3', letters: 'DEF' }],
+    [{ digit: '4', letters: 'GHI' }, { digit: '5', letters: 'JKL' }, { digit: '6', letters: 'MNO' }],
+    [{ digit: '7', letters: 'PQRS' }, { digit: '8', letters: 'TUV' }, { digit: '9', letters: 'WXYZ' }],
+    [{ digit: '*', letters: '' }, { digit: '0', letters: '+' }, { digit: '#', letters: '' }]
+  ];
+
+  const callOutcomes = [
+    { id: 'connected', label: 'Connected', description: 'Spoke with contact', icon: CheckCircle, color: 'text-green-500' },
+    { id: 'voicemail', label: 'Voicemail', description: 'Left a message', icon: MessageSquare, color: 'text-blue-500' },
+    { id: 'no_answer', label: 'No Answer', description: 'No response', icon: PhoneMissed, color: 'text-yellow-500' },
+    { id: 'busy', label: 'Busy', description: 'Line was busy', icon: PhoneOff, color: 'text-orange-500' },
+    { id: 'wrong_number', label: 'Wrong Number', description: 'Incorrect contact', icon: AlertCircle, color: 'text-red-500' },
+    { id: 'declined', label: 'Declined', description: 'Contact declined', icon: X, color: 'text-slate-500' }
   ];
 
   const handleDigitPress = (digit) => {
     if (phoneNumber.length < 15) {
       setPhoneNumber(prev => prev + digit);
+      // Play DTMF tone feedback (optional)
     }
   };
 
@@ -66,22 +112,27 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
     setPhoneNumber(prev => prev.slice(0, -1));
   };
 
-  const handleClear = () => {
-    setPhoneNumber('');
-  };
-
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
+  const fetchRecentCalls = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/calls/logs?limit=5`, getAuthHeaders());
+      setRecentCalls(response.data);
+    } catch (error) {
+      console.error('Failed to fetch recent calls');
+    }
+  };
+
   const initiateCall = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast.error('Please enter a valid phone number');
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 10) {
+      toast.error('Please enter a valid 10-digit phone number');
       return;
     }
 
-    // Format phone number
+    // Format phone number to E.164
     let formattedNumber = phoneNumber.replace(/\D/g, '');
     if (!formattedNumber.startsWith('+')) {
       if (formattedNumber.startsWith('1') && formattedNumber.length === 11) {
@@ -108,27 +159,33 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
         getAuthHeaders()
       );
 
-      if (response.data.call_sid) {
+      if (response.data.success && response.data.call_sid) {
         setCallSid(response.data.call_sid);
-        toast.info('Connecting call...');
+        setCallId(response.data.call_id);
+        toast.info('📞 Dialing...');
         
         // Start polling for call status
-        pollCallStatus(response.data.call_sid);
+        startStatusPolling(response.data.call_sid);
+      } else {
+        throw new Error('Failed to initiate call');
       }
     } catch (error) {
       console.error('Call error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to initiate call');
-      setCallStatus('idle');
-      setIsCallActive(false);
+      const errorMsg = error.response?.data?.detail || 'Failed to initiate call. Please check Twilio configuration.';
+      toast.error(errorMsg);
+      setCallStatus('failed');
+      setTimeout(() => {
+        setCallStatus('idle');
+        setIsCallActive(false);
+      }, 2000);
     }
   };
 
-  // Poll for call status updates
-  const pollCallStatus = async (sid) => {
+  const startStatusPolling = (sid) => {
     let attempts = 0;
-    const maxAttempts = 120; // 2 minutes max
+    const maxAttempts = 180; // 3 minutes max
     
-    const checkStatus = async () => {
+    statusPollRef.current = setInterval(async () => {
       try {
         const response = await axios.get(
           `${API_URL}/api/voice/call/${sid}/status`,
@@ -137,72 +194,61 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
         
         const status = response.data.status;
         
-        if (status === 'in-progress' || status === 'answered') {
+        if (status === 'ringing' || status === 'queued') {
+          setCallStatus('ringing');
+        } else if (status === 'in-progress' || status === 'answered') {
           setCallStatus('connected');
-          toast.success('Call connected!');
+          toast.success('📞 Call connected!');
         } else if (status === 'completed') {
-          endCallCleanup(response.data.duration || callDuration);
-          return;
-        } else if (status === 'busy' || status === 'failed' || status === 'no-answer' || status === 'canceled') {
-          toast.error(`Call ${status.replace('-', ' ')}`);
-          setCallStatus('ended');
-          setTimeout(() => {
-            setCallStatus('idle');
-            setIsCallActive(false);
-            setCallSid(null);
-          }, 2000);
-          return;
+          clearInterval(statusPollRef.current);
+          handleCallEnded(response.data.duration || callDuration, 'completed');
+        } else if (status === 'busy') {
+          clearInterval(statusPollRef.current);
+          toast.warning('📞 Line is busy');
+          handleCallEnded(0, 'busy');
+        } else if (status === 'failed' || status === 'canceled') {
+          clearInterval(statusPollRef.current);
+          toast.error(`📞 Call ${status}`);
+          handleCallEnded(0, status);
+        } else if (status === 'no-answer') {
+          clearInterval(statusPollRef.current);
+          toast.warning('📞 No answer');
+          handleCallEnded(0, 'no_answer');
         }
         
         attempts++;
-        if (attempts < maxAttempts && callStatus !== 'idle') {
-          setTimeout(checkStatus, 1000);
+        if (attempts >= maxAttempts) {
+          clearInterval(statusPollRef.current);
         }
       } catch (error) {
         console.error('Status check error:', error);
         attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 2000);
+        if (attempts >= maxAttempts) {
+          clearInterval(statusPollRef.current);
         }
       }
-    };
-    
-    checkStatus();
+    }, 1500);
   };
 
-  const endCallCleanup = async (finalDuration) => {
-    // Log the completed call
-    if (leadInfo?.id) {
-      try {
-        await axios.post(
-          `${API_URL}/api/calls/log`,
-          {
-            lead_id: leadInfo.id,
-            phone_number: phoneNumber,
-            outcome: finalDuration > 0 ? 'connected' : 'no_answer',
-            duration: finalDuration,
-            call_sid: callSid,
-            notes: ''
-          },
-          getAuthHeaders()
-        );
-      } catch (error) {
-        console.error('Failed to log call:', error);
-      }
+  const handleCallEnded = (duration, outcome) => {
+    if (statusPollRef.current) {
+      clearInterval(statusPollRef.current);
     }
     
     setCallStatus('ended');
-    toast.info(`Call ended - Duration: ${formatDuration(finalDuration)}`);
     
+    // Show outcome modal for logging
     setTimeout(() => {
-      setCallStatus('idle');
-      setIsCallActive(false);
-      setCallSid(null);
-      setCallDuration(0);
-    }, 2000);
+      setSelectedOutcome(outcome === 'completed' ? '' : outcome);
+      setShowOutcomeModal(true);
+    }, 1000);
   };
 
   const endCall = async () => {
+    if (statusPollRef.current) {
+      clearInterval(statusPollRef.current);
+    }
+    
     if (callSid) {
       try {
         await axios.post(
@@ -210,29 +256,76 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
           { call_sid: callSid },
           getAuthHeaders()
         );
-        
-        // Call the cleanup function
-        endCallCleanup(callDuration);
+        toast.info('📞 Call ended');
       } catch (error) {
         console.error('Hangup error:', error);
-        // Still cleanup locally even if hangup fails
-        endCallCleanup(callDuration);
       }
-    } else {
-      setCallStatus('idle');
-      setIsCallActive(false);
-      setCallDuration(0);
     }
+    
+    handleCallEnded(callDuration, 'connected');
+  };
+
+  const saveCallOutcome = async () => {
+    if (!selectedOutcome) {
+      toast.error('Please select a call outcome');
+      return;
+    }
+
+    setSavingOutcome(true);
+    try {
+      await axios.post(
+        `${API_URL}/api/calls/log`,
+        {
+          lead_id: leadInfo?.id || null,
+          phone_number: phoneNumber,
+          outcome: selectedOutcome,
+          duration: callDuration,
+          call_sid: callSid,
+          notes: callNotes
+        },
+        getAuthHeaders()
+      );
+      
+      toast.success('✅ Call logged successfully!');
+      setShowOutcomeModal(false);
+      resetDialer();
+      fetchRecentCalls();
+    } catch (error) {
+      console.error('Failed to log call:', error);
+      toast.error('Failed to save call outcome');
+    } finally {
+      setSavingOutcome(false);
+    }
+  };
+
+  const skipOutcomeLog = () => {
+    setShowOutcomeModal(false);
+    resetDialer();
+  };
+
+  const resetDialer = () => {
+    setCallStatus('idle');
+    setIsCallActive(false);
+    setCallSid(null);
+    setCallId(null);
+    setCallDuration(0);
+    setCallNotes('');
+    setSelectedOutcome('');
   };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    toast.info(isMuted ? 'Unmuted' : 'Muted');
+    toast.info(isMuted ? '🔊 Unmuted' : '🔇 Muted');
   };
 
   const toggleSpeaker = () => {
     setIsSpeakerOn(!isSpeakerOn);
-    toast.info(isSpeakerOn ? 'Speaker off' : 'Speaker on');
+    toast.info(isSpeakerOn ? '🔈 Speaker off' : '🔊 Speaker on');
+  };
+
+  const redialNumber = (number) => {
+    setPhoneNumber(number);
+    setShowRecentCalls(false);
   };
 
   if (!isOpen) return null;
@@ -243,107 +336,157 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-        onClick={(e) => e.target === e.currentTarget && !isCallActive && onClose()}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={(e) => e.target === e.currentTarget && !isCallActive && !showOutcomeModal && onClose()}
       >
         <motion.div
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="bg-gradient-to-b from-slate-900 to-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+          className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-700/50"
           data-testid="phone-dialer"
         >
           {/* Header */}
-          <div className="p-6 text-center relative">
-            {!isCallActive && (
+          <div className="p-5 text-center relative">
+            {!isCallActive && !showOutcomeModal && (
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 p-2 text-slate-400 hover:text-white transition-colors"
+                className="absolute right-4 top-4 p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-full transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
             
+            {/* Lead Info */}
             {leadInfo && (
               <div className="mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-primary/30">
                   <User className="w-8 h-8 text-white" />
                 </div>
-                <p className="text-white font-medium">{leadInfo.first_name} {leadInfo.last_name}</p>
+                <p className="text-white font-semibold text-lg">{leadInfo.first_name} {leadInfo.last_name}</p>
                 <p className="text-slate-400 text-sm">{leadInfo.company}</p>
               </div>
             )}
 
-            {/* Call Status */}
+            {!leadInfo && !isCallActive && (
+              <div className="mb-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-green-500/30">
+                  <Phone className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-white font-semibold text-lg">Quick Call</h2>
+              </div>
+            )}
+
+            {/* Call Status Display */}
             {callStatus === 'connecting' && (
-              <div className="text-center py-4">
-                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-2" />
-                <p className="text-slate-300">Connecting...</p>
+              <div className="py-4">
+                <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-3" />
+                <p className="text-blue-400 font-medium">Connecting...</p>
+                <p className="text-slate-500 text-sm">Please wait</p>
+              </div>
+            )}
+
+            {callStatus === 'ringing' && (
+              <div className="py-4">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3"
+                >
+                  <PhoneCall className="w-8 h-8 text-yellow-400" />
+                </motion.div>
+                <p className="text-yellow-400 font-medium">Ringing...</p>
+                <p className="text-slate-500 text-sm">{formatPhoneDisplay(phoneNumber)}</p>
+                <div className="flex items-center justify-center gap-2 mt-2 text-white text-xl font-mono">
+                  <Clock className="w-5 h-5 text-slate-400" />
+                  {formatDuration(callDuration)}
+                </div>
               </div>
             )}
 
             {callStatus === 'connected' && (
-              <div className="text-center py-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Circle className="w-3 h-3 text-green-500 fill-green-500 animate-pulse" />
-                  <span className="text-green-500 font-medium">Connected</span>
+              <div className="py-4">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  >
+                    <Circle className="w-3 h-3 text-green-500 fill-green-500" />
+                  </motion.div>
+                  <span className="text-green-400 font-semibold">Connected</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-white text-3xl font-mono">
-                  <Clock className="w-6 h-6 text-slate-400" />
+                <div className="flex items-center justify-center gap-2 text-white text-4xl font-mono mb-2">
                   {formatDuration(callDuration)}
                 </div>
+                <p className="text-slate-400 text-sm">{formatPhoneDisplay(phoneNumber)}</p>
                 {isRecording && (
-                  <div className="flex items-center justify-center gap-1 mt-2 text-red-400 text-sm">
+                  <div className="flex items-center justify-center gap-1.5 mt-3 text-red-400 text-sm">
                     <Circle className="w-2 h-2 fill-red-500 animate-pulse" />
-                    Recording
+                    Recording in progress
                   </div>
                 )}
               </div>
             )}
 
-            {callStatus === 'ended' && (
-              <div className="text-center py-4">
-                <p className="text-slate-300">Call Ended</p>
+            {callStatus === 'ended' && !showOutcomeModal && (
+              <div className="py-4">
+                <div className="w-14 h-14 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <PhoneOff className="w-7 h-7 text-slate-400" />
+                </div>
+                <p className="text-slate-300 font-medium">Call Ended</p>
                 <p className="text-slate-500 text-sm">Duration: {formatDuration(callDuration)}</p>
+              </div>
+            )}
+
+            {callStatus === 'failed' && (
+              <div className="py-4">
+                <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <AlertCircle className="w-7 h-7 text-red-400" />
+                </div>
+                <p className="text-red-400 font-medium">Call Failed</p>
+                <p className="text-slate-500 text-sm">Please try again</p>
               </div>
             )}
           </div>
 
           {/* Phone Number Display */}
-          <div className="px-6 pb-4">
-            <div className="bg-slate-800/50 rounded-xl p-4 flex items-center justify-between">
-              <input
-                type="text"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
-                placeholder="Enter phone number"
-                className="bg-transparent text-white text-2xl font-light w-full outline-none placeholder-slate-500"
-                disabled={isCallActive}
-                data-testid="phone-input"
-              />
-              {phoneNumber && !isCallActive && (
-                <button
-                  onClick={handleBackspace}
-                  className="p-2 text-slate-400 hover:text-white transition-colors"
-                >
-                  <Delete className="w-6 h-6" />
-                </button>
-              )}
+          {!showOutcomeModal && (
+            <div className="px-5 pb-3">
+              <div className="bg-slate-800/80 rounded-2xl p-4 flex items-center justify-between border border-slate-700/50">
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
+                  placeholder="Enter phone number"
+                  className="bg-transparent text-white text-2xl font-light w-full outline-none placeholder-slate-500 tracking-wide"
+                  disabled={isCallActive}
+                  data-testid="phone-input"
+                />
+                {phoneNumber && !isCallActive && (
+                  <button
+                    onClick={handleBackspace}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all ml-2"
+                  >
+                    <Delete className="w-6 h-6" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Dial Pad */}
-          {!isCallActive && (
-            <div className="px-6 pb-4">
-              <div className="grid grid-cols-3 gap-3">
-                {dialPadButtons.flat().map((digit) => (
+          {!isCallActive && !showOutcomeModal && (
+            <div className="px-5 pb-3">
+              <div className="grid grid-cols-3 gap-2">
+                {dialPadButtons.flat().map((btn) => (
                   <button
-                    key={digit}
-                    onClick={() => handleDigitPress(digit)}
-                    className="h-16 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-white text-2xl font-light transition-all active:scale-95"
-                    data-testid={`dial-${digit}`}
+                    key={btn.digit}
+                    onClick={() => handleDigitPress(btn.digit)}
+                    className="h-16 rounded-2xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/30 text-white transition-all active:scale-95 flex flex-col items-center justify-center"
+                    data-testid={`dial-${btn.digit}`}
                   >
-                    {digit}
+                    <span className="text-2xl font-light">{btn.digit}</span>
+                    {btn.letters && <span className="text-[10px] text-slate-500 tracking-widest">{btn.letters}</span>}
                   </button>
                 ))}
               </div>
@@ -351,78 +494,184 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
           )}
 
           {/* In-Call Controls */}
-          {isCallActive && callStatus === 'connected' && (
-            <div className="px-6 pb-4">
-              <div className="grid grid-cols-3 gap-4">
+          {isCallActive && callStatus === 'connected' && !showOutcomeModal && (
+            <div className="px-5 pb-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={toggleMute}
-                  className={`h-16 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
-                    isMuted ? 'bg-red-500/20 text-red-400' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all border ${
+                    isMuted 
+                      ? 'bg-red-500/20 border-red-500/50 text-red-400' 
+                      : 'bg-slate-800/60 border-slate-700/30 text-slate-300 hover:bg-slate-700/80'
                   }`}
                 >
                   {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-                  <span className="text-xs">{isMuted ? 'Unmute' : 'Mute'}</span>
+                  <span className="text-xs font-medium">{isMuted ? 'Unmute' : 'Mute'}</span>
                 </button>
                 <button
                   onClick={toggleSpeaker}
-                  className={`h-16 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
-                    !isSpeakerOn ? 'bg-slate-700/50 text-slate-500' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all border ${
+                    !isSpeakerOn 
+                      ? 'bg-slate-800/60 border-slate-700/30 text-slate-500' 
+                      : 'bg-slate-800/60 border-slate-700/30 text-slate-300 hover:bg-slate-700/80'
                   }`}
                 >
                   {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-                  <span className="text-xs">Speaker</span>
+                  <span className="text-xs font-medium">Speaker</span>
                 </button>
                 <button
-                  onClick={() => setIsRecording(!isRecording)}
-                  className={`h-16 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
-                    isRecording ? 'bg-red-500/20 text-red-400' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all border ${
+                    isRecording 
+                      ? 'bg-red-500/20 border-red-500/50 text-red-400' 
+                      : 'bg-slate-800/60 border-slate-700/30 text-slate-300'
                   }`}
                 >
                   <Circle className={`w-6 h-6 ${isRecording ? 'fill-red-500' : ''}`} />
-                  <span className="text-xs">{isRecording ? 'Recording' : 'Record'}</span>
+                  <span className="text-xs font-medium">{isRecording ? 'Recording' : 'Record'}</span>
                 </button>
               </div>
             </div>
           )}
 
           {/* Recording Toggle (before call) */}
-          {!isCallActive && (
-            <div className="px-6 pb-4">
-              <label className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl cursor-pointer">
-                <span className="text-slate-300 text-sm">Record this call</span>
-                <div
-                  onClick={() => setIsRecording(!isRecording)}
-                  className={`w-12 h-6 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}
-                >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-6 ml-0.5' : 'translate-x-0.5'}`} />
+          {!isCallActive && !showOutcomeModal && (
+            <div className="px-5 pb-3">
+              <button
+                onClick={() => setIsRecording(!isRecording)}
+                className={`w-full flex items-center justify-between p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                  isRecording 
+                    ? 'bg-red-500/10 border-red-500/30' 
+                    : 'bg-slate-800/60 border-slate-700/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Circle className={`w-5 h-5 ${isRecording ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
+                  <span className={`text-sm font-medium ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
+                    Record this call
+                  </span>
                 </div>
-              </label>
+                <div className={`w-11 h-6 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Recent Calls Toggle */}
+          {!isCallActive && !showOutcomeModal && recentCalls.length > 0 && (
+            <div className="px-5 pb-3">
+              <button
+                onClick={() => setShowRecentCalls(!showRecentCalls)}
+                className="w-full text-left text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                Recent calls ({recentCalls.length})
+              </button>
+              {showRecentCalls && (
+                <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                  {recentCalls.map((call, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => redialNumber(call.phone_number)}
+                      className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                    >
+                      <span className="text-white text-sm">{formatPhoneDisplay(call.phone_number)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        call.outcome === 'connected' ? 'bg-green-500/20 text-green-400' :
+                        call.outcome === 'no_answer' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-slate-600 text-slate-400'
+                      }`}>
+                        {call.outcome?.replace('_', ' ')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Call Button */}
-          <div className="p-6 pt-2">
-            {!isCallActive ? (
-              <button
-                onClick={initiateCall}
-                disabled={!phoneNumber || phoneNumber.length < 10}
-                className="w-full h-16 bg-green-500 hover:bg-green-600 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-3 text-white font-medium text-lg transition-all active:scale-95"
-                data-testid="call-btn"
-              >
-                <Phone className="w-6 h-6" />
-                Call
-              </button>
-            ) : (
-              <button
-                onClick={endCall}
-                className="w-full h-16 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center gap-3 text-white font-medium text-lg transition-all active:scale-95"
-                data-testid="end-call-btn"
-              >
-                <PhoneOff className="w-6 h-6" />
-                End Call
-              </button>
-            )}
-          </div>
+          {!showOutcomeModal && (
+            <div className="p-5 pt-2">
+              {!isCallActive ? (
+                <button
+                  onClick={initiateCall}
+                  disabled={!phoneNumber || phoneNumber.replace(/\D/g, '').length < 10}
+                  className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-3 text-white font-semibold text-lg transition-all active:scale-95 shadow-lg shadow-green-500/30 disabled:shadow-none"
+                  data-testid="call-btn"
+                >
+                  <Phone className="w-6 h-6" />
+                  Call
+                </button>
+              ) : (
+                <button
+                  onClick={endCall}
+                  className="w-full h-16 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center gap-3 text-white font-semibold text-lg transition-all active:scale-95 shadow-lg shadow-red-500/30"
+                  data-testid="end-call-btn"
+                >
+                  <PhoneOff className="w-6 h-6" />
+                  End Call
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Call Outcome Modal */}
+          {showOutcomeModal && (
+            <div className="p-5">
+              <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Log Call Outcome
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {callOutcomes.map((outcome) => (
+                  <button
+                    key={outcome.id}
+                    onClick={() => setSelectedOutcome(outcome.id)}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                      selectedOutcome === outcome.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-slate-700 hover:border-slate-600 bg-slate-800/50'
+                    }`}
+                  >
+                    <outcome.icon className={`w-5 h-5 ${outcome.color}`} />
+                    <span className="text-white text-sm font-medium">{outcome.label}</span>
+                    <span className="text-slate-500 text-xs">{outcome.description}</span>
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={callNotes}
+                onChange={(e) => setCallNotes(e.target.value)}
+                placeholder="Add notes about this call..."
+                className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 resize-none mb-4"
+                rows={3}
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={skipOutcomeLog}
+                  className="flex-1 py-3 border border-slate-600 text-slate-400 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={saveCallOutcome}
+                  disabled={!selectedOutcome || savingOutcome}
+                  className="flex-1 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {savingOutcome ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

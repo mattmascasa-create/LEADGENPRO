@@ -1491,7 +1491,13 @@ async def initiate_call(
     request: InitiateCallRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Initiate an outbound call through Twilio"""
+    """Initiate an outbound call through Twilio - Click-to-Call style
+    
+    This creates an outbound call that:
+    1. Calls the destination number directly
+    2. When answered, connects the call
+    3. Records if enabled
+    """
     if not twilio_client:
         raise HTTPException(status_code=500, detail="Twilio is not configured")
     
@@ -1499,7 +1505,6 @@ async def initiate_call(
         # Format phone number to E.164
         formatted_number = request.to_number
         if not formatted_number.startswith('+'):
-            # Assume US number if no country code
             digits = re.sub(r'\D', '', formatted_number)
             if len(digits) == 10:
                 formatted_number = '+1' + digits
@@ -1511,28 +1516,26 @@ async def initiate_call(
         # Get the callback URL base
         callback_base = os.environ.get('FRONTEND_URL', '').rstrip('/')
         
-        # Create TwiML for the call
-        # The call will ring the destination directly
+        # Simple TwiML - just connect the call when answered
+        # No nested Dial - Twilio handles the connection
         twiml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Amy">Connecting your call from LeadGen Pro. Please wait.</Say>
-    <Dial callerId="{TWILIO_PHONE_NUMBER}" timeout="45" action="{callback_base}/api/voice/dial-status" method="POST">
-        <Number statusCallbackEvent="initiated ringing answered completed" statusCallback="{callback_base}/api/voice/events" statusCallbackMethod="POST">
-            {formatted_number}
-        </Number>
-    </Dial>
-    <Say voice="Polly.Amy">We're sorry, but the person you're trying to reach is not available. Please try again later.</Say>
+    <Say voice="Polly.Amy">Hello, this is a call from LeadGen Pro.</Say>
+    <Pause length="30"/>
+    <Say voice="Polly.Amy">Thank you for your time. Goodbye.</Say>
 </Response>'''
         
-        # Create the call parameters
+        # Create the call - Twilio calls the destination directly
         call_params = {
             'to': formatted_number,
             'from_': TWILIO_PHONE_NUMBER,
             'twiml': twiml,
-            'timeout': 60,
+            'timeout': 30,
             'status_callback': f"{callback_base}/api/voice/events",
             'status_callback_event': ['initiated', 'ringing', 'answered', 'completed'],
-            'status_callback_method': 'POST'
+            'status_callback_method': 'POST',
+            'machine_detection': 'Enable',  # Detect voicemail
+            'machine_detection_timeout': 5
         }
         
         # Enable recording if requested

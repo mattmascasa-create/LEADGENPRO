@@ -1824,12 +1824,6 @@ async def get_pending_call_status(call_id: str, current_user: User = Depends(get
         "lead_status": pending_call.get("lead_status"),
         "duration": 0
     }
-            "from": TWILIO_PHONE_NUMBER,
-            "recording": request.record
-        }
-    except Exception as e:
-        logging.error(f"Error initiating call: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 # Handle dial status (what happens when the dial completes)
 @api_router.post("/voice/dial-status")

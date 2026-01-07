@@ -10,6 +10,8 @@ import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import OnboardingWizard from '@/pages/OnboardingWizard';
 import DashboardPage from '@/pages/DashboardPage';
+import AdminDashboardPage from '@/pages/AdminDashboardPage';
+import EmployeeDashboardPage from '@/pages/EmployeeDashboardPage';
 import PipelinePage from '@/pages/PipelinePage';
 import LeadsPage from '@/pages/LeadsPage';
 import LeadDetailPage from '@/pages/LeadDetailPage';
@@ -36,6 +38,14 @@ import AIAssistant from '@/components/AIAssistant';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+
+// Admin emails that always have admin access
+const ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com'];
+
+// Helper to check if user is admin
+const isAdminUser = (user) => {
+  return user?.role === 'admin' || ADMIN_EMAILS.includes(user?.email);
+};
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();

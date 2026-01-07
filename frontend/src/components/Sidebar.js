@@ -46,6 +46,7 @@ const Sidebar = () => {
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Reports', href: '/reports', icon: PieChart },
+    { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'User Management', href: '/admin/users', icon: UserCog, roles: ['admin'] },
     { name: 'Distribute Leads', href: '/admin/distribute', icon: FolderOpen, roles: ['admin'] },
   ];

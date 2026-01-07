@@ -1485,6 +1485,7 @@ class InitiateCallRequest(BaseModel):
     to_number: str
     lead_id: Optional[str] = None
     record: bool = False
+    agent_phone: Optional[str] = None  # Agent's phone number for click-to-call
 
 @api_router.post("/voice/call")
 async def initiate_call(

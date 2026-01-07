@@ -25,14 +25,18 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [x] Lead distribution by admins
 - [x] Drag-and-drop Kanban pipeline
 
-### VoIP & Dialer System (Improved)
+### VoIP & Dialer System (Improved - v2)
 - [x] Click-to-call via Twilio VoIP
-- [x] **Physical Phone Dialer** - Fully functional dial pad with:
-  - T9 keypad for entering any phone number
-  - Call recording toggle
-  - Live call timer
-  - Mute/Speaker/Recording controls during call
-  - End call button
+- [x] **Physical Phone Dialer** - Fully redesigned, intuitive dial pad with:
+  - Modern dark gradient design
+  - T9 keypad with letter labels (ABC, DEF, etc.)
+  - Clear phone number display with backspace
+  - Call recording toggle (prominent red indicator)
+  - **Recent calls list** - Quick redial from last 5 calls
+  - **Call outcome logging** - Post-call modal to select outcome (Connected, Voicemail, No Answer, Busy, Wrong Number, Declined)
+  - **Call notes** - Add notes to each call log
+  - **Call status indicators** - Connecting, Ringing, Connected, Ended, Failed
+  - Live call timer with animated status
 - [x] **Twilio Integration** - Robust call handling with:
   - Proper webhook endpoints for call status events (`/api/voice/events`)
   - Recording completion callbacks (`/api/voice/recording-callback`)
@@ -40,6 +44,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Active call tracking in database
   - Automatic call log creation on completion
   - Recording URL storage for playback
+  - Real-time call status polling
 - [x] **Call Analytics** - Gong-like dashboard with:
   - Call logs with recordings
   - AI-powered transcription (OpenAI Whisper)

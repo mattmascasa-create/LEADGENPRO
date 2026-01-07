@@ -2507,11 +2507,19 @@ async def transcribe_call(call_id: str, current_user: User = Depends(get_current
         segments = []
         if hasattr(transcription_response, 'segments') and transcription_response.segments:
             for seg in transcription_response.segments:
-                segments.append({
-                    "start": seg.start,
-                    "end": seg.end,
-                    "text": seg.text
-                })
+                # Handle both object and dict formats
+                if isinstance(seg, dict):
+                    segments.append({
+                        "start": seg.get("start", 0),
+                        "end": seg.get("end", 0),
+                        "text": seg.get("text", "")
+                    })
+                else:
+                    segments.append({
+                        "start": seg.start,
+                        "end": seg.end,
+                        "text": seg.text
+                    })
             update_data["transcript_segments"] = segments
         
         await db.call_logs.update_one(

@@ -211,32 +211,18 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
           getAuthHeaders()
         );
         
-        // Update call log with duration
-        if (leadInfo?.id) {
-          await axios.post(
-            `${API_URL}/api/calls/log`,
-            {
-              lead_id: leadInfo.id,
-              phone_number: phoneNumber,
-              outcome: 'connected',
-              duration: callDuration,
-              call_sid: callSid
-            },
-            getAuthHeaders()
-          );
-        }
+        // Call the cleanup function
+        endCallCleanup(callDuration);
       } catch (error) {
         console.error('Hangup error:', error);
+        // Still cleanup locally even if hangup fails
+        endCallCleanup(callDuration);
       }
-    }
-
-    setCallStatus('ended');
-    setTimeout(() => {
+    } else {
       setCallStatus('idle');
       setIsCallActive(false);
-      setCallSid(null);
       setCallDuration(0);
-    }, 1500);
+    }
   };
 
   const toggleMute = () => {

@@ -110,23 +110,10 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
 
       if (response.data.call_sid) {
         setCallSid(response.data.call_sid);
-        setCallStatus('connected');
-        toast.success('Call connected!');
+        toast.info('Connecting call...');
         
-        // Log the call
-        if (leadInfo?.id) {
-          await axios.post(
-            `${API_URL}/api/calls/log`,
-            {
-              lead_id: leadInfo.id,
-              phone_number: formattedNumber,
-              outcome: 'connected',
-              duration: 0,
-              call_sid: response.data.call_sid
-            },
-            getAuthHeaders()
-          );
-        }
+        // Start polling for call status
+        pollCallStatus(response.data.call_sid);
       }
     } catch (error) {
       console.error('Call error:', error);
@@ -134,6 +121,85 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
       setCallStatus('idle');
       setIsCallActive(false);
     }
+  };
+
+  // Poll for call status updates
+  const pollCallStatus = async (sid) => {
+    let attempts = 0;
+    const maxAttempts = 120; // 2 minutes max
+    
+    const checkStatus = async () => {
+      try {
+        const response = await axios.get(
+          `${API_URL}/api/voice/call/${sid}/status`,
+          getAuthHeaders()
+        );
+        
+        const status = response.data.status;
+        
+        if (status === 'in-progress' || status === 'answered') {
+          setCallStatus('connected');
+          toast.success('Call connected!');
+        } else if (status === 'completed') {
+          endCallCleanup(response.data.duration || callDuration);
+          return;
+        } else if (status === 'busy' || status === 'failed' || status === 'no-answer' || status === 'canceled') {
+          toast.error(`Call ${status.replace('-', ' ')}`);
+          setCallStatus('ended');
+          setTimeout(() => {
+            setCallStatus('idle');
+            setIsCallActive(false);
+            setCallSid(null);
+          }, 2000);
+          return;
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts && callStatus !== 'idle') {
+          setTimeout(checkStatus, 1000);
+        }
+      } catch (error) {
+        console.error('Status check error:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 2000);
+        }
+      }
+    };
+    
+    checkStatus();
+  };
+
+  const endCallCleanup = async (finalDuration) => {
+    // Log the completed call
+    if (leadInfo?.id) {
+      try {
+        await axios.post(
+          `${API_URL}/api/calls/log`,
+          {
+            lead_id: leadInfo.id,
+            phone_number: phoneNumber,
+            outcome: finalDuration > 0 ? 'connected' : 'no_answer',
+            duration: finalDuration,
+            call_sid: callSid,
+            notes: ''
+          },
+          getAuthHeaders()
+        );
+      } catch (error) {
+        console.error('Failed to log call:', error);
+      }
+    }
+    
+    setCallStatus('ended');
+    toast.info(`Call ended - Duration: ${formatDuration(finalDuration)}`);
+    
+    setTimeout(() => {
+      setCallStatus('idle');
+      setIsCallActive(false);
+      setCallSid(null);
+      setCallDuration(0);
+    }, 2000);
   };
 
   const endCall = async () => {

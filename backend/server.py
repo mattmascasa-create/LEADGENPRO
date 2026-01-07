@@ -667,6 +667,43 @@ async def login(credentials: UserLogin):
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+class UpdateProfileRequest(BaseModel):
+    phone: Optional[str] = None
+    full_name: Optional[str] = None
+    company: Optional[str] = None
+    department: Optional[str] = None
+
+@api_router.put("/auth/profile")
+async def update_profile(request: UpdateProfileRequest, current_user: User = Depends(get_current_user)):
+    """Update current user's profile including phone number for click-to-call"""
+    update_data = {}
+    if request.phone is not None:
+        # Format phone to E.164 if provided
+        phone = request.phone
+        if phone and not phone.startswith('+'):
+            digits = re.sub(r'\D', '', phone)
+            if len(digits) == 10:
+                phone = '+1' + digits
+            elif len(digits) == 11 and digits.startswith('1'):
+                phone = '+' + digits
+        update_data["phone"] = phone
+    if request.full_name is not None:
+        update_data["full_name"] = request.full_name
+    if request.company is not None:
+        update_data["company"] = request.company
+    if request.department is not None:
+        update_data["department"] = request.department
+    
+    if update_data:
+        await db.users.update_one(
+            {"id": current_user.id},
+            {"$set": update_data}
+        )
+    
+    # Return updated user
+    updated_user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "hashed_password": 0})
+    return updated_user
+
 @api_router.put("/auth/onboarding")
 async def complete_onboarding(current_user: User = Depends(get_current_user)):
     await db.users.update_one(

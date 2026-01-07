@@ -3520,41 +3520,6 @@ async def connect_drive(current_user: User = Depends(get_current_user)):
 async def drive_callback(code: str = None, state: str = None, error: str = None):
     """Legacy callback - redirect to unified Google callback"""
     return await google_callback(code=code, state=state, error=error)
-            redirect_uri=GOOGLE_DRIVE_REDIRECT_URI
-        )
-        
-        flow.fetch_token(code=code)
-        credentials = flow.credentials
-        
-        logging.info(f"Drive credentials obtained for user {state}, scopes: {credentials.scopes}")
-        
-        # Store credentials in database
-        await db.drive_credentials.update_one(
-            {"user_id": state},
-            {"$set": {
-                "user_id": state,
-                "access_token": credentials.token,
-                "refresh_token": credentials.refresh_token,
-                "token_uri": credentials.token_uri,
-                "client_id": credentials.client_id,
-                "client_secret": credentials.client_secret,
-                "scopes": list(credentials.scopes) if credentials.scopes else [],
-                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }},
-            upsert=True
-        )
-        
-        logging.info(f"Drive credentials stored for user {state}")
-        
-        # Redirect to frontend
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=f"{FRONTEND_URL}/content-hub?drive_connected=true")
-    
-    except Exception as e:
-        logging.error(f"OAuth callback failed: {str(e)}")
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url=f"{FRONTEND_URL}/content-hub?drive_error={str(e)}")
 
 @api_router.get("/drive/disconnect")
 async def disconnect_drive(current_user: User = Depends(get_current_user)):

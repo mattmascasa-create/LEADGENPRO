@@ -678,10 +678,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Admin Dashboard Frontend"
-    - "Employee Dashboard Frontend"
-    - "Role-based Sidebar Navigation"
-    - "Team Chat Close Button Enhancement"
+    []
   stuck_tasks:
     - "Onboarding Wizard"
     - "Pipeline/Kanban Board with Drag-and-Drop"
@@ -703,6 +700,10 @@ test_plan:
     - "My Stats API"
     - "Set Daily Goals API"
     - "Round Robin Distribution API"
+    - "Admin Dashboard Frontend"
+    - "Employee Dashboard Frontend"
+    - "Role-based Sidebar Navigation"
+    - "Team Chat Close Button Enhancement"
 
 agent_communication:
   - agent: "main"

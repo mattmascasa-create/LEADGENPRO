@@ -220,6 +220,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Public booking page - no auth required */}
           <Route path="/book/:userId" element={<BookingPage />} />
         </Routes>

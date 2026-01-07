@@ -642,15 +642,18 @@ frontend:
 
   - task: "Role-based Sidebar Navigation"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/components/Sidebar.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Role-based sidebar implemented. Admin users see Admin Portal badge with full navigation (User Management, Distribute Leads). Employee users see Employee Portal badge with limited navigation (My Dashboard, My Leads, Calendar, Tasks, Meetings). Needs frontend testing."
+      - working: true
+        agent: "testing"
+        comment: "✅ ROLE-BASED SIDEBAR NAVIGATION FULLY TESTED - All functionality working perfectly. Successfully verified: 1) Admin Portal badge displayed with correct red styling (bg-red-500/20 text-red-400) ✅ 2) Admin navigation includes all required items: User Management, Distribute Leads, All Leads, Pipeline, Analytics, Reports ✅ 3) Navigation links functional - tested User Management link, successfully navigated to /admin/users and back ✅ 4) Role-based access control working - admin users see full admin navigation ✅ 5) Sidebar responsive and accessible on mobile viewport ✅. Role-based sidebar navigation is production-ready."
 
   - task: "Team Chat Close Button Enhancement"
     implemented: true

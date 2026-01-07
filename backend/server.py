@@ -3515,49 +3515,11 @@ async def get_drive_status(current_user: User = Depends(get_current_user)):
 async def connect_drive(current_user: User = Depends(get_current_user)):
     """Redirect to unified Google connect with Drive scope"""
     return await connect_google(services="drive", current_user=current_user)
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": GOOGLE_CLIENT_ID,
-                    "client_secret": GOOGLE_CLIENT_SECRET,
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [GOOGLE_DRIVE_REDIRECT_URI]
-                }
-            },
-            scopes=['https://www.googleapis.com/auth/drive'],
-            redirect_uri=GOOGLE_DRIVE_REDIRECT_URI
-        )
-        
-        authorization_url, state = flow.authorization_url(
-            access_type='offline',
-            include_granted_scopes='true',
-            prompt='consent',
-            state=current_user.id
-        )
-        
-        logging.info(f"Drive OAuth initiated for user {current_user.id}")
-        return {"authorization_url": authorization_url}
-    
-    except Exception as e:
-        logging.error(f"Failed to initiate OAuth: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to initiate OAuth: {str(e)}")
 
 @api_router.get("/drive/callback")
-async def drive_callback(code: str, state: str):
-    """Handle Google Drive OAuth callback"""
-    try:
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": GOOGLE_CLIENT_ID,
-                    "client_secret": GOOGLE_CLIENT_SECRET,
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [GOOGLE_DRIVE_REDIRECT_URI]
-                }
-            },
-            scopes=None,
+async def drive_callback(code: str = None, state: str = None, error: str = None):
+    """Legacy callback - redirect to unified Google callback"""
+    return await google_callback(code=code, state=state, error=error)
             redirect_uri=GOOGLE_DRIVE_REDIRECT_URI
         )
         

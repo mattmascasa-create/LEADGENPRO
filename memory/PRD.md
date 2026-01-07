@@ -200,3 +200,33 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - **OpenAI Whisper**: Implemented via `emergentintegrations`
 - **Resend**: Implemented but blocked by sandbox mode
 - **Google Drive**: Partially implemented, paused
+
+## Deployment Configuration
+
+### Security Settings (Updated)
+- **JWT_SECRET**: Secure 64-character token generated
+- **CORS_ORIGINS**: Configured for `leadgenpro2.com` domain
+- **API Keys**: User-generated keys for external integrations
+
+### Public API System (NEW)
+The platform now includes a full public API for external integrations:
+
+**Base URL**: `/api/public`
+**Authentication**: API Key via `X-API-Key` header
+
+**Available Endpoints**:
+- `GET /public/health` - Health check (no auth)
+- `GET /public/docs` - API documentation
+- **Leads**: GET, POST, PUT, DELETE `/public/leads`
+- **Appointments**: GET, POST, DELETE `/public/appointments`
+- **Calls**: GET, POST `/public/calls`
+- **Tasks**: GET, POST `/public/tasks`
+- **Activities**: GET, POST `/public/activities`
+- **Webhooks**: Subscribe to events (lead.created, call.completed, etc.)
+
+**Permissions**: read, write, delete, admin
+
+### Settings Page (NEW)
+- Profile management (name, phone, company, department)
+- API Key management (create, view, delete)
+- Integration status overview

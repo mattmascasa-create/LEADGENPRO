@@ -1012,6 +1012,14 @@ agent_communication:
    - Guest details form
    - Confirmation with "Add to Calendar" link
 
+3. **Gong-like Call Analytics Dashboard** (`/app/frontend/src/pages/CallAnalyticsDashboard.js`)
+   - Overview tab: Stats, outcomes chart, sentiment analysis
+   - Call History tab: Real Twilio call data with transcribe/analyze buttons
+   - AI Coaching tab: Talk ratio analysis, personalized improvement tips
+   - Leaderboard tab: Team performance rankings
+   - Integration with OpenAI Whisper for transcription
+   - AI-powered call analysis for sentiment, topics, coaching
+
 ### Backend Endpoints:
 - `GET /api/meeting-types` - Get user's meeting types
 - `POST /api/meeting-types` - Create new meeting type

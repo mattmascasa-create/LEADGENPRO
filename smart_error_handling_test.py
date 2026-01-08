@@ -104,43 +104,43 @@ class SmartErrorHandlingTester:
             self.log_result("Error Reporting API", False, "No auth token available")
             return False
         
-        # Test different error categories
+        # Test different error categories (using correct ErrorReport model structure)
         test_errors = [
             {
                 "error_type": "authentication_failed",
                 "error_message": "JWT token has expired",
-                "category": "authentication",
-                "severity": "medium",
                 "endpoint": "/api/leads",
                 "request_data": {"action": "get_leads"},
-                "stack_trace": "TokenExpiredError: JWT token expired at 2024-01-08T10:30:00Z"
+                "stack_trace": "TokenExpiredError: JWT token expired at 2024-01-08T10:30:00Z",
+                "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
+                "page_url": "https://leadgenpro-7.preview.emergentagent.com/leads"
             },
             {
                 "error_type": "file_upload_failed",
                 "error_message": "Authorization header missing in CSV upload request",
-                "category": "file_upload",
-                "severity": "high",
                 "endpoint": "/api/leads/bulk-import",
                 "request_data": {"filename": "leads.csv"},
-                "stack_trace": "HTTPException: Authorization header required"
+                "stack_trace": "HTTPException: Authorization header required",
+                "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
+                "page_url": "https://leadgenpro-7.preview.emergentagent.com/leads"
             },
             {
                 "error_type": "database_connection_failed",
                 "error_message": "Cannot connect to MongoDB database",
-                "category": "database",
-                "severity": "critical",
                 "endpoint": "/api/leads",
                 "request_data": {"query": "find_all"},
-                "stack_trace": "ConnectionError: MongoDB connection timeout"
+                "stack_trace": "ConnectionError: MongoDB connection timeout",
+                "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
+                "page_url": "https://leadgenpro-7.preview.emergentagent.com/dashboard"
             },
             {
                 "error_type": "network_timeout",
                 "error_message": "Request to external API timed out",
-                "category": "network",
-                "severity": "medium",
                 "endpoint": "/api/assistant/chat",
                 "request_data": {"message": "How do I add a lead?"},
-                "stack_trace": "TimeoutError: Request timeout after 30 seconds"
+                "stack_trace": "TimeoutError: Request timeout after 30 seconds",
+                "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
+                "page_url": "https://leadgenpro-7.preview.emergentagent.com/dashboard"
             }
         ]
         
@@ -149,30 +149,33 @@ class SmartErrorHandlingTester:
             response, error = self.make_request("POST", "/errors/report", error_data)
             
             if error:
-                self.log_result(f"Error Report {i+1} ({error_data['category']})", False, f"Request failed: {error}")
+                self.log_result(f"Error Report {i+1} ({error_data['error_type']})", False, f"Request failed: {error}")
                 continue
             
             if response.status_code == 200:
                 result = response.json()
-                if "error_id" in result and "auto_fix_suggestions" in result:
+                if "error_id" in result and "user_suggestion" in result:
                     # Store first error ID for later tests
                     if i == 0:
                         self.test_error_id = result["error_id"]
                     
                     # Check auto-fix suggestions
-                    suggestions = result["auto_fix_suggestions"]
-                    if suggestions and "user_action" in suggestions:
-                        self.log_result(f"Error Report {i+1} ({error_data['category']})", True, 
-                                      f"Error logged with auto-fix: {suggestions['user_action'][:50]}...")
+                    user_suggestion = result["user_suggestion"]
+                    category = result.get("category", "unknown")
+                    severity = result.get("severity", "unknown")
+                    
+                    if user_suggestion:
+                        self.log_result(f"Error Report {i+1} ({error_data['error_type']})", True, 
+                                      f"Category: {category} | Severity: {severity} | Suggestion: {user_suggestion[:40]}...")
                         success_count += 1
                     else:
-                        self.log_result(f"Error Report {i+1} ({error_data['category']})", False, 
-                                      "Missing auto-fix suggestions")
+                        self.log_result(f"Error Report {i+1} ({error_data['error_type']})", False, 
+                                      "Missing user_suggestion")
                 else:
-                    self.log_result(f"Error Report {i+1} ({error_data['category']})", False, 
-                                  "Missing error_id or auto_fix_suggestions in response")
+                    self.log_result(f"Error Report {i+1} ({error_data['error_type']})", False, 
+                                  f"Missing error_id or user_suggestion in response: {result}")
             else:
-                self.log_result(f"Error Report {i+1} ({error_data['category']})", False, 
+                self.log_result(f"Error Report {i+1} ({error_data['error_type']})", False, 
                               f"Status {response.status_code}: {response.text}")
         
         # Overall test result

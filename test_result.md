@@ -465,6 +465,18 @@ backend:
         agent: "testing"
         comment: "✅ GOOGLE CALENDAR & MEET INTEGRATION TESTING COMPLETED - All 9 backend tests passed with 100% success rate. RESULTS: ✅ Create Event with Google Meet Link: POST /api/calendar/events/with-meet generates proper Meet links in format https://meet.google.com/xxx-xxxx-xxx ✅ Add Meet Link to Existing Event: POST /api/calendar/events/{id}/add-meet successfully adds Meet links to regular events ✅ Export to Google Calendar URL: GET /api/calendar/export/google-url/{id} generates proper Google Calendar template URLs starting with https://calendar.google.com/calendar/render?action=TEMPLATE ✅ Export ICS File: GET /api/calendar/export/ics/{id} returns proper text/calendar content with valid ICS format ✅ Get Calendar Sync Status: GET /api/calendar/sync-status returns all required fields (google_linked, has_full_sync, sync_method, message) ✅ Get Calendar Events: GET /api/calendar/events correctly returns events with meeting_link field populated. Test credentials: admin@test.com/admin123. Created comprehensive test suites at /app/google_calendar_meet_test.py and /app/detailed_calendar_test.py. All Google Calendar and Meet integration endpoints are production-ready."
 
+  - task: "Google Calendar and Meet Integration Frontend"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/CalendarPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE GOOGLE CALENDAR & MEET INTEGRATION FRONTEND TESTING COMPLETED - All 5 test scenarios passed with 100% success rate using admin@test.com/admin123. RESULTS: ✅ Login and Navigate to Calendar: Successfully logged in and accessed /calendar page with calendar component visible ✅ Create Event with Google Meet: 'New Event' button opens modal, 'Auto-generate Google Meet link' checkbox with Google Meet icon works correctly, Meeting Link input disabled when checkbox checked, event creation successful ✅ Event Detail Modal Meet Features: Events display 'Join Meeting' link with Google Meet icon (https://meet.google.com/xxx-xxxx-xxx format), Copy button functional, 'Add Google Meet Link' button available for events without Meet links ✅ Export to Google Calendar: 'Export to Calendar' section present, 'Add to Google Calendar' button with Google Calendar icon functional, ICS download button with download icon working ✅ Google Meet Checkbox in Form: Checkbox exists with correct label 'Auto-generate Google Meet link', Google Meet icon present, Meeting Link input properly disabled/enabled based on checkbox state. All Google Calendar and Meet integration frontend features are production-ready and working perfectly."
+
 frontend:
   - task: "Landing Page"
     implemented: true

@@ -2293,13 +2293,17 @@ async def get_available_slots_for_meeting_type(
         {"_id": 0}
     ).to_list(100)
     
+    # If no rules, create default Mon-Fri
+    if not rules:
+        rules = [{"day_of_week": i, "start_time": "09:00", "end_time": "17:00", "is_available": True} for i in range(5)]
+    
     # Get existing bookings
-    start_date = datetime.now(timezone.utc)
-    end_date = start_date + timedelta(days=days)
+    now_utc = datetime.now(timezone.utc)
+    end_date = now_utc + timedelta(days=days)
     
     existing_bookings = await db.appointments.find({
         "employee_id": user_id,
-        "scheduled_at": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+        "scheduled_at": {"$gte": now_utc.isoformat(), "$lte": end_date.isoformat()}
     }, {"_id": 0}).to_list(1000)
     
     # Generate available slots
@@ -2309,7 +2313,8 @@ async def get_available_slots_for_meeting_type(
     buffer_after = meeting_type.get("buffer_after", 0)
     
     for day_offset in range(days):
-        check_date = start_date + timedelta(days=day_offset)
+        # Create a timezone-aware date for this day
+        check_date = now_utc.date() + timedelta(days=day_offset)
         day_of_week = check_date.weekday()
         
         # Find rule for this day
@@ -2321,10 +2326,11 @@ async def get_available_slots_for_meeting_type(
         start_hour, start_min = map(int, day_rule.get("start_time", "09:00").split(":"))
         end_hour, end_min = map(int, day_rule.get("end_time", "17:00").split(":"))
         
-        # Generate slots - ensure timezone-aware datetimes
-        current_time = check_date.replace(hour=start_hour, minute=start_min, second=0, microsecond=0, tzinfo=timezone.utc)
-        end_time = check_date.replace(hour=end_hour, minute=end_min, second=0, microsecond=0, tzinfo=timezone.utc)
-        now_utc = datetime.now(timezone.utc)
+        # Generate timezone-aware slot times
+        current_time = datetime(check_date.year, check_date.month, check_date.day, 
+                                start_hour, start_min, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(check_date.year, check_date.month, check_date.day, 
+                            end_hour, end_min, 0, 0, tzinfo=timezone.utc)
         
         while current_time + timedelta(minutes=duration) <= end_time:
             # Skip past times
@@ -2337,7 +2343,15 @@ async def get_available_slots_for_meeting_type(
             is_available = True
             
             for booking in existing_bookings:
-                booking_start = datetime.fromisoformat(booking["scheduled_at"].replace("Z", "+00:00"))
+                # Parse booking time - ensure timezone awareness
+                scheduled_at = booking["scheduled_at"]
+                if scheduled_at.endswith("Z"):
+                    scheduled_at = scheduled_at.replace("Z", "+00:00")
+                elif "+" not in scheduled_at and "-" not in scheduled_at[10:]:
+                    # No timezone info, assume UTC
+                    scheduled_at = scheduled_at + "+00:00"
+                
+                booking_start = datetime.fromisoformat(scheduled_at)
                 booking_end = booking_start + timedelta(minutes=booking.get("duration", 30))
                 
                 # Add buffers

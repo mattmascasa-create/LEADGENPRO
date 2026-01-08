@@ -65,6 +65,10 @@ const TeamChatEnhanced = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [mentions, setMentions] = useState([]);
+  const [unreadMentions, setUnreadMentions] = useState(0);
+  const [showMentionsPanel, setShowMentionsPanel] = useState(false);
+  const lastCheckedMentions = useRef(null);
   
   const [meetingForm, setMeetingForm] = useState({
     title: '',

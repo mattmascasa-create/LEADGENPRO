@@ -90,22 +90,31 @@ const TeamChatEnhanced = () => {
       fetchTeamMembers();
       fetchUserStatuses();
       fetchMentions();
+      fetchDmConversations();
       updateMyPresence();
       
-      // Poll for status updates every 10 seconds
-      const statusInterval = setInterval(fetchUserStatuses, 10000);
-      // Update my presence every 30 seconds
-      const presenceInterval = setInterval(updateMyPresence, 30000);
+      // Poll for status updates every 5 seconds (more frequent for real-time feel)
+      const statusInterval = setInterval(fetchUserStatuses, 5000);
+      // Update my presence every 15 seconds
+      const presenceInterval = setInterval(updateMyPresence, 15000);
       // Poll for mentions every 5 seconds
       const mentionsInterval = setInterval(fetchMentions, 5000);
+      // Poll for messages in current channel every 3 seconds
+      const messagesInterval = setInterval(() => {
+        if (selectedChannel) fetchMessages();
+      }, 3000);
+      // Poll for DMs every 10 seconds
+      const dmInterval = setInterval(fetchDmConversations, 10000);
       
       return () => {
         clearInterval(statusInterval);
         clearInterval(presenceInterval);
         clearInterval(mentionsInterval);
+        clearInterval(messagesInterval);
+        clearInterval(dmInterval);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, selectedChannel]);
 
   useEffect(() => {
     if (selectedChannel) {

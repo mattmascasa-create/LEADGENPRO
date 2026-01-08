@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import PhoneDialer from './PhoneDialer';
+import NotificationCenter from './NotificationCenter';
 import { 
   LayoutDashboard, 
   GitBranch, 
@@ -26,7 +27,8 @@ import {
   Shield,
   Link2,
   Menu,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 // Admin emails that always have admin access

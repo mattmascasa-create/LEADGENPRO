@@ -29,6 +29,7 @@ import ContentHubPage from '@/pages/ContentHubPage';
 import AIEmailPage from '@/pages/AIEmailPage';
 import AdvancedReportingPage from '@/pages/AdvancedReportingPage';
 import SettingsPage from '@/pages/SettingsPage';
+import CRMIntegrationsPage from '@/pages/CRMIntegrationsPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';

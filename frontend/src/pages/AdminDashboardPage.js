@@ -270,37 +270,38 @@ const AdminDashboardPage = () => {
                       </span>
                     </td>
                     <td className="px-3 lg:px-6 py-3 lg:py-4 text-center text-foreground text-sm lg:text-base">{emp.calls_total}</td>
-                  <td className="px-6 py-4 text-center text-foreground">{emp.meetings_today}</td>
-                  <td className="px-6 py-4 text-center text-foreground">{emp.leads_assigned}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                      emp.conversion_rate >= 20 ? 'bg-green-100 text-green-700' : 
-                      emp.conversion_rate >= 10 ? 'bg-orange-100 text-orange-700' : 
-                      'bg-slate-100 text-slate-700'
-                    }`}>
-                      {emp.conversion_rate}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setShowGoalsModal(emp)}
-                      className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
-                    >
-                      Set Goals
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <td className="px-3 lg:px-6 py-3 lg:py-4 text-center text-foreground text-sm lg:text-base">{emp.meetings_today}</td>
+                    <td className="px-3 lg:px-6 py-3 lg:py-4 text-center text-foreground text-sm lg:text-base">{emp.leads_assigned}</td>
+                    <td className="px-3 lg:px-6 py-3 lg:py-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs lg:text-sm font-medium ${
+                        emp.conversion_rate >= 20 ? 'bg-green-100 text-green-700' : 
+                        emp.conversion_rate >= 10 ? 'bg-orange-100 text-orange-700' : 
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {emp.conversion_rate}%
+                      </span>
+                    </td>
+                    <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
+                      <button
+                        onClick={() => setShowGoalsModal(emp)}
+                        className="px-2 lg:px-3 py-1 lg:py-1.5 bg-primary/10 text-primary rounded-lg text-xs lg:text-sm font-medium hover:bg-primary/20 transition-colors"
+                      >
+                        Goals
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {employeePerformance.length === 0 && (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 text-secondary mx-auto mb-4" />
-              <p className="text-secondary">No employees found</p>
+            <div className="text-center py-8 lg:py-12">
+              <Users className="w-10 h-10 lg:w-12 lg:h-12 text-secondary mx-auto mb-4" />
+              <p className="text-secondary text-sm lg:text-base">No employees found</p>
               <button
                 onClick={() => navigate('/admin/users')}
-                className="mt-4 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90"
+                className="mt-4 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 text-sm lg:text-base"
               >
                 Add Your First Employee
               </button>

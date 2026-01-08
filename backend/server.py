@@ -652,13 +652,17 @@ async def register(user_data: UserCreate):
 async def login(credentials: UserLogin):
     # Case-insensitive email lookup
     email_lower = credentials.email.lower()
+    logging.info(f"Login attempt for email: {email_lower}")
     user_doc = await db.users.find_one(
-        {"email": {"$regex": f"^{email_lower}$", "$options": "i"}}
+        {"email": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}}
     )
     if not user_doc:
+        logging.warning(f"User not found: {email_lower}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    logging.info(f"User found: {user_doc.get('email')}, has password: {'password' in user_doc}")
     if not verify_password(credentials.password, user_doc['password']):
+        logging.warning(f"Password verification failed for: {email_lower}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     user = User(**{k: v for k, v in user_doc.items() if k != 'password'})
@@ -668,6 +672,7 @@ async def login(credentials: UserLogin):
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     
+    logging.info(f"Login successful for: {email_lower}")
     return Token(access_token=access_token, token_type="bearer", user=user)
 
 @api_router.get("/auth/me", response_model=User)

@@ -521,9 +521,18 @@ const TeamChatEnhanced = () => {
         const isMentioned = teamMembers.some(m => 
           m.full_name.toLowerCase() === name.toLowerCase()
         );
+        const isMentionedMe = user?.full_name?.toLowerCase() === name.toLowerCase();
+        
         if (isMentioned) {
           return (
-            <span key={i} className="bg-blue-100 text-blue-800 px-1 rounded font-medium cursor-pointer hover:bg-blue-200">
+            <span 
+              key={i} 
+              className={`px-1 rounded font-medium cursor-pointer ${
+                isMentionedMe 
+                  ? 'bg-yellow-200 text-yellow-800 animate-pulse' 
+                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+              }`}
+            >
               {part}
             </span>
           );

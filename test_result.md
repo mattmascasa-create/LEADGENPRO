@@ -859,14 +859,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Smart Error Handling - Error Reporting API"
-    - "Smart Error Handling - Support Bot AI Diagnosis"
-    - "Smart Error Handling - System Health API"
-    - "Smart Error Handling - Admin Errors List"
-    - "Smart Error Handling - Notifications API"
-    - "Smart Error Handling - CSV Upload Fix"
-    - "Smart Error Handling - Auto-Fix Suggestions"
+    - "Calendly-like Scheduling - Meeting Types CRUD"
+    - "Calendly-like Scheduling - Availability Management"
+    - "Calendly-like Scheduling - Public Booking Flow"
   stuck_tasks:
+    - "Calendly-like Scheduling - Public Booking Flow"
     - "Onboarding Wizard"
     - "Pipeline/Kanban Board with Drag-and-Drop"
     - "Dashboard Page"

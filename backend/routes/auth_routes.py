@@ -4,20 +4,40 @@ Handles user registration, login, profile, and Google OAuth
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends, Response
-from pydantic import BaseModel, EmailStr
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime, timezone, timedelta
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+from motor.motor_asyncio import AsyncIOMotorClient
 import uuid
 import httpx
 import logging
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-from ..core import (
-    db, get_current_user, User, get_password_hash, verify_password,
-    create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, ADMIN_EMAILS, log_activity
-)
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
+
+# Database connection
+mongo_url = os.environ.get('MONGO_URL')
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ.get('DB_NAME', 'leadgenpro')]
+
+# Security
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
+ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
+
+# Admin emails
+ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com']
 
 # ==================== Request Models ====================
 

@@ -341,10 +341,11 @@ async def get_ai_diagnosis(error_doc: dict) -> dict:
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"error-diagnosis-{error_doc.get('id', 'unknown')}"
+            session_id=f"error-diagnosis-{error_doc.get('id', 'unknown')}",
+            system_message="You are an expert system administrator and developer. Analyze errors and provide actionable solutions."
         ).with_model("openai", "gpt-4o-mini")
         
-        prompt = f"""You are an expert system administrator and developer. Analyze this error and provide:
+        prompt = f"""Analyze this error and provide:
 1. A clear diagnosis of what went wrong
 2. Step-by-step instructions to fix it
 3. How to prevent it in the future
@@ -385,13 +386,13 @@ Provide your response in JSON format:
         except json.JSONDecodeError:
             return {
                 "diagnosis": response.text,
-                "fix_steps": [],
+                "fix_steps": ["Check the error details", "Contact system administrator"],
                 "can_auto_fix": False
             }
             
     except Exception as e:
         logging.error(f"AI diagnosis failed: {e}")
-        return {"diagnosis": f"AI diagnosis failed: {str(e)}", "suggestions": []}
+        return {"diagnosis": f"AI diagnosis failed: {str(e)}", "fix_steps": ["Contact system administrator"], "suggestions": []}
 
 # Create the main app
 app = FastAPI(title="LeadGen Pro API")

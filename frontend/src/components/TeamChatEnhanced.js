@@ -763,6 +763,22 @@ const TeamChatEnhanced = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => setShowMentionsPanel(!showMentionsPanel)}
+                    className={`p-2 rounded-lg transition-colors relative ${showMentionsPanel ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-secondary'}`}
+                    title="Mentions"
+                  >
+                    {unreadMentions > 0 ? (
+                      <BellDot className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <AtSign className="w-5 h-5" />
+                    )}
+                    {unreadMentions > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {unreadMentions > 9 ? '9+' : unreadMentions}
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setShowSearch(!showSearch)}
                     className={`p-2 rounded-lg transition-colors ${showSearch ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-secondary'}`}
                     title="Search messages"

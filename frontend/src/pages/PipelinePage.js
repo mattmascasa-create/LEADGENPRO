@@ -44,17 +44,17 @@ const DraggableLeadCard = ({ lead }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white p-4 rounded-lg border border-border hover:border-primary transition-all duration-200 cursor-grab active:cursor-grabbing shadow-sm"
+      className="bg-white p-3 lg:p-4 rounded-lg border border-border hover:border-primary transition-all duration-200 cursor-grab active:cursor-grabbing shadow-sm"
     >
-      <h4 className="font-semibold text-foreground mb-1">
+      <h4 className="font-semibold text-foreground mb-1 text-sm lg:text-base truncate">
         {lead.first_name} {lead.last_name}
       </h4>
-      <p className="text-sm text-secondary mb-2">{lead.company}</p>
+      <p className="text-xs lg:text-sm text-secondary mb-2 truncate">{lead.company}</p>
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-primary">
           Score: {lead.score}
         </span>
-        <span className="text-xs text-secondary truncate max-w-[120px]">{lead.email}</span>
+        <span className="text-xs text-secondary truncate max-w-[80px] lg:max-w-[120px]">{lead.email}</span>
       </div>
     </div>
   );
@@ -87,23 +87,23 @@ const StageColumn = ({ stage, children }) => {
   });
 
   return (
-    <div ref={setNodeRef} className="flex-shrink-0 w-80">
-      <div className={`${stage.color} rounded-lg p-4 mb-4`}>
+    <div ref={setNodeRef} className="flex-shrink-0 w-64 lg:w-80">
+      <div className={`${stage.color} rounded-lg p-3 lg:p-4 mb-3 lg:mb-4`}>
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">{stage.name}</h3>
-          <span className="text-sm font-medium text-secondary">
+          <h3 className="font-semibold text-foreground text-sm lg:text-base">{stage.name}</h3>
+          <span className="text-xs lg:text-sm font-medium text-secondary">
             {React.Children.count(children)}
           </span>
         </div>
       </div>
       <div
-        className={`space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
+        className={`space-y-2 lg:space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
           isOver ? 'bg-primary/10 border-2 border-dashed border-primary' : ''
         }`}
       >
         {children}
         {React.Children.count(children) === 0 && (
-          <p className="text-sm text-secondary text-center py-8">
+          <p className="text-xs lg:text-sm text-secondary text-center py-8">
             Drop leads here
           </p>
         )}
@@ -229,9 +229,9 @@ const PipelinePage = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Sales Pipeline</h1>
-          <p className="text-secondary">Drag and drop leads to move them through stages</p>
+        <div className="mb-6 lg:mb-8">
+          <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">Sales Pipeline</h1>
+          <p className="text-sm lg:text-base text-secondary">Drag and drop leads to move them through stages</p>
         </div>
 
         <DndContext
@@ -241,7 +241,7 @@ const PipelinePage = () => {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-3 lg:gap-4 overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0">
             {stages.map((stage) => (
               <StageColumn key={stage.id} stage={stage}>
                 {getLeadsByStage(stage.id).map((lead) => (

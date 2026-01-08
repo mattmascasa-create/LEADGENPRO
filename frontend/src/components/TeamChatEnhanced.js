@@ -725,7 +725,7 @@ const TeamChatEnhanced = () => {
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    {channels.map((channel) => (
+                    {channels.filter(c => c.type !== 'dm').map((channel) => (
                       <button
                         key={channel.id}
                         onClick={() => setSelectedChannel(channel)}
@@ -744,6 +744,45 @@ const TeamChatEnhanced = () => {
                         )}
                       </button>
                     ))}
+                    
+                    {/* Direct Messages Section */}
+                    <div className="px-3 py-2 mt-4 text-xs text-slate-500 uppercase font-semibold flex items-center justify-between">
+                      Direct Messages
+                    </div>
+                    {dmConversations.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-slate-500">
+                        Click on a team member to start a DM
+                      </p>
+                    ) : (
+                      dmConversations.map((dm) => {
+                        const otherUser = dm.other_user;
+                        const statusInfo = getUserStatusIndicator(otherUser?.id);
+                        return (
+                          <button
+                            key={dm.channel.id}
+                            onClick={() => setSelectedChannel(dm.channel)}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded text-left transition-colors ${
+                              selectedChannel?.id === dm.channel.id
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-300 hover:bg-slate-800'
+                            }`}
+                          >
+                            <div className="relative">
+                              <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                {otherUser?.full_name?.charAt(0) || '?'}
+                              </div>
+                              <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${statusInfo.color} border border-slate-900 rounded-full`} />
+                            </div>
+                            <span className="text-sm font-medium truncate flex-1">{otherUser?.full_name || 'Unknown'}</span>
+                            {dm.unread_count > 0 && (
+                              <span className="bg-red-500 text-white text-xs px-1.5 rounded-full">
+                                {dm.unread_count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 )}
 

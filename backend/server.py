@@ -2036,7 +2036,7 @@ async def list_dm_conversations(current_user: User = Depends(get_current_user)):
             })
     
     # Sort by last message time
-    result.sort(key=lambda x: x.get("last_message", {}).get("created_at", ""), reverse=True)
+    result.sort(key=lambda x: (x.get("last_message") or {}).get("created_at", ""), reverse=True)
     return result
 
 @api_router.post("/chat/channels", response_model=Channel)

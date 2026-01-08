@@ -2237,7 +2237,11 @@ async def get_availability(current_user: User = Depends(get_current_user)):
             })
         for rule in default_rules:
             await db.availability_rules.insert_one(rule)
-        rules = default_rules
+        # Re-fetch without _id
+        rules = await db.availability_rules.find(
+            {"user_id": current_user.id}, 
+            {"_id": 0}
+        ).to_list(100)
     
     return rules
 

@@ -4152,6 +4152,97 @@ async def public_health():
     """Health check endpoint - no auth required"""
     return {"status": "healthy", "service": "LeadGen Pro API", "version": "2.0"}
 
+# ==================== Test Email Endpoint ====================
+
+class TestEmailRequest(BaseModel):
+    to_email: str
+    
+@api_router.post("/test-email")
+async def send_test_email(request: TestEmailRequest, current_user: User = Depends(get_current_user)):
+    """
+    Send a test email to verify Resend configuration.
+    Only admins can use this endpoint.
+    """
+    # Check if user is admin
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can send test emails")
+    
+    if not RESEND_API_KEY:
+        return {
+            "success": False,
+            "error": "RESEND_API_KEY not configured",
+            "sender_email": SENDER_EMAIL
+        }
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">LeadGen Pro - Test Email</h1>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 16px; margin-bottom: 20px;">🎉 <strong>Congratulations!</strong></p>
+            
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Your Resend email integration is working correctly!
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <h2 style="color: #10b981; margin-top: 0; font-size: 18px;">Email Configuration</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b; width: 120px;">Sender:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{SENDER_EMAIL}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Timestamp:</td>
+                        <td style="padding: 8px 0;">{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748b;">Sent by:</td>
+                        <td style="padding: 8px 0;">{current_user.full_name} ({current_user.email})</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
+                This is a test email from LeadGen Pro to verify your email configuration.
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [request.to_email],
+        "subject": "LeadGen Pro - Test Email ✅",
+        "html": html_content
+    }
+    
+    try:
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logging.info(f"Test email sent to {request.to_email}, email_id: {email.get('id')}")
+        return {
+            "success": True,
+            "message": f"Test email sent successfully to {request.to_email}",
+            "email_id": email.get('id'),
+            "sender_email": SENDER_EMAIL
+        }
+    except Exception as e:
+        logging.error(f"Failed to send test email: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "sender_email": SENDER_EMAIL
+        }
+
 @public_api.get("/leads")
 async def public_get_leads(
     limit: int = 50,

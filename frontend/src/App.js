@@ -111,54 +111,229 @@ const SmartDashboard = () => {
   return <EmployeeDashboardPage />;
 };
 
+// Router wrapper that detects Google OAuth session_id in URL fragment
+// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+const AppRouter = () => {
+  const location = useLocation();
+  
+  // Check URL fragment (not query params) for session_id - SYNCHRONOUSLY during render
+  // This prevents race conditions by processing new session_id FIRST before checking existing session_token
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
+  
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingWizard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <SmartDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/employee-dashboard"
+        element={
+          <ProtectedRoute>
+            <EmployeeDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pipeline"
+        element={
+          <ProtectedRoute>
+            <PipelinePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leads"
+        element={
+          <ProtectedRoute>
+            <LeadsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leads/:id"
+        element={
+          <ProtectedRoute>
+            <LeadDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute>
+            <AppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sequences"
+        element={
+          <ProtectedRoute>
+            <SequencesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/templates"
+        element={
+          <ProtectedRoute>
+            <TemplatesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/distribute"
+        element={
+          <AdminRoute>
+            <AdminDistributePage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <AdminRoute>
+            <AdminUsersPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/call-lists"
+        element={
+          <ProtectedRoute>
+            <CallListsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <CalendarPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/call-analytics"
+        element={
+          <ProtectedRoute>
+            <CallAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/book/:userId"
+        element={<BookingPage />}
+      />
+      <Route
+        path="/content-hub"
+        element={
+          <ProtectedRoute>
+            <ContentHubPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai-email"
+        element={
+          <ProtectedRoute>
+            <AIEmailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <AdvancedReportingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <TasksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/meetings"
+        element={
+          <ProtectedRoute>
+            <MeetingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
 function AppContent() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/onboarding"
-            element={
-              <ProtectedRoute>
-                <OnboardingWizard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <SmartDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin-dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboardPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/employee-dashboard"
-            element={
-              <ProtectedRoute>
-                <EmployeeDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/pipeline"
-            element={
-              <ProtectedRoute>
-                <PipelinePage />
-              </ProtectedRoute>
-            }
-          />
+        <AppRouter />
+        <AIAssistant />
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </BrowserRouter>
+    </div>
+  );
+}
           <Route
             path="/leads"
             element={

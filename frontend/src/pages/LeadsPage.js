@@ -136,8 +136,12 @@ const LeadsPage = () => {
     formData.append('file', file);
 
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.post(`${API_URL}/api/leads/bulk-import`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
       });
       toast.success(`Imported ${response.data.success} leads successfully!`);
       if (response.data.failed > 0) {
@@ -146,6 +150,7 @@ const LeadsPage = () => {
       setShowImport(false);
       fetchLeads();
     } catch (error) {
+      console.error('Import error:', error);
       toast.error('Import failed: ' + (error.response?.data?.detail || 'Unknown error'));
     } finally {
       setImporting(false);

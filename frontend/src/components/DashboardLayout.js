@@ -8,13 +8,17 @@ const DashboardLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="ml-64">
-        <main className="p-8">
+      {/* Main content - responsive margin */}
+      <div className="lg:ml-64 transition-all duration-300">
+        <main className="p-4 pt-16 lg:pt-8 lg:p-8">
           {children}
         </main>
       </div>
-      <AICoach />
-      <AICopilot />
+      {/* Hide floating widgets on mobile for cleaner experience */}
+      <div className="hidden lg:block">
+        <AICoach />
+        <AICopilot />
+      </div>
       <TeamChat />
     </div>
   );

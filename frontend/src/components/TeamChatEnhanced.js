@@ -68,6 +68,7 @@ const TeamChatEnhanced = () => {
   const [mentions, setMentions] = useState([]);
   const [unreadMentions, setUnreadMentions] = useState(0);
   const [showMentionsPanel, setShowMentionsPanel] = useState(false);
+  const [dmConversations, setDmConversations] = useState([]);
   const lastCheckedMentions = useRef(null);
   
   const [meetingForm, setMeetingForm] = useState({

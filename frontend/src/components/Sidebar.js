@@ -156,14 +156,19 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Role Badge */}
-        <div className="px-3 lg:px-4 pt-3 lg:pt-4">
-          <div className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs lg:text-sm font-medium ${
+        {/* Role Badge & Notifications */}
+        <div className="px-3 lg:px-4 pt-3 lg:pt-4 flex items-center gap-2">
+          <div className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs lg:text-sm font-medium ${
             isAdmin ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
           }`}>
             {isAdmin ? <Shield className="w-4 h-4" /> : <Users className="w-4 h-4" />}
             {isAdmin ? 'Admin' : 'Employee'}
           </div>
+          {isAdmin && (
+            <div className="bg-slate-800 rounded-lg">
+              <NotificationCenter />
+            </div>
+          )}
         </div>
 
         {/* Quick Call Button */}

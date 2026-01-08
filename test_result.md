@@ -562,6 +562,42 @@ backend:
         agent: "testing"
         comment: "✅ COMPREHENSIVE GOOGLE CALENDAR & MEET INTEGRATION FRONTEND TESTING COMPLETED - All 5 test scenarios passed with 100% success rate using admin@test.com/admin123. RESULTS: ✅ Login and Navigate to Calendar: Successfully logged in and accessed /calendar page with calendar component visible ✅ Create Event with Google Meet: 'New Event' button opens modal, 'Auto-generate Google Meet link' checkbox with Google Meet icon works correctly, Meeting Link input disabled when checkbox checked, event creation successful ✅ Event Detail Modal Meet Features: Events display 'Join Meeting' link with Google Meet icon (https://meet.google.com/xxx-xxxx-xxx format), Copy button functional, 'Add Google Meet Link' button available for events without Meet links ✅ Export to Google Calendar: 'Export to Calendar' section present, 'Add to Google Calendar' button with Google Calendar icon functional, ICS download button with download icon working ✅ Google Meet Checkbox in Form: Checkbox exists with correct label 'Auto-generate Google Meet link', Google Meet icon present, Meeting Link input properly disabled/enabled based on checkbox state. All Google Calendar and Meet integration frontend features are production-ready and working perfectly."
 
+  - task: "Calendly-like Scheduling - Meeting Types CRUD"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Meeting Types CRUD fully tested: GET /api/meeting-types returns 4 default types (Quick Call, Discovery Call, Product Demo, Strategy Session), POST /api/meeting-types creates new meeting type successfully, PUT /api/meeting-types/{id} updates meeting type (verified via re-fetch), DELETE /api/meeting-types/{id} deactivates meeting type successfully. All CRUD operations working correctly."
+
+  - task: "Calendly-like Scheduling - Availability Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Availability Management fully tested: GET /api/availability returns default Mon-Fri 9am-5pm availability rules (5 rules), PUT /api/availability successfully updates availability to custom schedule (8am-6pm Mon-Fri, half-day Saturday, unavailable Sunday). Availability CRUD operations working correctly."
+
+  - task: "Calendly-like Scheduling - Public Booking Flow"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUES FOUND: 1) GET /api/booking/{user_id}/meeting-types works correctly (no auth required), 2) GET /api/booking/{user_id}/slots/{meeting_type_id} returns 500 Internal Server Error due to timezone comparison bug: 'TypeError: can't compare offset-naive and offset-aware datetimes' at line 2346, 3) POST /api/booking/{user_id}/book returns 400 'Missing required fields' - endpoint expects BookingRequest model format but test used different format. Two duplicate booking endpoints exist (lines 2361 and 3770) causing confusion. Backend has timezone handling bugs that prevent slot generation."
+
 frontend:
   - task: "Landing Page"
     implemented: true

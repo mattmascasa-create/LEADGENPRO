@@ -184,38 +184,38 @@ const LeadsPage = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Leads</h1>
-            <p className="text-secondary">Import, scrape, and manage all your leads</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">Leads</h1>
+            <p className="text-sm lg:text-base text-secondary">Import, scrape, and manage all your leads</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 lg:gap-3">
             <button
               onClick={() => exportLeads()}
-              className="px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+              className="px-3 lg:px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-slate-50 transition-all duration-200 flex items-center gap-2 text-sm"
             >
-              <Download className="w-5 h-5" />
-              Export All
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
             </button>
             <button
               onClick={() => setShowImport(true)}
-              className="px-4 py-2 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/10 transition-all duration-200 flex items-center gap-2"
+              className="px-3 lg:px-4 py-2 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/10 transition-all duration-200 flex items-center gap-2 text-sm"
             >
-              <Upload className="w-5 h-5" />
-              Import CSV
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Import</span>
             </button>
             <button
               onClick={() => setShowScraper(true)}
-              className="px-4 py-2 border-2 border-accent text-accent rounded-lg font-semibold hover:bg-accent/10 transition-all duration-200 flex items-center gap-2"
+              className="px-3 lg:px-4 py-2 border-2 border-accent text-accent rounded-lg font-semibold hover:bg-accent/10 transition-all duration-200 flex items-center gap-2 text-sm"
             >
-              <Globe className="w-5 h-5" />
-              Scrape Website
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Scrape</span>
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center gap-2"
+              className="px-4 lg:px-6 py-2 lg:py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center gap-2 text-sm"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Add Lead
             </button>
           </div>

@@ -229,10 +229,10 @@ const CalendarPage = () => {
     <DashboardLayout>
       <div>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Team Calendar</h1>
-            <p className="text-secondary">Manage team schedules and events</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">Team Calendar</h1>
+            <p className="text-sm lg:text-base text-secondary">Manage team schedules and events</p>
           </div>
           <button
             onClick={() => {
@@ -243,21 +243,21 @@ const CalendarPage = () => {
               });
               setShowEventModal(true);
             }}
-            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2 text-sm lg:text-base w-full sm:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             New Event
           </button>
         </div>
 
         {/* Calendar */}
-        <div className="bg-white rounded-xl border border-border p-4" style={{ height: 700 }}>
+        <div className="bg-white rounded-xl border border-border p-2 lg:p-4 overflow-hidden" style={{ minHeight: 500 }}>
           <Calendar
             localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: '100%' }}
+            style={{ height: 500 }}
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
             selectable
@@ -270,17 +270,17 @@ const CalendarPage = () => {
             popup
             components={{
               toolbar: (props) => (
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-border">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => props.onNavigate('PREV')}
                       className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5" />
                     </button>
                     <button
                       onClick={() => props.onNavigate('TODAY')}
-                      className="px-3 py-1 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors"
+                      className="px-2 lg:px-3 py-1 text-xs lg:text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors"
                     >
                       Today
                     </button>
@@ -288,18 +288,18 @@ const CalendarPage = () => {
                       onClick={() => props.onNavigate('NEXT')}
                       className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5" />
                     </button>
-                    <span className="text-lg font-semibold text-foreground ml-4">
+                    <span className="text-sm lg:text-lg font-semibold text-foreground ml-2 lg:ml-4">
                       {props.label}
                     </span>
                   </div>
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
                     {['month', 'week', 'day', 'agenda'].map((v) => (
                       <button
                         key={v}
                         onClick={() => props.onView(v)}
-                        className={`px-3 py-1 text-sm font-medium rounded-md capitalize transition-colors ${
+                        className={`px-2 lg:px-3 py-1 text-xs lg:text-sm font-medium rounded-md capitalize transition-colors whitespace-nowrap ${
                           props.view === v ? 'bg-white shadow-sm' : 'hover:bg-white/50'
                         }`}
                       >

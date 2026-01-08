@@ -114,40 +114,38 @@ const TasksPage = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Task Management</h1>
-            <p className="text-secondary">Organize and track all your sales activities</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">Task Management</h1>
+            <p className="text-sm lg:text-base text-secondary">Organize and track all your sales activities</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center gap-2"
+            className="px-4 lg:px-6 py-2 lg:py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center gap-2 text-sm lg:text-base w-full sm:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             New Task
           </button>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search tasks..."
-                className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+        <div className="flex flex-col gap-3 lg:gap-4 mb-6 lg:mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-secondary" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search tasks..."
+              className="w-full pl-9 lg:pl-10 pr-4 py-2 lg:py-3 text-sm lg:text-base border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2">
             {['all', 'today', 'overdue', 'completed'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg font-medium capitalize transition-all ${
+                className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-medium capitalize transition-all text-sm whitespace-nowrap ${
                   filter === f ? 'bg-primary text-white' : 'border border-border hover:bg-slate-50'
                 }`}
               >
@@ -158,22 +156,22 @@ const TasksPage = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg border border-border">
-            <div className="text-2xl font-bold text-primary">{tasksByStatus.todo.length}</div>
-            <div className="text-sm text-secondary">To Do</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-border">
+            <div className="text-xl lg:text-2xl font-bold text-primary">{tasksByStatus.todo.length}</div>
+            <div className="text-xs lg:text-sm text-secondary">To Do</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-border">
-            <div className="text-2xl font-bold text-red-600">{tasksByStatus.overdue.length}</div>
-            <div className="text-sm text-secondary">Overdue</div>
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-border">
+            <div className="text-xl lg:text-2xl font-bold text-red-600">{tasksByStatus.overdue.length}</div>
+            <div className="text-xs lg:text-sm text-secondary">Overdue</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-border">
-            <div className="text-2xl font-bold text-green-600">{tasksByStatus.completed.length}</div>
-            <div className="text-sm text-secondary">Completed</div>
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-border">
+            <div className="text-xl lg:text-2xl font-bold text-green-600">{tasksByStatus.completed.length}</div>
+            <div className="text-xs lg:text-sm text-secondary">Completed</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-border">
-            <div className="text-2xl font-bold text-foreground">{tasks.length}</div>
-            <div className="text-sm text-secondary">Total Tasks</div>
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-border">
+            <div className="text-xl lg:text-2xl font-bold text-foreground">{tasks.length}</div>
+            <div className="text-xs lg:text-sm text-secondary">Total Tasks</div>
           </div>
         </div>
 

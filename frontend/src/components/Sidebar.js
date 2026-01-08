@@ -73,6 +73,7 @@ const Sidebar = () => {
   const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Shield },
     { name: 'Calendar', href: '/calendar', icon: CalendarDays },
+    { name: 'Scheduling', href: '/scheduling', icon: CalendarClock },
     { name: 'Call Lists', href: '/call-lists', icon: Phone },
     { name: 'Call Analytics', href: '/call-analytics', icon: Mic },
     { name: 'AI Email', href: '/ai-email', icon: Wand2 },

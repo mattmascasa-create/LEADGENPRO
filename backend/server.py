@@ -341,8 +341,8 @@ async def get_ai_diagnosis(error_doc: dict) -> dict:
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            model="gpt-4o-mini"
-        )
+            session_id=f"error-diagnosis-{error_doc.get('id', 'unknown')}"
+        ).with_model("openai", "gpt-4o-mini")
         
         prompt = f"""You are an expert system administrator and developer. Analyze this error and provide:
 1. A clear diagnosis of what went wrong

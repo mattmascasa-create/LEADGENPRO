@@ -77,6 +77,8 @@ const CalendarPage = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('month');
+  const [addMeetLink, setAddMeetLink] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -138,13 +140,23 @@ const CalendarPage = () => {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/api/calendar/events`, {
+      // Use the endpoint with Meet link if checkbox is checked
+      const endpoint = addMeetLink ? '/api/calendar/events/with-meet' : '/api/calendar/events';
+      
+      const response = await axios.post(`${API_URL}${endpoint}`, {
         ...formData,
         start: new Date(formData.start).toISOString(),
         end: new Date(formData.end).toISOString()
       }, getAuthHeaders());
-      toast.success('Event created!');
+      
+      if (addMeetLink && response.data.meeting_link) {
+        toast.success(`Event created with Google Meet link!`);
+      } else {
+        toast.success('Event created!');
+      }
+      
       setShowEventModal(false);
+      setAddMeetLink(false);
       setFormData({
         title: '',
         description: '',
@@ -170,6 +182,42 @@ const CalendarPage = () => {
     } catch (error) {
       toast.error('Failed to delete event');
     }
+  };
+
+  const handleAddMeetToEvent = async (eventId) => {
+    try {
+      const response = await axios.post(`${API_URL}/api/calendar/events/${eventId}/add-meet`, {}, getAuthHeaders());
+      toast.success('Google Meet link added!');
+      setShowEventDetail({...showEventDetail, meeting_link: response.data.meeting_link});
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to add Meet link');
+    }
+  };
+
+  const handleExportToGoogleCalendar = async (eventId) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/calendar/export/google-url/${eventId}`, getAuthHeaders());
+      window.open(response.data.google_calendar_url, '_blank');
+    } catch (error) {
+      toast.error('Failed to export to Google Calendar');
+    }
+  };
+
+  const handleDownloadICS = async (eventId) => {
+    try {
+      window.open(`${API_URL}/api/calendar/export/ics/${eventId}`, '_blank');
+      toast.success('ICS file downloading...');
+    } catch (error) {
+      toast.error('Failed to download ICS file');
+    }
+  };
+
+  const copyMeetLink = (link) => {
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    toast.success('Meeting link copied!');
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const eventTypes = [

@@ -334,24 +334,27 @@ const AppRouter = () => {
 
 function AppContent() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <AppRouter />
-        <AIAssistant />
-        <ToastContainer 
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-      </BrowserRouter>
-    </div>
+    <ErrorBoundary>
+      <div className="App">
+        <BrowserRouter>
+          <AppRouter />
+          <AIAssistant />
+          <SupportBot />
+          <ToastContainer 
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </BrowserRouter>
+      </div>
+    </ErrorBoundary>
   );
 }
 

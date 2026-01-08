@@ -23,7 +23,9 @@ import {
   HardDrive,
   Wand2,
   PieChart,
-  Shield
+  Shield,
+  Link2,
+  Share2
 } from 'lucide-react';
 
 // Admin emails that always have admin access

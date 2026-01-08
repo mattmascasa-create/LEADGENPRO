@@ -38,8 +38,6 @@ const GoogleCalendarIcon = () => (
   </svg>
 );
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
-
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({
   format,

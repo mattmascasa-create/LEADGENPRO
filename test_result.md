@@ -823,7 +823,13 @@ metadata:
 
 test_plan:
   current_focus:
-    []
+    - "Smart Error Handling - Error Reporting API"
+    - "Smart Error Handling - Support Bot AI Diagnosis"
+    - "Smart Error Handling - System Health API"
+    - "Smart Error Handling - Admin Errors List"
+    - "Smart Error Handling - Notifications API"
+    - "Smart Error Handling - CSV Upload Fix"
+    - "Smart Error Handling - Auto-Fix Suggestions"
   stuck_tasks:
     - "Onboarding Wizard"
     - "Pipeline/Kanban Board with Drag-and-Drop"
@@ -854,6 +860,13 @@ test_plan:
     - "Google Calendar and Meet Integration"
     - "Google Calendar and Meet Integration Frontend"
     - "CRM Integrations Page"
+    - "Smart Error Handling - Error Reporting API"
+    - "Smart Error Handling - Support Bot AI Diagnosis"
+    - "Smart Error Handling - System Health API"
+    - "Smart Error Handling - Admin Errors List"
+    - "Smart Error Handling - Notifications API"
+    - "Smart Error Handling - CSV Upload Fix"
+    - "Smart Error Handling - Auto-Fix Suggestions"
 
 agent_communication:
   - agent: "main"

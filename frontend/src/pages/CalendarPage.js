@@ -88,17 +88,12 @@ const CalendarPage = () => {
     meeting_link: ''
   });
 
-  useEffect(() => {
-    fetchEvents();
-    fetchTeamMembers();
-  }, []);
-
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/calendar/events`, getAuthHeaders());
       const formattedEvents = response.data.map(event => ({
@@ -110,16 +105,21 @@ const CalendarPage = () => {
     } catch (error) {
       console.error('Failed to load events:', error);
     }
-  };
+  }, []);
 
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/team-members`, getAuthHeaders());
       setTeamMembers(response.data);
     } catch (error) {
       console.error('Failed to load team members:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+    fetchTeamMembers();
+  }, [fetchEvents, fetchTeamMembers]);
 
   const handleSelectSlot = useCallback(({ start, end }) => {
     setSelectedSlot({ start, end });

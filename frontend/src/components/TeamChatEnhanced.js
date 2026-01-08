@@ -165,6 +165,78 @@ const TeamChatEnhanced = () => {
     }
   };
 
+  const fetchMentions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Filter only mention notifications
+      const mentionNotifs = response.data.notifications?.filter(n => n.type === 'mention') || [];
+      
+      // Check for new mentions since last check
+      if (lastCheckedMentions.current && mentionNotifs.length > 0) {
+        const newMentions = mentionNotifs.filter(m => 
+          new Date(m.created_at) > lastCheckedMentions.current && !m.read
+        );
+        
+        // Show toast for new mentions
+        newMentions.forEach(mention => {
+          toast.info(
+            <div className="flex items-center gap-2">
+              <AtSign className="w-4 h-4" />
+              <span>{mention.title}</span>
+            </div>,
+            {
+              onClick: () => {
+                setShowMentionsPanel(true);
+                markMentionAsRead(mention.id);
+              },
+              autoClose: 5000
+            }
+          );
+        });
+      }
+      
+      lastCheckedMentions.current = new Date();
+      setMentions(mentionNotifs);
+      setUnreadMentions(mentionNotifs.filter(m => !m.read).length);
+    } catch (error) {
+      console.error('Failed to load mentions');
+    }
+  };
+
+  const markMentionAsRead = async (notificationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/notifications/${notificationId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMentions();
+    } catch (error) {
+      console.error('Failed to mark mention as read');
+    }
+  };
+
+  const markAllMentionsAsRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const unreadMentionsList = mentions.filter(m => !m.read);
+      await Promise.all(
+        unreadMentionsList.map(m => 
+          axios.put(`${API_URL}/api/notifications/${m.id}/read`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        )
+      );
+      fetchMentions();
+      toast.success('All mentions marked as read');
+    } catch (error) {
+      toast.error('Failed to mark mentions as read');
+    }
+  };
+
   const updateMyPresence = async () => {
     try {
       const token = localStorage.getItem('token');

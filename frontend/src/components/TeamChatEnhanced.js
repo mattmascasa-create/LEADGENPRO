@@ -247,6 +247,39 @@ const TeamChatEnhanced = () => {
     }
   };
 
+  const fetchDmConversations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/chat/dm/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDmConversations(response.data);
+    } catch (error) {
+      console.error('Failed to load DM conversations');
+    }
+  };
+
+  const startDirectMessage = async (targetUserId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/chat/dm/${targetUserId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const dmChannel = response.data;
+      
+      // Switch to the DM channel
+      setSelectedChannel(dmChannel);
+      setActiveView('channels');
+      fetchMessages();
+      fetchDmConversations();
+      
+      toast.success('Direct message opened');
+    } catch (error) {
+      toast.error('Failed to start direct message');
+    }
+  };
+
   const updateMyPresence = async () => {
     try {
       const token = localStorage.getItem('token');

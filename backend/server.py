@@ -466,7 +466,7 @@ class Appointment(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
-    lead_id: str
+    lead_id: Optional[str] = None
     employee_id: str
     scheduled_at: datetime
     duration: int = 30
@@ -477,7 +477,7 @@ class Appointment(BaseModel):
 
 class AppointmentCreate(BaseModel):
     title: str
-    lead_id: str
+    lead_id: Optional[str] = None
     employee_id: str
     scheduled_at: datetime
     duration: int = 30

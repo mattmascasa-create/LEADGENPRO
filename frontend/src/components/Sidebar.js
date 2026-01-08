@@ -98,6 +98,7 @@ const Sidebar = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'My Leads', href: '/call-lists', icon: Phone },
     { name: 'Calendar', href: '/calendar', icon: CalendarDays },
+    { name: 'Scheduling', href: '/scheduling', icon: CalendarClock },
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
     { name: 'Meetings', href: '/meetings', icon: Calendar },
     { name: 'Call Analytics', href: '/call-analytics', icon: Mic },

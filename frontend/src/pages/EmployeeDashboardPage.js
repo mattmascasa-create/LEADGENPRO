@@ -73,11 +73,11 @@ const EmployeeDashboardPage = () => {
     <DashboardLayout>
       <div data-testid="employee-dashboard-page">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
+        <div className="mb-6 lg:mb-8">
+          <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">
             Welcome back, {user?.full_name?.split(' ')[0]}! 👋
           </h1>
-          <p className="text-secondary">Here&apos;s your daily overview and goals</p>
+          <p className="text-sm lg:text-base text-secondary">Here&apos;s your daily overview and goals</p>
         </div>
 
         {/* Admin Notes (if any) */}
@@ -85,72 +85,72 @@ const EmployeeDashboardPage = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8"
+            className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 lg:p-6 mb-6 lg:mb-8"
           >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="w-5 h-5 text-blue-600" />
+            <div className="flex items-start gap-3 lg:gap-4">
+              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-blue-900 mb-1">📝 Note from Admin</h3>
-                <p className="text-blue-800">{dashboard.admin_notes}</p>
+                <h3 className="font-semibold text-blue-900 mb-1 text-sm lg:text-base">📝 Note from Admin</h3>
+                <p className="text-blue-800 text-sm lg:text-base">{dashboard.admin_notes}</p>
               </div>
             </div>
           </motion.div>
         )}
 
         {/* Daily Goals Progress */}
-        <div className="bg-white rounded-xl border border-border p-6 mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-6 mb-6 lg:mb-8">
+          <h2 className="text-lg lg:text-xl font-semibold text-foreground mb-4 lg:mb-6 flex items-center gap-2">
+            <Target className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
             Today&apos;s Goals
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid gap-4 lg:gap-6">
             {/* Calls Progress */}
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
+            <div className="p-3 lg:p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2 lg:mb-3">
                 <div className="flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">Calls Made</span>
+                  <Phone className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
+                  <span className="font-medium text-sm lg:text-base">Calls Made</span>
                 </div>
-                <span className="text-lg font-bold">
+                <span className="text-base lg:text-lg font-bold">
                   {dashboard?.progress?.calls_made || 0} / {dashboard?.progress?.calls_target || 20}
                 </span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-3">
+              <div className="w-full bg-slate-200 rounded-full h-2 lg:h-3">
                 <div 
-                  className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(dashboard?.progress?.calls_made || 0, dashboard?.progress?.calls_target || 20)}`}
+                  className={`h-2 lg:h-3 rounded-full transition-all duration-500 ${getProgressColor(dashboard?.progress?.calls_made || 0, dashboard?.progress?.calls_target || 20)}`}
                   style={{ width: `${getProgressPercentage(dashboard?.progress?.calls_made || 0, dashboard?.progress?.calls_target || 20)}%` }}
                 />
               </div>
               {(dashboard?.progress?.calls_made || 0) >= (dashboard?.progress?.calls_target || 20) && (
-                <div className="flex items-center gap-1 mt-2 text-green-600 text-sm">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="flex items-center gap-1 mt-2 text-green-600 text-xs lg:text-sm">
+                  <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4" />
                   Goal achieved! 🎉
                 </div>
               )}
             </div>
 
             {/* Meetings Progress */}
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
+            <div className="p-3 lg:p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2 lg:mb-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <span className="font-medium">Meetings Scheduled</span>
+                  <Calendar className="w-4 h-4 lg:w-5 lg:h-5 text-purple-600" />
+                  <span className="font-medium text-sm lg:text-base">Meetings Scheduled</span>
                 </div>
-                <span className="text-lg font-bold">
+                <span className="text-base lg:text-lg font-bold">
                   {dashboard?.progress?.meetings_scheduled || 0} / {dashboard?.progress?.meetings_target || 3}
                 </span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-3">
+              <div className="w-full bg-slate-200 rounded-full h-2 lg:h-3">
                 <div 
-                  className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(dashboard?.progress?.meetings_scheduled || 0, dashboard?.progress?.meetings_target || 3)}`}
+                  className={`h-2 lg:h-3 rounded-full transition-all duration-500 ${getProgressColor(dashboard?.progress?.meetings_scheduled || 0, dashboard?.progress?.meetings_target || 3)}`}
                   style={{ width: `${getProgressPercentage(dashboard?.progress?.meetings_scheduled || 0, dashboard?.progress?.meetings_target || 3)}%` }}
                 />
               </div>
               {(dashboard?.progress?.meetings_scheduled || 0) >= (dashboard?.progress?.meetings_target || 3) && (
-                <div className="flex items-center gap-1 mt-2 text-green-600 text-sm">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="flex items-center gap-1 mt-2 text-green-600 text-xs lg:text-sm">
+                  <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4" />
                   Goal achieved! 🎉
                 </div>
               )}
@@ -159,9 +159,9 @@ const EmployeeDashboardPage = () => {
         </div>
 
         {/* Stats and Chart Row */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid gap-4 lg:gap-6 mb-6 lg:mb-8">
           {/* Personal Stats */}
-          <div className="lg:col-span-1 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
             {[
               { icon: Users, label: 'My Leads', value: dashboard?.my_leads_count || 0, color: 'text-blue-600', bg: 'bg-blue-100' },
               { icon: CheckCircle2, label: 'Pending Tasks', value: dashboard?.pending_tasks_count || 0, color: 'text-orange-600', bg: 'bg-orange-100' },
@@ -175,34 +175,35 @@ const EmployeeDashboardPage = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white p-4 rounded-xl border border-border"
+                  className="bg-white p-3 lg:p-4 rounded-xl border border-border"
                 >
-                  <div className={`${stat.bg} ${stat.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`${stat.bg} ${stat.color} w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center mb-2 lg:mb-3`}>
+                    <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
                   </div>
                   <p className="text-xs text-secondary mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-foreground">{stat.value}</p>
                 </motion.div>
               );
             })}
           </div>
 
           {/* Weekly Activity Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
+          <div className="bg-white rounded-xl border border-border p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-semibold text-foreground mb-4 lg:mb-6 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 text-primary" />
               Your Weekly Activity
             </h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={weeklyStats?.daily_calls || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
-                <XAxis dataKey="day" stroke="hsl(215 16% 47%)" />
-                <YAxis stroke="hsl(215 16% 47%)" />
+                <XAxis dataKey="day" stroke="hsl(215 16% 47%)" fontSize={11} />
+                <YAxis stroke="hsl(215 16% 47%)" fontSize={11} />
                 <Tooltip
                   contentStyle={{
                     background: '#ffffff',
                     border: '1px solid hsl(214 32% 91%)',
-                    borderRadius: '0.5rem'
+                    borderRadius: '0.5rem',
+                    fontSize: '12px'
                   }}
                 />
                 <Bar dataKey="calls" fill="hsl(226 71% 40%)" radius={[8, 8, 0, 0]} />
@@ -212,52 +213,50 @@ const EmployeeDashboardPage = () => {
         </div>
 
         {/* Leads and Tasks Row */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-2">
           {/* My Leads to Call */}
           <div className="bg-white rounded-xl border border-border overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <PhoneCall className="w-5 h-5 text-green-600" />
+            <div className="p-4 lg:p-6 border-b border-border flex items-center justify-between">
+              <h3 className="text-base lg:text-lg font-semibold text-foreground flex items-center gap-2">
+                <PhoneCall className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />
                 Leads to Call
               </h3>
               <button
                 onClick={() => navigate('/call-lists')}
-                className="text-sm text-primary hover:underline flex items-center gap-1"
+                className="text-xs lg:text-sm text-primary hover:underline flex items-center gap-1"
               >
                 View All
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
               </button>
             </div>
-            <div className="divide-y divide-border max-h-80 overflow-y-auto">
+            <div className="divide-y divide-border max-h-64 lg:max-h-80 overflow-y-auto">
               {myLeads.length > 0 ? myLeads.slice(0, 5).map((lead) => (
                 <div
                   key={lead.id}
-                  className="p-4 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between"
+                  className="p-3 lg:p-4 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between"
                   onClick={() => navigate(`/leads/${lead.id}`)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                       {lead.first_name?.charAt(0) || 'L'}
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{lead.first_name} {lead.last_name}</p>
-                      <p className="text-sm text-secondary">{lead.company}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm lg:text-base truncate">{lead.first_name} {lead.last_name}</p>
+                      <p className="text-xs lg:text-sm text-secondary truncate">{lead.company}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      lead.status === 'new' ? 'bg-blue-100 text-blue-700' :
-                      lead.status === 'contacted' ? 'bg-green-100 text-green-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {lead.status}
-                    </span>
-                  </div>
+                  <span className={`px-2 py-0.5 lg:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                    lead.status === 'new' ? 'bg-blue-100 text-blue-700' :
+                    lead.status === 'contacted' ? 'bg-green-100 text-green-700' :
+                    'bg-orange-100 text-orange-700'
+                  }`}>
+                    {lead.status}
+                  </span>
                 </div>
               )) : (
-                <div className="p-8 text-center text-secondary">
-                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No leads assigned yet</p>
+                <div className="p-6 lg:p-8 text-center text-secondary">
+                  <Users className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No leads assigned yet</p>
                 </div>
               )}
             </div>
@@ -265,31 +264,31 @@ const EmployeeDashboardPage = () => {
 
           {/* My Tasks */}
           <div className="bg-white rounded-xl border border-border overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-orange-600" />
+            <div className="p-4 lg:p-6 border-b border-border flex items-center justify-between">
+              <h3 className="text-base lg:text-lg font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 lg:w-5 lg:h-5 text-orange-600" />
                 Pending Tasks
               </h3>
               <button
                 onClick={() => navigate('/tasks')}
-                className="text-sm text-primary hover:underline flex items-center gap-1"
+                className="text-xs lg:text-sm text-primary hover:underline flex items-center gap-1"
               >
                 View All
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
               </button>
             </div>
-            <div className="divide-y divide-border max-h-80 overflow-y-auto">
+            <div className="divide-y divide-border max-h-64 lg:max-h-80 overflow-y-auto">
               {myTasks.length > 0 ? myTasks.slice(0, 5).map((task) => (
                 <div
                   key={task.id}
-                  className="p-4 hover:bg-slate-50 transition-colors"
+                  className="p-3 lg:p-4 hover:bg-slate-50 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">{task.title}</p>
-                      <p className="text-sm text-secondary mt-1">{task.description || 'No description'}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm lg:text-base truncate">{task.title}</p>
+                      <p className="text-xs lg:text-sm text-secondary mt-1 line-clamp-1">{task.description || 'No description'}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-2 py-0.5 lg:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                       task.priority === 'high' ? 'bg-red-100 text-red-700' :
                       task.priority === 'medium' ? 'bg-orange-100 text-orange-700' :
                       'bg-slate-100 text-slate-700'
@@ -298,16 +297,16 @@ const EmployeeDashboardPage = () => {
                     </span>
                   </div>
                   {task.due_date && (
-                    <div className="flex items-center gap-1 mt-2 text-sm text-secondary">
+                    <div className="flex items-center gap-1 mt-2 text-xs lg:text-sm text-secondary">
                       <Clock className="w-3 h-3" />
                       Due: {new Date(task.due_date).toLocaleDateString()}
                     </div>
                   )}
                 </div>
               )) : (
-                <div className="p-8 text-center text-secondary">
-                  <CheckCircle2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No pending tasks</p>
+                <div className="p-6 lg:p-8 text-center text-secondary">
+                  <CheckCircle2 className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No pending tasks</p>
                 </div>
               )}
             </div>

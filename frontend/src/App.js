@@ -26,6 +26,8 @@ import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminErrorsPage from '@/pages/AdminErrorsPage';
 import BookingPage from '@/pages/BookingPage';
+import BookingPageEnhanced from '@/pages/BookingPageEnhanced';
+import SchedulingSettingsPage from '@/pages/SchedulingSettingsPage';
 import ContentHubPage from '@/pages/ContentHubPage';
 import AIEmailPage from '@/pages/AIEmailPage';
 import AdvancedReportingPage from '@/pages/AdvancedReportingPage';

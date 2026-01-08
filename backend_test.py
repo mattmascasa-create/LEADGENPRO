@@ -873,12 +873,24 @@ class LeadGenProTester:
             self.log_result("Get Available Slots", False, "No admin user ID available")
             return False
         
-        if not hasattr(self, 'test_meeting_type_id') or not self.test_meeting_type_id:
-            self.log_result("Get Available Slots", False, "No meeting type ID available")
+        # Use a meeting type from the public list instead of our test one
+        # since the test meeting type might belong to a different user
+        public_response, public_error = self.make_request("GET", f"/booking/{self.admin_user_id}/meeting-types")
+        
+        if public_error or public_response.status_code != 200:
+            self.log_result("Get Available Slots", False, "Could not get public meeting types for slots test")
             return False
         
+        public_meeting_types = public_response.json()
+        if not public_meeting_types:
+            self.log_result("Get Available Slots", False, "No public meeting types available")
+            return False
+        
+        # Use the first available meeting type
+        meeting_type_id = public_meeting_types[0]["id"]
+        
         # No auth headers for public endpoint
-        response, error = self.make_request("GET", f"/booking/{self.admin_user_id}/slots/{self.test_meeting_type_id}?days=7")
+        response, error = self.make_request("GET", f"/booking/{self.admin_user_id}/slots/{meeting_type_id}?days=7")
         
         if error:
             self.log_result("Get Available Slots", False, f"Request failed: {error}")
@@ -895,12 +907,16 @@ class LeadGenProTester:
                         if "date" in sample_slot and "times" in sample_slot:
                             total_times = sum(len(day["times"]) for day in slots)
                             self.log_result("Get Available Slots", True, f"Retrieved {len(slots)} days with {total_times} total time slots")
+                            # Store the meeting type ID for booking test
+                            self.slots_meeting_type_id = meeting_type_id
                             return True
                         else:
                             self.log_result("Get Available Slots", False, f"Invalid slot structure: {sample_slot}")
                             return False
                     else:
                         self.log_result("Get Available Slots", True, "No available slots (expected if fully booked)")
+                        # Still store the meeting type ID for booking test
+                        self.slots_meeting_type_id = meeting_type_id
                         return True
                 else:
                     self.log_result("Get Available Slots", False, f"Expected slots array, got: {slots}")

@@ -2308,10 +2308,10 @@ def generate_google_meet_link():
     import random
     import string
     chars = string.ascii_lowercase
-    code = f"{random.choices(chars, k=3)}-{random.choices(chars, k=4)}-{random.choices(chars, k=3)}"
-    code = ''.join([''.join(x) if isinstance(x, list) else x for x in code.split('-')])
-    parts = [code[:3], code[3:7], code[7:10]]
-    return f"https://meet.google.com/{'-'.join(parts)}"
+    part1 = ''.join(random.choices(chars, k=3))
+    part2 = ''.join(random.choices(chars, k=4))
+    part3 = ''.join(random.choices(chars, k=3))
+    return f"https://meet.google.com/{part1}-{part2}-{part3}"
 
 @api_router.post("/calendar/events/with-meet")
 async def create_event_with_meet(event_data: CalendarEventCreate, current_user: User = Depends(get_current_user)):

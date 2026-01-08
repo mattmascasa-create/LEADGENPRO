@@ -88,6 +88,7 @@ const Sidebar = () => {
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Users', href: '/admin/users', icon: UserCog },
     { name: 'Distribute', href: '/admin/distribute', icon: FolderOpen },
+    { name: 'System Errors', href: '/admin/errors', icon: AlertTriangle },
   ];
 
   // Employee navigation - limited access

@@ -22,7 +22,7 @@ import AnalyticsPage from '@/pages/AnalyticsPage';
 import AdminDistributePage from '@/pages/AdminDistributePage';
 import CallListsPage from '@/pages/CallListsPage';
 import CalendarPage from '@/pages/CalendarPage';
-import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
+import CallAnalyticsDashboard from '@/pages/CallAnalyticsDashboard';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminErrorsPage from '@/pages/AdminErrorsPage';
 import BookingPage from '@/pages/BookingPage';

@@ -356,18 +356,20 @@ const TeamChatEnhanced = () => {
       
       // Extract mentions
       const mentionRegex = /@([A-Za-z\s]+)/g;
-      const mentions = [];
+      const mentionedUsers = [];
+      const mentionIds = [];
       let match;
       while ((match = mentionRegex.exec(newMessage)) !== null) {
         const mentionedMember = teamMembers.find(m => 
           m.full_name.toLowerCase() === match[1].trim().toLowerCase()
         );
         if (mentionedMember) {
-          mentions.push(mentionedMember.id);
+          mentionIds.push(mentionedMember.id);
+          mentionedUsers.push(mentionedMember.full_name);
         }
       }
-      if (mentions.length > 0) {
-        metadata.mentions = mentions;
+      if (mentionIds.length > 0) {
+        metadata.mentions = mentionIds;
       }
 
       // Handle reply
@@ -389,6 +391,17 @@ const TeamChatEnhanced = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Show notification for mentions
+      if (mentionedUsers.length > 0) {
+        toast.success(
+          <div className="flex items-center gap-2">
+            <AtSign className="w-4 h-4" />
+            <span>Mentioned {mentionedUsers.join(', ')}</span>
+          </div>,
+          { autoClose: 2000 }
+        );
+      }
       
       setNewMessage('');
       setReplyingTo(null);

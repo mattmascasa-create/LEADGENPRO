@@ -222,8 +222,8 @@ const AdminDashboardPage = () => {
 
         {/* Employee Performance Table */}
         <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <div className="p-6 border-b border-border flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <div className="p-4 lg:p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-base lg:text-lg font-semibold text-foreground flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-primary" />
               Employee Performance
             </h3>
@@ -231,43 +231,45 @@ const AdminDashboardPage = () => {
               onClick={() => navigate('/admin/distribute')}
               className="text-sm text-primary hover:underline flex items-center gap-1"
             >
-              Manage Lead Distribution
+              Manage Distribution
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-border">
-              <tr>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Employee</th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-secondary">Calls Today</th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-secondary">Total Calls</th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-secondary">Meetings Today</th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-secondary">Leads Assigned</th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-secondary">Conversion</th>
-                <th className="text-right px-6 py-4 text-sm font-semibold text-secondary">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employeePerformance.map((emp, index) => (
-                <tr key={emp.employee_id} className="border-b border-border hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
-                        {emp.employee_name?.charAt(0) || 'U'}
+          {/* Scrollable table wrapper for mobile */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead className="bg-slate-50 border-b border-border">
+                <tr>
+                  <th className="text-left px-4 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Employee</th>
+                  <th className="text-center px-3 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Today</th>
+                  <th className="text-center px-3 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Total</th>
+                  <th className="text-center px-3 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Meetings</th>
+                  <th className="text-center px-3 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Leads</th>
+                  <th className="text-center px-3 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Conv%</th>
+                  <th className="text-right px-4 lg:px-6 py-3 lg:py-4 text-xs lg:text-sm font-semibold text-secondary">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employeePerformance.map((emp, index) => (
+                  <tr key={emp.employee_id} className="border-b border-border hover:bg-slate-50 transition-colors">
+                    <td className="px-4 lg:px-6 py-3 lg:py-4">
+                      <div className="flex items-center gap-2 lg:gap-3">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base flex-shrink-0">
+                          {emp.employee_name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground text-sm lg:text-base truncate">{emp.employee_name}</p>
+                          <p className="text-xs lg:text-sm text-secondary truncate">{emp.department || emp.role}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-foreground">{emp.employee_name}</p>
-                        <p className="text-sm text-secondary">{emp.department || emp.role}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`text-lg font-semibold ${emp.calls_today >= 10 ? 'text-green-600' : emp.calls_today >= 5 ? 'text-orange-600' : 'text-red-600'}`}>
-                      {emp.calls_today}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center text-foreground">{emp.calls_total}</td>
+                    </td>
+                    <td className="px-3 lg:px-6 py-3 lg:py-4 text-center">
+                      <span className={`text-base lg:text-lg font-semibold ${emp.calls_today >= 10 ? 'text-green-600' : emp.calls_today >= 5 ? 'text-orange-600' : 'text-red-600'}`}>
+                        {emp.calls_today}
+                      </span>
+                    </td>
+                    <td className="px-3 lg:px-6 py-3 lg:py-4 text-center text-foreground text-sm lg:text-base">{emp.calls_total}</td>
                   <td className="px-6 py-4 text-center text-foreground">{emp.meetings_today}</td>
                   <td className="px-6 py-4 text-center text-foreground">{emp.leads_assigned}</td>
                   <td className="px-6 py-4 text-center">

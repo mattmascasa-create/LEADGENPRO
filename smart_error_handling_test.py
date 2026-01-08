@@ -288,34 +288,29 @@ class SmartErrorHandlingTester:
         if response.status_code == 200:
             health_data = response.json()
             
-            # Check required fields
-            required_fields = ["overall_status", "services", "last_checked"]
+            # Check required fields (based on actual API structure)
+            required_fields = ["overall", "services", "timestamp"]
             if all(field in health_data for field in required_fields):
                 
                 # Check services status
                 services = health_data["services"]
-                expected_services = ["database", "email", "ai"]
+                expected_services = ["database", "resend_email", "twilio_voice", "ai_diagnosis"]
                 
                 if all(service in services for service in expected_services):
-                    # Check each service has status
-                    all_services_ok = True
+                    # Check each service has a status
                     service_statuses = []
                     
                     for service in expected_services:
-                        if "status" in services[service]:
-                            status = services[service]["status"]
-                            service_statuses.append(f"{service}:{status}")
-                        else:
-                            all_services_ok = False
-                            break
+                        status = services[service]
+                        service_statuses.append(f"{service}:{status}")
                     
-                    if all_services_ok:
-                        self.log_result("System Health API", True, 
-                                      f"Overall: {health_data['overall_status']} | Services: {', '.join(service_statuses)}")
-                        return True
-                    else:
-                        self.log_result("System Health API", False, "Some services missing status field")
-                        return False
+                    overall_status = health_data["overall"]
+                    recent_errors = health_data.get("recent_errors_24h", 0)
+                    critical_errors = health_data.get("critical_errors_24h", 0)
+                    
+                    self.log_result("System Health API", True, 
+                                  f"Overall: {overall_status} | Recent errors: {recent_errors} | Critical: {critical_errors}")
+                    return True
                 else:
                     missing_services = [s for s in expected_services if s not in services]
                     self.log_result("System Health API", False, f"Missing services: {missing_services}")

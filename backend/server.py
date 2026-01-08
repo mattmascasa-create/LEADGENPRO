@@ -4375,6 +4375,346 @@ async def search_drive_files(
         raise HTTPException(status_code=500, detail=f"Failed to search files: {str(e)}")
 
 # =============================================================================
+# SMART ERROR HANDLING & SUPPORT BOT ENDPOINTS
+# =============================================================================
+
+class ErrorReport(BaseModel):
+    error_type: str
+    error_message: str
+    endpoint: Optional[str] = None
+    stack_trace: Optional[str] = None
+    request_data: Optional[Dict[str, Any]] = None
+    user_agent: Optional[str] = None
+    page_url: Optional[str] = None
+
+class SupportBotRequest(BaseModel):
+    error_id: Optional[str] = None
+    question: str
+    context: Optional[Dict[str, Any]] = None
+
+@api_router.post("/errors/report")
+async def report_error(
+    error: ErrorReport,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+):
+    """Report an error from frontend or backend"""
+    # Categorize the error
+    category, error_type, severity = categorize_error(error.error_message, error.endpoint)
+    
+    # Attempt auto-fix
+    auto_fix_result = await attempt_auto_fix(category, error_type, {
+        "user_id": current_user.id,
+        "request_data": error.request_data
+    })
+    
+    # Log to database
+    error_doc = await log_error_to_db(
+        error_type=error.error_type,
+        error_message=error.error_message,
+        category=category,
+        severity=severity,
+        user_id=current_user.id,
+        endpoint=error.endpoint,
+        request_data=error.request_data,
+        stack_trace=error.stack_trace,
+        auto_fix_attempted=auto_fix_result.get("attempted", False),
+        auto_fix_result=auto_fix_result.get("message")
+    )
+    
+    # Get rule-based suggestions
+    rules = AUTO_FIX_RULES.get(category, {}).get(error_type, {})
+    
+    return {
+        "error_id": error_doc["id"],
+        "category": category,
+        "severity": severity,
+        "auto_fix": auto_fix_result,
+        "user_suggestion": rules.get("user_action", "Please try again or contact support."),
+        "admin_suggestion": rules.get("admin_action", "Check logs for more details.") if current_user.role == "admin" else None
+    }
+
+@api_router.post("/support-bot/diagnose")
+async def support_bot_diagnose(
+    request: SupportBotRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """AI-powered support bot for error diagnosis and help"""
+    error_doc = None
+    
+    # If error_id provided, get the error details
+    if request.error_id:
+        error_doc = await db.system_errors.find_one({"id": request.error_id}, {"_id": 0})
+    
+    # If no specific error, create a context for general questions
+    if not error_doc:
+        error_doc = {
+            "error_type": "user_question",
+            "error_message": request.question,
+            "category": "support",
+            "endpoint": request.context.get("page") if request.context else None
+        }
+    
+    # Get AI diagnosis
+    diagnosis = await get_ai_diagnosis(error_doc)
+    
+    # Store the support interaction
+    interaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user.id,
+        "error_id": request.error_id,
+        "question": request.question,
+        "diagnosis": diagnosis,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.support_interactions.insert_one(interaction)
+    
+    return {
+        "diagnosis": diagnosis.get("diagnosis", "Unable to diagnose the issue"),
+        "root_cause": diagnosis.get("root_cause"),
+        "fix_steps": diagnosis.get("fix_steps", []),
+        "prevention": diagnosis.get("prevention"),
+        "severity": diagnosis.get("severity_assessment"),
+        "can_auto_fix": diagnosis.get("can_auto_fix", False),
+        "auto_fix_action": diagnosis.get("auto_fix_action")
+    }
+
+@api_router.post("/support-bot/auto-fix/{error_id}")
+async def support_bot_auto_fix(
+    error_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Attempt to automatically fix an error"""
+    # Check if admin
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can trigger auto-fix")
+    
+    # Get error
+    error_doc = await db.system_errors.find_one({"id": error_id}, {"_id": 0})
+    if not error_doc:
+        raise HTTPException(status_code=404, detail="Error not found")
+    
+    # Get AI diagnosis with auto-fix capability
+    diagnosis = await get_ai_diagnosis(error_doc)
+    
+    if not diagnosis.get("can_auto_fix"):
+        return {
+            "success": False,
+            "message": "This error cannot be automatically fixed",
+            "manual_steps": diagnosis.get("fix_steps", [])
+        }
+    
+    # Attempt the auto-fix based on AI recommendation
+    auto_fix_result = await attempt_auto_fix(
+        error_doc.get("category"),
+        error_doc.get("error_type"),
+        {"error_doc": error_doc, "diagnosis": diagnosis}
+    )
+    
+    # Update error record
+    await db.system_errors.update_one(
+        {"id": error_id},
+        {
+            "$set": {
+                "auto_fix_attempted": True,
+                "auto_fix_result": auto_fix_result.get("message"),
+                "resolved": auto_fix_result.get("success", False),
+                "resolved_at": datetime.now(timezone.utc).isoformat() if auto_fix_result.get("success") else None
+            }
+        }
+    )
+    
+    return {
+        "success": auto_fix_result.get("success", False),
+        "action_taken": auto_fix_result.get("action_taken"),
+        "message": auto_fix_result.get("message"),
+        "ai_diagnosis": diagnosis
+    }
+
+@api_router.get("/admin/errors")
+async def get_system_errors(
+    current_user: User = Depends(get_current_user),
+    severity: Optional[str] = None,
+    category: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    limit: int = 50
+):
+    """Get system errors for admin dashboard"""
+    # Check if admin
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = {}
+    if severity:
+        query["severity"] = severity
+    if category:
+        query["category"] = category
+    if resolved is not None:
+        query["resolved"] = resolved
+    
+    errors = await db.system_errors.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    # Get stats
+    total = await db.system_errors.count_documents({})
+    unresolved = await db.system_errors.count_documents({"resolved": False})
+    critical = await db.system_errors.count_documents({"severity": "critical", "resolved": False})
+    
+    return {
+        "errors": errors,
+        "stats": {
+            "total": total,
+            "unresolved": unresolved,
+            "critical": critical
+        }
+    }
+
+@api_router.put("/admin/errors/{error_id}/resolve")
+async def resolve_error(
+    error_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Manually mark an error as resolved"""
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.system_errors.update_one(
+        {"id": error_id},
+        {
+            "$set": {
+                "resolved": True,
+                "resolved_by": current_user.id,
+                "resolved_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Error not found")
+    
+    return {"message": "Error marked as resolved"}
+
+@api_router.get("/admin/system-health")
+async def get_system_health(current_user: User = Depends(get_current_user)):
+    """Get overall system health status"""
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check database
+    db_status = "healthy"
+    try:
+        await db.command('ping')
+    except:
+        db_status = "unhealthy"
+    
+    # Check external services
+    services = {
+        "database": db_status,
+        "resend_email": "configured" if RESEND_API_KEY else "not_configured",
+        "twilio_voice": "configured" if twilio_client else "not_configured",
+        "ai_diagnosis": "configured" if EMERGENT_LLM_KEY else "not_configured"
+    }
+    
+    # Get error stats from last 24 hours
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    recent_errors = await db.system_errors.count_documents({
+        "created_at": {"$gte": yesterday}
+    })
+    critical_errors = await db.system_errors.count_documents({
+        "created_at": {"$gte": yesterday},
+        "severity": "critical"
+    })
+    
+    overall_health = "healthy"
+    if critical_errors > 0:
+        overall_health = "critical"
+    elif recent_errors > 10:
+        overall_health = "warning"
+    elif db_status == "unhealthy":
+        overall_health = "critical"
+    
+    return {
+        "overall": overall_health,
+        "services": services,
+        "recent_errors_24h": recent_errors,
+        "critical_errors_24h": critical_errors,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@api_router.get("/notifications")
+async def get_notifications(current_user: User = Depends(get_current_user)):
+    """Get user notifications including error alerts"""
+    notifications = []
+    
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    
+    if is_admin:
+        # Get unresolved critical errors
+        critical_errors = await db.system_errors.find(
+            {"severity": "critical", "resolved": False},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(5).to_list(5)
+        
+        for error in critical_errors:
+            notifications.append({
+                "id": error["id"],
+                "type": "error",
+                "severity": "critical",
+                "title": f"Critical Error: {error['error_type']}",
+                "message": error["error_message"][:100] + "..." if len(error.get("error_message", "")) > 100 else error.get("error_message", ""),
+                "created_at": error["created_at"],
+                "action_url": f"/admin/errors/{error['id']}"
+            })
+        
+        # Get recent high severity errors
+        high_errors = await db.system_errors.find(
+            {"severity": "high", "resolved": False},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(3).to_list(3)
+        
+        for error in high_errors:
+            notifications.append({
+                "id": error["id"],
+                "type": "error",
+                "severity": "high",
+                "title": f"Error: {error['error_type']}",
+                "message": error["error_message"][:100] + "..." if len(error.get("error_message", "")) > 100 else error.get("error_message", ""),
+                "created_at": error["created_at"],
+                "action_url": f"/admin/errors/{error['id']}"
+            })
+    
+    # Get user-specific notifications
+    user_notifications = await db.notifications.find(
+        {"user_id": current_user.id, "read": False},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    notifications.extend(user_notifications)
+    
+    # Sort by created_at
+    notifications.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    return {
+        "notifications": notifications[:15],
+        "unread_count": len([n for n in notifications if not n.get("read", False)])
+    }
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Mark a notification as read"""
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": current_user.id},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Notification marked as read"}
+
+# =============================================================================
 # PUBLIC API - External Integration Endpoints
 # =============================================================================
 # These endpoints allow external applications to integrate with LeadGen Pro

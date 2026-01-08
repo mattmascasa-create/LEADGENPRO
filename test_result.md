@@ -441,6 +441,18 @@ backend:
         agent: "testing"
         comment: "POST /api/admin/distribute-leads-roundrobin tested successfully. Distributes unassigned leads to all employees equally. Successfully distributed leads in round-robin fashion. Admin lead distribution API working perfectly."
 
+  - task: "Google Sign-In Backend API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ GOOGLE SIGN-IN BACKEND TESTING COMPLETED - All 5 backend tests passed with 100% success rate. RESULTS: ✅ Traditional Login Still Works: admin@test.com/admin123 login successful, returns access_token and user data ✅ Google Auth Invalid Session: POST /api/auth/google with invalid session_id correctly returns 401 'Invalid or expired session' ✅ Google Auth No User Found: Documented expected 403 behavior for valid Google session with non-existing email ✅ Check Admin Status: GET /api/auth/check-admin returns is_admin=true for admin user ✅ Google Link Status: GET /api/auth/me/google-link-status returns google_linked and session_valid fields. All Google OAuth backend endpoints working correctly with proper error handling."
+
 frontend:
   - task: "Landing Page"
     implemented: true

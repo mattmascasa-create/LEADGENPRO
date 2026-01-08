@@ -295,7 +295,7 @@ class GoogleCalendarMeetTester:
         
         if response.status_code == 200:
             content_type = response.headers.get('content-type', '')
-            if content_type == 'text/calendar':
+            if content_type.startswith('text/calendar'):
                 ics_content = response.text
                 
                 # Verify ICS content contains required elements

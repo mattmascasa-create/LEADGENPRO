@@ -273,7 +273,7 @@ const AppRouter = () => {
         path="/call-analytics"
         element={
           <ProtectedRoute>
-            <CallAnalyticsPage />
+            <CallAnalyticsDashboard />
           </ProtectedRoute>
         }
       />

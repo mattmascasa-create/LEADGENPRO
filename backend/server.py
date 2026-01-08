@@ -2410,24 +2410,26 @@ async def create_booking(
         
         # Email to host
         await send_booking_notification_email(
-            host_email=host_user.get("email"),
-            host_name=host_user.get("full_name"),
+            employee_email=host_user.get("email"),
+            employee_name=host_user.get("full_name"),
             guest_name=guest_name,
             guest_email=guest_email,
+            guest_phone=guest_phone or "",
+            guest_company=guest_company or "",
             booking_datetime=booking_datetime,
             duration=meeting_type.get("duration", 30),
-            meeting_link=meeting_link,
-            notes=notes
+            notes=notes or ""
         )
         
         # Email to guest
-        await send_booking_confirmation_email(
-            guest_email=guest_email,
+        await send_guest_confirmation_email(
             guest_name=guest_name,
-            host_name=host_user.get("full_name"),
+            guest_email=guest_email,
+            employee_name=host_user.get("full_name"),
+            employee_email=host_user.get("email"),
             booking_datetime=booking_datetime,
             duration=meeting_type.get("duration", 30),
-            meeting_link=meeting_link
+            company_name="LeadGen Pro"
         )
     except Exception as e:
         logging.error(f"Failed to send booking emails: {e}")
@@ -2437,6 +2439,7 @@ async def create_booking(
         "meeting_link": meeting_link,
         "message": "Booking confirmed!"
     }
+
 
 # ============================================
 # GONG-LIKE CALL ANALYTICS & INTELLIGENCE

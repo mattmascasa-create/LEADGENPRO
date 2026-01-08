@@ -370,7 +370,7 @@ Provide your response in JSON format:
     "auto_fix_action": "Description if can_auto_fix is true"
 }}"""
 
-        response = await chat.send_message_async(UserMessage(prompt))
+        response = await chat.send_message(UserMessage(prompt))
         
         # Parse JSON from response
         try:

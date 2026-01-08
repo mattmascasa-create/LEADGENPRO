@@ -900,6 +900,8 @@ test_plan:
     - "Smart Error Handling - Notifications API"
     - "Smart Error Handling - CSV Upload Fix"
     - "Smart Error Handling - Auto-Fix Suggestions"
+    - "Calendly-like Scheduling - Meeting Types CRUD"
+    - "Calendly-like Scheduling - Availability Management"
 
 agent_communication:
   - agent: "main"

@@ -3767,9 +3767,9 @@ async def get_available_slots(user_id: str, date: str):
     
     return {"slots": available_slots, "date": date}
 
-@api_router.post("/booking/{user_id}/book")
-async def create_booking(user_id: str, booking: BookingRequest):
-    """Create a booking (public endpoint - no auth required)"""
+@api_router.post("/booking/{user_id}/book-simple")
+async def create_booking_simple(user_id: str, booking: BookingRequest):
+    """Create a booking (simple public endpoint - no meeting type required)"""
     # Verify user exists
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
     if not user:

@@ -166,7 +166,18 @@ const TeamChatEnhanced = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const statusMap = {};
+      const now = new Date();
+      
       response.data.forEach(s => {
+        // Check if user is "stale" (hasn't been seen in 2 minutes)
+        if (s.last_seen) {
+          const lastSeen = new Date(s.last_seen);
+          const diffMinutes = (now - lastSeen) / 1000 / 60;
+          if (diffMinutes > 2 && s.status === 'online') {
+            // Mark as offline if not seen recently
+            s.status = 'offline';
+          }
+        }
         statusMap[s.user_id] = s;
       });
       setUserStatuses(statusMap);

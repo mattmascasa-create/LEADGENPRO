@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timezone
 
 # Backend URL
-BACKEND_URL = "https://leadgen-pro-23.preview.emergentagent.com/api"
+BACKEND_URL = "https://leadgenpro-7.preview.emergentagent.com/api"
 
 def test_specific_scenarios():
     """Test the exact scenarios from the review request"""

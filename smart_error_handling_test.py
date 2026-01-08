@@ -543,7 +543,7 @@ Bob,Johnson,bob.johnson@startup.io,+1-555-0103,Startup IO,CEO"""
         ]
         
         success_count = 0
-        for i, test_case in enumerate(test_cases):
+        for i, test_case in enumerate(auto_fix_tests):
             response, error = self.make_request("POST", "/errors/report", test_case)
             
             if error:

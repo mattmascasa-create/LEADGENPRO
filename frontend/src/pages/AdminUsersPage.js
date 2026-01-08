@@ -172,10 +172,10 @@ const AdminUsersPage = () => {
     <DashboardLayout>
       <div data-testid="admin-users-page">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">User Management</h1>
-            <p className="text-secondary">Manage team members and their access levels</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">User Management</h1>
+            <p className="text-sm lg:text-base text-secondary">Manage team members and their access levels</p>
           </div>
           <button
             data-testid="create-user-btn"
@@ -191,131 +191,208 @@ const AdminUsersPage = () => {
               });
               setShowCreateModal(true);
             }}
-            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2 text-sm lg:text-base w-full sm:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             Add User
           </button>
         </div>
 
         {/* Search & Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+          <div className="col-span-2 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-secondary" />
             <input
               type="text"
-              placeholder="Search users by name, email, or department..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+              className="w-full pl-9 lg:pl-10 pr-4 py-2 text-sm lg:text-base border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
               data-testid="search-users-input"
             />
           </div>
-          <div className="bg-white rounded-xl border border-border p-4">
-            <p className="text-secondary text-sm">Total Users</p>
-            <p className="text-2xl font-bold">{users.length}</p>
+          <div className="bg-white rounded-xl border border-border p-3 lg:p-4">
+            <p className="text-secondary text-xs lg:text-sm">Total Users</p>
+            <p className="text-xl lg:text-2xl font-bold">{users.length}</p>
           </div>
-          <div className="bg-white rounded-xl border border-border p-4">
-            <p className="text-secondary text-sm">Admins</p>
-            <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+          <div className="bg-white rounded-xl border border-border p-3 lg:p-4">
+            <p className="text-secondary text-xs lg:text-sm">Admins</p>
+            <p className="text-xl lg:text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users Table - Mobile Cards / Desktop Table */}
         <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-border">
-              <tr>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">User</th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Contact</th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Department</th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Role</th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Booking Link</th>
-                <th className="text-right px-6 py-4 text-sm font-semibold text-secondary">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr 
-                  key={user.id} 
-                  className="border-b border-border hover:bg-slate-50 transition-colors"
-                  data-testid={`user-row-${user.id}`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
-                        {user.full_name?.charAt(0) || 'U'}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{user.full_name}</p>
-                        <p className="text-sm text-secondary">{user.company || 'No company'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="w-4 h-4 text-secondary" />
-                        <span>{user.email}</span>
-                      </div>
-                      {user.phone && (
-                        <div className="flex items-center gap-2 text-sm text-secondary">
-                          <Phone className="w-4 h-4" />
-                          <span>{user.phone}</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm">{user.department || '-'}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${getRoleBadgeColor(user.role)}`}>
-                      {getRoleIcon(user.role)}
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => copyBookingLink(user.id)}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                      data-testid={`copy-booking-link-${user.id}`}
-                    >
-                      {copiedLink === user.id ? (
-                        <>
-                          <Check className="w-4 h-4 text-green-600" />
-                          <span className="text-green-600">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Link className="w-4 h-4" />
-                          <span>Copy Link</span>
-                        </>
-                      )}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(user)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                        data-testid={`edit-user-${user.id}`}
-                      >
-                        <Edit className="w-4 h-4 text-secondary" />
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteConfirm(user)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                        data-testid={`delete-user-${user.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
-                  </td>
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-border">
+                <tr>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">User</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Contact</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Department</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Role</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-secondary">Booking Link</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-secondary">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr 
+                    key={user.id} 
+                    className="border-b border-border hover:bg-slate-50 transition-colors"
+                    data-testid={`user-row-${user.id}`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+                          {user.full_name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{user.full_name}</p>
+                          <p className="text-sm text-secondary">{user.company || 'No company'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="w-4 h-4 text-secondary" />
+                          <span>{user.email}</span>
+                        </div>
+                        {user.phone && (
+                          <div className="flex items-center gap-2 text-sm text-secondary">
+                            <Phone className="w-4 h-4" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm">{user.department || '-'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${getRoleBadgeColor(user.role)}`}>
+                        {getRoleIcon(user.role)}
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => copyBookingLink(user.id)}
+                        className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                        data-testid={`copy-booking-link-${user.id}`}
+                      >
+                        {copiedLink === user.id ? (
+                          <>
+                            <Check className="w-4 h-4 text-green-600" />
+                            <span className="text-green-600">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Link className="w-4 h-4" />
+                            <span>Copy Link</span>
+                          </>
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                          data-testid={`edit-user-${user.id}`}
+                        >
+                          <Edit className="w-4 h-4 text-secondary" />
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(user)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          data-testid={`delete-user-${user.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="lg:hidden divide-y divide-border">
+            {filteredUsers.map((user) => (
+              <div 
+                key={user.id} 
+                className="p-4"
+                data-testid={`user-card-${user.id}`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+                      {user.full_name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{user.full_name}</p>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${getRoleBadgeColor(user.role)}`}>
+                        {getRoleIcon(user.role)}
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(user)}
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <Edit className="w-4 h-4 text-secondary" />
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(user)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-sm text-secondary mb-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate">{user.email}</span>
+                  </div>
+                  {user.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      <span>{user.phone}</span>
+                    </div>
+                  )}
+                  {user.department && (
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4" />
+                      <span>{user.department}</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => copyBookingLink(user.id)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  {copiedLink === user.id ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span className="text-green-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link className="w-4 h-4" />
+                      <span>Copy Booking Link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">

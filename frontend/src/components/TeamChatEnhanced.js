@@ -789,13 +789,14 @@ const TeamChatEnhanced = () => {
                 {activeView === 'direct' && (
                   <div className="space-y-1">
                     <div className="px-3 py-2 text-xs text-slate-500 uppercase font-semibold">
-                      Team Members
+                      Team Members - Click to DM
                     </div>
                     {teamMembers.filter(m => m.id !== user?.id).map((member) => {
                       const statusInfo = getUserStatusIndicator(member.id);
                       return (
                         <div key={member.id} className="group">
                           <button
+                            onClick={() => startDirectMessage(member.id)}
                             className="w-full flex items-center gap-2 px-3 py-2 rounded text-left text-slate-300 hover:bg-slate-800 transition-colors"
                           >
                             <div className="relative">
@@ -817,35 +818,8 @@ const TeamChatEnhanced = () => {
                                 <span className="truncate">{statusInfo.text}</span>
                               </span>
                             </div>
+                            <MessageSquare className="w-4 h-4 text-slate-500 group-hover:text-blue-400" />
                           </button>
-                          {/* Quick actions on hover */}
-                          <div className="hidden group-hover:flex items-center gap-1 px-3 pb-2">
-                            <button
-                              onClick={() => {
-                                // Start DM by setting channel to user
-                                setNewMessage(`@${member.full_name} `);
-                                inputRef.current?.focus();
-                              }}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                              title="Send message"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleViewAvailability(member)}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                              title="View availability"
-                            >
-                              <CalendarDays className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => copyBookingLink(member.id)}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                              title="Copy booking link"
-                            >
-                              <Link2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
                         </div>
                       );
                     })}

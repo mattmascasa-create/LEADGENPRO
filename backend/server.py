@@ -1928,11 +1928,18 @@ class ChatMessageCreate(BaseModel):
 
 @api_router.get("/chat/channels", response_model=List[Channel])
 async def get_channels(current_user: User = Depends(get_current_user)):
-    """Get all channels"""
-    channels = await db.channels.find({}, {"_id": 0}).to_list(1000)
+    """Get all channels including DMs for current user"""
+    # Get public channels
+    public_channels = await db.channels.find({"type": "public"}, {"_id": 0}).to_list(1000)
     
-    # Create default channels if none exist
-    if not channels:
+    # Get DM channels where user is a participant
+    dm_channels = await db.channels.find({
+        "type": "dm",
+        "participants": current_user.id
+    }, {"_id": 0}).to_list(100)
+    
+    # Create default public channels if none exist
+    if not public_channels:
         default_channels = [
             {"name": "general", "description": "General team discussion", "type": "public"},
             {"name": "sales", "description": "Sales team coordination", "type": "public"},
@@ -1944,9 +1951,91 @@ async def get_channels(current_user: User = Depends(get_current_user)):
             doc['created_at'] = doc['created_at'].isoformat()
             await db.channels.insert_one(doc)
         
-        channels = await db.channels.find({}, {"_id": 0}).to_list(1000)
+        public_channels = await db.channels.find({"type": "public"}, {"_id": 0}).to_list(1000)
     
-    return [Channel(**ch) for ch in channels]
+    all_channels = public_channels + dm_channels
+    return [Channel(**ch) for ch in all_channels]
+
+
+@api_router.post("/chat/dm/{user_id}")
+async def get_or_create_dm_channel(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get or create a DM channel with another user"""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot create DM with yourself")
+    
+    # Check if target user exists
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if DM channel already exists between these users
+    existing_dm = await db.channels.find_one({
+        "type": "dm",
+        "participants": {"$all": [current_user.id, user_id]}
+    }, {"_id": 0})
+    
+    if existing_dm:
+        return Channel(**existing_dm)
+    
+    # Create new DM channel
+    dm_channel = {
+        "id": str(uuid.uuid4()),
+        "name": f"dm_{current_user.id}_{user_id}",
+        "description": f"Direct message between {current_user.full_name} and {target_user['full_name']}",
+        "type": "dm",
+        "participants": [current_user.id, user_id],
+        "participant_names": {
+            current_user.id: current_user.full_name,
+            user_id: target_user['full_name']
+        },
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.channels.insert_one(dm_channel)
+    dm_channel.pop("_id", None)
+    return dm_channel
+
+
+@api_router.get("/chat/dm/list")
+async def list_dm_conversations(current_user: User = Depends(get_current_user)):
+    """Get all DM conversations for current user with last message info"""
+    dm_channels = await db.channels.find({
+        "type": "dm",
+        "participants": current_user.id
+    }, {"_id": 0}).to_list(100)
+    
+    result = []
+    for dm in dm_channels:
+        # Get the other participant
+        other_id = next((p for p in dm.get("participants", []) if p != current_user.id), None)
+        if other_id:
+            other_user = await db.users.find_one({"id": other_id}, {"_id": 0, "hashed_password": 0})
+            
+            # Get last message
+            last_message = await db.chat_messages.find_one(
+                {"channel_id": dm["id"]},
+                {"_id": 0},
+                sort=[("created_at", -1)]
+            )
+            
+            # Get unread count
+            unread_count = await db.chat_messages.count_documents({
+                "channel_id": dm["id"],
+                "sender_id": {"$ne": current_user.id},
+                "read_by": {"$ne": current_user.id}
+            })
+            
+            result.append({
+                "channel": dm,
+                "other_user": other_user,
+                "last_message": last_message,
+                "unread_count": unread_count
+            })
+    
+    # Sort by last message time
+    result.sort(key=lambda x: x.get("last_message", {}).get("created_at", ""), reverse=True)
+    return result
 
 @api_router.post("/chat/channels", response_model=Channel)
 async def create_channel(channel_data: ChannelCreate, current_user: User = Depends(get_current_user)):

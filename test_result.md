@@ -728,6 +728,8 @@ test_plan:
     - "Employee Dashboard Frontend"
     - "Role-based Sidebar Navigation"
     - "Team Chat Close Button Enhancement"
+    - "Google Sign-In Backend API"
+    - "Google Sign-In Frontend UI"
 
 agent_communication:
   - agent: "main"

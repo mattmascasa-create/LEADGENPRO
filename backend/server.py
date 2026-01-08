@@ -1866,7 +1866,9 @@ class Channel(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: Optional[str] = None
-    type: str = "public"  # public, private
+    type: str = "public"  # public, private, dm
+    participants: Optional[List[str]] = None  # For DMs - list of user IDs
+    participant_names: Optional[dict] = None  # For DMs - {user_id: name}
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

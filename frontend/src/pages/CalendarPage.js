@@ -422,7 +422,26 @@ const CalendarPage = () => {
                       onChange={(e) => setFormData({...formData, meeting_link: e.target.value})}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="https://zoom.us/j/..."
+                      disabled={addMeetLink}
                     />
+                    {/* Auto-generate Google Meet Link checkbox */}
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={addMeetLink}
+                        onChange={(e) => {
+                          setAddMeetLink(e.target.checked);
+                          if (e.target.checked) {
+                            setFormData({...formData, meeting_link: ''});
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <span className="flex items-center gap-2 text-sm">
+                        <GoogleMeetIcon />
+                        Auto-generate Google Meet link
+                      </span>
+                    </label>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Attendees</label>

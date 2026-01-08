@@ -617,6 +617,374 @@ class LeadGenProTester:
             self.log_result("Google Link Status", False, f"Status {response.status_code}: {response.text}")
             return False
     
+    # ==================== Calendly-like Scheduling Tests ====================
+    
+    def test_get_meeting_types(self):
+        """Test GET /api/meeting-types - Should return default meeting types"""
+        print("\n📅 Testing Get Meeting Types...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Get Meeting Types", False, "No admin token available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("GET", "/meeting-types", headers=headers)
+        
+        if error:
+            self.log_result("Get Meeting Types", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            meeting_types = response.json()
+            if isinstance(meeting_types, list) and len(meeting_types) >= 4:
+                # Check for default meeting types
+                type_names = [mt.get('name', '') for mt in meeting_types]
+                expected_types = ['Quick Call', 'Discovery Call', 'Product Demo', 'Strategy Session']
+                found_types = [t for t in expected_types if t in type_names]
+                
+                if len(found_types) >= 4:
+                    self.log_result("Get Meeting Types", True, f"Found {len(meeting_types)} meeting types including defaults: {found_types}")
+                    return True
+                else:
+                    self.log_result("Get Meeting Types", False, f"Missing default meeting types. Found: {type_names}")
+                    return False
+            else:
+                self.log_result("Get Meeting Types", False, f"Expected list with 4+ items, got: {meeting_types}")
+                return False
+        else:
+            self.log_result("Get Meeting Types", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_create_meeting_type(self):
+        """Test POST /api/meeting-types - Create a new meeting type"""
+        print("\n➕ Testing Create Meeting Type...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Create Meeting Type", False, "No admin token available")
+            return False
+        
+        meeting_type_data = {
+            "name": "Sales Demo",
+            "duration": 60,
+            "location": "google_meet",
+            "color": "#EC4899",
+            "description": "Comprehensive product demonstration for potential clients",
+            "buffer_before": 5,
+            "buffer_after": 10
+        }
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("POST", "/meeting-types", meeting_type_data, headers=headers)
+        
+        if error:
+            self.log_result("Create Meeting Type", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            meeting_type = response.json()
+            if ("id" in meeting_type and 
+                meeting_type.get("name") == "Sales Demo" and 
+                meeting_type.get("duration") == 60 and
+                meeting_type.get("color") == "#EC4899"):
+                
+                # Store for later tests
+                self.test_meeting_type_id = meeting_type["id"]
+                self.log_result("Create Meeting Type", True, f"Meeting type created: {meeting_type['name']} (ID: {meeting_type['id']})")
+                return True
+            else:
+                self.log_result("Create Meeting Type", False, f"Invalid meeting type data: {meeting_type}")
+                return False
+        else:
+            self.log_result("Create Meeting Type", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_update_meeting_type(self):
+        """Test PUT /api/meeting-types/{id} - Update a meeting type"""
+        print("\n✏️ Testing Update Meeting Type...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Update Meeting Type", False, "No admin token available")
+            return False
+        
+        if not hasattr(self, 'test_meeting_type_id') or not self.test_meeting_type_id:
+            self.log_result("Update Meeting Type", False, "No meeting type ID available - run create test first")
+            return False
+        
+        update_data = {
+            "name": "Sales Demo - Updated",
+            "duration": 45,
+            "location": "zoom",
+            "color": "#10B981",
+            "description": "Updated comprehensive product demonstration"
+        }
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("PUT", f"/meeting-types/{self.test_meeting_type_id}", update_data, headers=headers)
+        
+        if error:
+            self.log_result("Update Meeting Type", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            updated_type = response.json()
+            if (updated_type.get("name") == "Sales Demo - Updated" and 
+                updated_type.get("duration") == 45 and
+                updated_type.get("color") == "#10B981"):
+                
+                self.log_result("Update Meeting Type", True, f"Meeting type updated: {updated_type['name']}")
+                return True
+            else:
+                self.log_result("Update Meeting Type", False, f"Update not reflected: {updated_type}")
+                return False
+        else:
+            self.log_result("Update Meeting Type", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_get_availability(self):
+        """Test GET /api/availability - Should return default availability"""
+        print("\n🕒 Testing Get Availability...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Get Availability", False, "No admin token available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("GET", "/availability", headers=headers)
+        
+        if error:
+            self.log_result("Get Availability", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            availability = response.json()
+            if isinstance(availability, list) and len(availability) >= 5:
+                # Check for weekday availability (Mon-Fri, 9am-5pm)
+                weekday_rules = [rule for rule in availability if rule.get('day_of_week', -1) < 5]
+                if len(weekday_rules) >= 5:
+                    # Check time format
+                    sample_rule = weekday_rules[0]
+                    if ('start_time' in sample_rule and 'end_time' in sample_rule and 
+                        'is_available' in sample_rule):
+                        self.log_result("Get Availability", True, f"Found {len(availability)} availability rules (Mon-Fri default)")
+                        return True
+                    else:
+                        self.log_result("Get Availability", False, f"Missing required fields in availability rule: {sample_rule}")
+                        return False
+                else:
+                    self.log_result("Get Availability", False, f"Expected weekday rules, got: {availability}")
+                    return False
+            else:
+                self.log_result("Get Availability", False, f"Expected list with 5+ items, got: {availability}")
+                return False
+        else:
+            self.log_result("Get Availability", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_update_availability(self):
+        """Test PUT /api/availability - Update availability hours"""
+        print("\n🔄 Testing Update Availability...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Update Availability", False, "No admin token available")
+            return False
+        
+        # Update to 8am-6pm Monday-Friday
+        availability_data = [
+            {"day_of_week": 0, "start_time": "08:00", "end_time": "18:00", "is_available": True},  # Monday
+            {"day_of_week": 1, "start_time": "08:00", "end_time": "18:00", "is_available": True},  # Tuesday
+            {"day_of_week": 2, "start_time": "08:00", "end_time": "18:00", "is_available": True},  # Wednesday
+            {"day_of_week": 3, "start_time": "08:00", "end_time": "18:00", "is_available": True},  # Thursday
+            {"day_of_week": 4, "start_time": "08:00", "end_time": "18:00", "is_available": True},  # Friday
+            {"day_of_week": 5, "start_time": "09:00", "end_time": "12:00", "is_available": True},  # Saturday (half day)
+            {"day_of_week": 6, "start_time": "09:00", "end_time": "17:00", "is_available": False}  # Sunday (unavailable)
+        ]
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("PUT", "/availability", availability_data, headers=headers)
+        
+        if error:
+            self.log_result("Update Availability", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            result = response.json()
+            if "message" in result and "updated" in result["message"].lower():
+                self.log_result("Update Availability", True, "Availability updated successfully")
+                return True
+            else:
+                self.log_result("Update Availability", False, f"Unexpected response: {result}")
+                return False
+        else:
+            self.log_result("Update Availability", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_public_get_meeting_types(self):
+        """Test GET /api/booking/{user_id}/meeting-types - Public booking page (no auth)"""
+        print("\n🌐 Testing Public Get Meeting Types...")
+        
+        if not hasattr(self, 'admin_user_id') or not self.admin_user_id:
+            self.log_result("Public Get Meeting Types", False, "No admin user ID available")
+            return False
+        
+        # No auth headers for public endpoint
+        response, error = self.make_request("GET", f"/booking/{self.admin_user_id}/meeting-types")
+        
+        if error:
+            self.log_result("Public Get Meeting Types", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            meeting_types = response.json()
+            if isinstance(meeting_types, list) and len(meeting_types) > 0:
+                # Check that meeting types have required fields for public booking
+                sample_type = meeting_types[0]
+                required_fields = ['id', 'name', 'duration', 'description', 'color']
+                missing_fields = [field for field in required_fields if field not in sample_type]
+                
+                if not missing_fields:
+                    self.log_result("Public Get Meeting Types", True, f"Retrieved {len(meeting_types)} public meeting types")
+                    return True
+                else:
+                    self.log_result("Public Get Meeting Types", False, f"Missing fields in meeting type: {missing_fields}")
+                    return False
+            else:
+                self.log_result("Public Get Meeting Types", False, f"Expected non-empty list, got: {meeting_types}")
+                return False
+        else:
+            self.log_result("Public Get Meeting Types", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_get_available_slots(self):
+        """Test GET /api/booking/{user_id}/slots/{meeting_type_id}?days=7 - Get available time slots"""
+        print("\n📅 Testing Get Available Slots...")
+        
+        if not hasattr(self, 'admin_user_id') or not self.admin_user_id:
+            self.log_result("Get Available Slots", False, "No admin user ID available")
+            return False
+        
+        if not hasattr(self, 'test_meeting_type_id') or not self.test_meeting_type_id:
+            self.log_result("Get Available Slots", False, "No meeting type ID available")
+            return False
+        
+        # No auth headers for public endpoint
+        response, error = self.make_request("GET", f"/booking/{self.admin_user_id}/slots/{self.test_meeting_type_id}?days=7")
+        
+        if error:
+            self.log_result("Get Available Slots", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            slots_data = response.json()
+            if isinstance(slots_data, dict) and "slots" in slots_data:
+                slots = slots_data["slots"]
+                if isinstance(slots, list):
+                    # Check slot structure
+                    if len(slots) > 0:
+                        sample_slot = slots[0]
+                        if "date" in sample_slot and "times" in sample_slot:
+                            total_times = sum(len(day["times"]) for day in slots)
+                            self.log_result("Get Available Slots", True, f"Retrieved {len(slots)} days with {total_times} total time slots")
+                            return True
+                        else:
+                            self.log_result("Get Available Slots", False, f"Invalid slot structure: {sample_slot}")
+                            return False
+                    else:
+                        self.log_result("Get Available Slots", True, "No available slots (expected if fully booked)")
+                        return True
+                else:
+                    self.log_result("Get Available Slots", False, f"Expected slots array, got: {slots}")
+                    return False
+            else:
+                self.log_result("Get Available Slots", False, f"Expected object with 'slots' field, got: {slots_data}")
+                return False
+        else:
+            self.log_result("Get Available Slots", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_create_booking(self):
+        """Test POST /api/booking/{user_id}/book - Create a booking with guest details"""
+        print("\n📝 Testing Create Booking...")
+        
+        if not hasattr(self, 'admin_user_id') or not self.admin_user_id:
+            self.log_result("Create Booking", False, "No admin user ID available")
+            return False
+        
+        if not hasattr(self, 'test_meeting_type_id') or not self.test_meeting_type_id:
+            self.log_result("Create Booking", False, "No meeting type ID available")
+            return False
+        
+        # Create booking for tomorrow at 2 PM
+        tomorrow = datetime.now() + timedelta(days=1)
+        booking_time = tomorrow.replace(hour=14, minute=0, second=0, microsecond=0)
+        
+        booking_data = {
+            "meeting_type_id": self.test_meeting_type_id,
+            "scheduled_at": booking_time.isoformat(),
+            "name": "John Smith",
+            "email": "john.smith@prospectcorp.com",
+            "phone": "+1-555-0199",
+            "company": "Prospect Corp",
+            "notes": "Interested in enterprise features and pricing. Looking to implement for 50+ users."
+        }
+        
+        # No auth headers for public endpoint
+        response, error = self.make_request("POST", f"/booking/{self.admin_user_id}/book", booking_data)
+        
+        if error:
+            self.log_result("Create Booking", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            booking_result = response.json()
+            if "booking" in booking_result and "message" in booking_result:
+                booking = booking_result["booking"]
+                if (booking.get("title") and 
+                    "john.smith@prospectcorp.com" in str(booking).lower()):
+                    
+                    self.test_booking_id = booking.get("id")
+                    self.log_result("Create Booking", True, f"Booking created successfully: {booking_result['message']}")
+                    return True
+                else:
+                    self.log_result("Create Booking", False, f"Invalid booking data: {booking}")
+                    return False
+            else:
+                self.log_result("Create Booking", False, f"Missing required fields in response: {booking_result}")
+                return False
+        else:
+            self.log_result("Create Booking", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
+    def test_delete_meeting_type(self):
+        """Test DELETE /api/meeting-types/{id} - Delete a meeting type"""
+        print("\n🗑️ Testing Delete Meeting Type...")
+        
+        if not hasattr(self, 'admin_token') or not self.admin_token:
+            self.log_result("Delete Meeting Type", False, "No admin token available")
+            return False
+        
+        if not hasattr(self, 'test_meeting_type_id') or not self.test_meeting_type_id:
+            self.log_result("Delete Meeting Type", False, "No meeting type ID available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response, error = self.make_request("DELETE", f"/meeting-types/{self.test_meeting_type_id}", headers=headers)
+        
+        if error:
+            self.log_result("Delete Meeting Type", False, f"Request failed: {error}")
+            return False
+        
+        if response.status_code == 200:
+            result = response.json()
+            if "message" in result and "deleted" in result["message"].lower():
+                self.log_result("Delete Meeting Type", True, "Meeting type deleted successfully")
+                return True
+            else:
+                self.log_result("Delete Meeting Type", False, f"Unexpected response: {result}")
+                return False
+        else:
+            self.log_result("Delete Meeting Type", False, f"Status {response.status_code}: {response.text}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests in sequence"""
         print("🚀 Starting LeadGen Pro Backend API Testing...")

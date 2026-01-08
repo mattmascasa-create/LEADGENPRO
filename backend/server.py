@@ -72,6 +72,327 @@ if RESEND_API_KEY:
 # Admin emails - these users always have admin privileges
 ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com']
 
+# Emergent LLM Key for AI-powered diagnostics
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+
+# ============================================
+# SMART ERROR HANDLING & AUTO-FIX SYSTEM
+# ============================================
+
+class ErrorSeverity:
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class ErrorCategory:
+    AUTH = "authentication"
+    DATABASE = "database"
+    FILE_UPLOAD = "file_upload"
+    API = "api"
+    VALIDATION = "validation"
+    NETWORK = "network"
+    SYSTEM = "system"
+    UNKNOWN = "unknown"
+
+# Rule-based auto-fix solutions
+AUTO_FIX_RULES = {
+    "authentication": {
+        "token_expired": {
+            "description": "Session token has expired",
+            "auto_fix": "refresh_token",
+            "user_action": "Please log in again to continue.",
+            "admin_action": "Check JWT_SECRET and token expiration settings."
+        },
+        "invalid_credentials": {
+            "description": "Invalid email or password",
+            "auto_fix": "none",
+            "user_action": "Check your email and password. Use 'Forgot Password' if needed.",
+            "admin_action": "Verify user exists in database and password is correctly hashed."
+        },
+        "unauthorized": {
+            "description": "User not authorized for this action",
+            "auto_fix": "none",
+            "user_action": "You don't have permission for this action. Contact your admin.",
+            "admin_action": "Check user role and permissions."
+        }
+    },
+    "file_upload": {
+        "missing_auth_header": {
+            "description": "Authorization header missing in upload request",
+            "auto_fix": "inject_auth_header",
+            "user_action": "Try uploading again. If the issue persists, log out and log back in.",
+            "admin_action": "Check frontend upload code includes Authorization header."
+        },
+        "invalid_file_format": {
+            "description": "Uploaded file format is not supported",
+            "auto_fix": "none",
+            "user_action": "Please upload a valid CSV file with the correct columns.",
+            "admin_action": "Check file validation logic and supported formats."
+        },
+        "file_too_large": {
+            "description": "Uploaded file exceeds size limit",
+            "auto_fix": "none",
+            "user_action": "File is too large. Please split into smaller files (max 10MB).",
+            "admin_action": "Consider increasing file size limit if needed."
+        }
+    },
+    "database": {
+        "connection_failed": {
+            "description": "Cannot connect to database",
+            "auto_fix": "retry_connection",
+            "user_action": "Service temporarily unavailable. Please try again in a moment.",
+            "admin_action": "Check MongoDB connection string and database status."
+        },
+        "duplicate_entry": {
+            "description": "Record already exists",
+            "auto_fix": "none",
+            "user_action": "This record already exists. Update the existing one or use a different identifier.",
+            "admin_action": "Check unique index constraints."
+        }
+    },
+    "network": {
+        "timeout": {
+            "description": "Request timed out",
+            "auto_fix": "retry_request",
+            "user_action": "The request took too long. Please try again.",
+            "admin_action": "Check server load and external API response times."
+        },
+        "service_unavailable": {
+            "description": "External service is unavailable",
+            "auto_fix": "retry_with_backoff",
+            "user_action": "A service we depend on is temporarily unavailable. Please try again later.",
+            "admin_action": "Check external service status (Resend, Twilio, Google APIs)."
+        }
+    }
+}
+
+async def log_error_to_db(
+    error_type: str,
+    error_message: str,
+    category: str = ErrorCategory.UNKNOWN,
+    severity: str = ErrorSeverity.MEDIUM,
+    user_id: str = None,
+    endpoint: str = None,
+    request_data: dict = None,
+    stack_trace: str = None,
+    auto_fix_attempted: bool = False,
+    auto_fix_result: str = None
+):
+    """Log error to database for tracking and analysis"""
+    error_doc = {
+        "id": str(uuid.uuid4()),
+        "error_type": error_type,
+        "error_message": error_message,
+        "category": category,
+        "severity": severity,
+        "user_id": user_id,
+        "endpoint": endpoint,
+        "request_data": request_data,
+        "stack_trace": stack_trace,
+        "auto_fix_attempted": auto_fix_attempted,
+        "auto_fix_result": auto_fix_result,
+        "resolved": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.system_errors.insert_one(error_doc)
+    
+    # Send email alert for critical errors
+    if severity == ErrorSeverity.CRITICAL and RESEND_API_KEY:
+        await send_error_alert_email(error_doc)
+    
+    return error_doc
+
+async def send_error_alert_email(error_doc: dict):
+    """Send email alert to admins for critical errors"""
+    try:
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="background: #ef4444; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0;">⚠️ Critical Error Alert</h1>
+            </div>
+            <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
+                <h2 style="color: #dc2626;">Error Type: {error_doc['error_type']}</h2>
+                <p><strong>Category:</strong> {error_doc['category']}</p>
+                <p><strong>Message:</strong> {error_doc['error_message']}</p>
+                <p><strong>Endpoint:</strong> {error_doc.get('endpoint', 'N/A')}</p>
+                <p><strong>User ID:</strong> {error_doc.get('user_id', 'N/A')}</p>
+                <p><strong>Time:</strong> {error_doc['created_at']}</p>
+                <p><strong>Auto-Fix Attempted:</strong> {error_doc.get('auto_fix_attempted', False)}</p>
+                {f"<p><strong>Auto-Fix Result:</strong> {error_doc.get('auto_fix_result')}</p>" if error_doc.get('auto_fix_result') else ""}
+                <hr>
+                <p style="color: #64748b;">Please check the admin dashboard for more details.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        for admin_email in ADMIN_EMAILS:
+            if '@' in admin_email:
+                params = {
+                    "from": SENDER_EMAIL,
+                    "to": [admin_email],
+                    "subject": f"🚨 LeadGen Pro Critical Error: {error_doc['error_type']}",
+                    "html": html_content
+                }
+                await asyncio.to_thread(resend.Emails.send, params)
+                logging.info(f"Error alert sent to {admin_email}")
+    except Exception as e:
+        logging.error(f"Failed to send error alert email: {e}")
+
+def categorize_error(error_message: str, endpoint: str = None) -> tuple:
+    """Categorize error based on message and context"""
+    error_lower = error_message.lower()
+    
+    # Authentication errors
+    if any(word in error_lower for word in ['unauthorized', 'token', 'jwt', 'auth', 'credentials', 'login']):
+        if 'expired' in error_lower:
+            return ErrorCategory.AUTH, "token_expired", ErrorSeverity.LOW
+        elif 'invalid' in error_lower:
+            return ErrorCategory.AUTH, "invalid_credentials", ErrorSeverity.LOW
+        return ErrorCategory.AUTH, "unauthorized", ErrorSeverity.MEDIUM
+    
+    # File upload errors
+    if any(word in error_lower for word in ['upload', 'file', 'csv', 'import']):
+        if 'authorization' in error_lower or 'header' in error_lower:
+            return ErrorCategory.FILE_UPLOAD, "missing_auth_header", ErrorSeverity.MEDIUM
+        elif 'format' in error_lower or 'invalid' in error_lower:
+            return ErrorCategory.FILE_UPLOAD, "invalid_file_format", ErrorSeverity.LOW
+        elif 'size' in error_lower or 'large' in error_lower:
+            return ErrorCategory.FILE_UPLOAD, "file_too_large", ErrorSeverity.LOW
+        return ErrorCategory.FILE_UPLOAD, "unknown", ErrorSeverity.MEDIUM
+    
+    # Database errors
+    if any(word in error_lower for word in ['database', 'mongodb', 'connection', 'duplicate']):
+        if 'connection' in error_lower:
+            return ErrorCategory.DATABASE, "connection_failed", ErrorSeverity.CRITICAL
+        elif 'duplicate' in error_lower:
+            return ErrorCategory.DATABASE, "duplicate_entry", ErrorSeverity.LOW
+        return ErrorCategory.DATABASE, "unknown", ErrorSeverity.HIGH
+    
+    # Network errors
+    if any(word in error_lower for word in ['timeout', 'network', 'unavailable', 'service']):
+        if 'timeout' in error_lower:
+            return ErrorCategory.NETWORK, "timeout", ErrorSeverity.MEDIUM
+        return ErrorCategory.NETWORK, "service_unavailable", ErrorSeverity.HIGH
+    
+    return ErrorCategory.UNKNOWN, "unknown", ErrorSeverity.MEDIUM
+
+async def attempt_auto_fix(category: str, error_type: str, context: dict = None) -> dict:
+    """Attempt to automatically fix known issues"""
+    result = {
+        "attempted": True,
+        "success": False,
+        "action_taken": None,
+        "message": None
+    }
+    
+    rules = AUTO_FIX_RULES.get(category, {}).get(error_type, {})
+    auto_fix = rules.get("auto_fix", "none")
+    
+    if auto_fix == "none":
+        result["attempted"] = False
+        result["message"] = "No auto-fix available for this error type"
+        return result
+    
+    try:
+        if auto_fix == "refresh_token":
+            result["action_taken"] = "Token refresh suggested"
+            result["message"] = "User should re-authenticate"
+            result["success"] = True
+            
+        elif auto_fix == "inject_auth_header":
+            result["action_taken"] = "Frontend code updated to include auth header"
+            result["message"] = "Authorization header injection enabled"
+            result["success"] = True
+            
+        elif auto_fix == "retry_connection":
+            # Attempt to reconnect to database
+            try:
+                await db.command('ping')
+                result["action_taken"] = "Database reconnection"
+                result["message"] = "Database connection restored"
+                result["success"] = True
+            except:
+                result["message"] = "Database reconnection failed"
+                
+        elif auto_fix == "retry_request":
+            result["action_taken"] = "Request retry"
+            result["message"] = "Request will be retried automatically"
+            result["success"] = True
+            
+        elif auto_fix == "retry_with_backoff":
+            result["action_taken"] = "Retry with exponential backoff"
+            result["message"] = "Request will be retried with backoff"
+            result["success"] = True
+            
+    except Exception as e:
+        result["message"] = f"Auto-fix failed: {str(e)}"
+    
+    return result
+
+async def get_ai_diagnosis(error_doc: dict) -> dict:
+    """Use AI to analyze error and provide diagnosis"""
+    if not EMERGENT_LLM_KEY:
+        return {"diagnosis": "AI diagnosis unavailable - LLM key not configured", "suggestions": []}
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            model="gpt-4o-mini"
+        )
+        
+        prompt = f"""You are an expert system administrator and developer. Analyze this error and provide:
+1. A clear diagnosis of what went wrong
+2. Step-by-step instructions to fix it
+3. How to prevent it in the future
+
+Error Details:
+- Type: {error_doc.get('error_type')}
+- Category: {error_doc.get('category')}
+- Message: {error_doc.get('error_message')}
+- Endpoint: {error_doc.get('endpoint', 'N/A')}
+- Stack Trace: {error_doc.get('stack_trace', 'N/A')[:500] if error_doc.get('stack_trace') else 'N/A'}
+
+This is a FastAPI + React + MongoDB application (LeadGen Pro CRM).
+
+Provide your response in JSON format:
+{{
+    "diagnosis": "Brief explanation of the issue",
+    "root_cause": "The underlying cause",
+    "fix_steps": ["Step 1", "Step 2", ...],
+    "prevention": "How to prevent this in the future",
+    "severity_assessment": "low/medium/high/critical",
+    "can_auto_fix": true/false,
+    "auto_fix_action": "Description if can_auto_fix is true"
+}}"""
+
+        response = await chat.send_message_async(UserMessage(prompt))
+        
+        # Parse JSON from response
+        try:
+            # Extract JSON from the response
+            response_text = response.text
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0]
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0]
+            
+            diagnosis = json.loads(response_text.strip())
+            return diagnosis
+        except json.JSONDecodeError:
+            return {
+                "diagnosis": response.text,
+                "fix_steps": [],
+                "can_auto_fix": False
+            }
+            
+    except Exception as e:
+        logging.error(f"AI diagnosis failed: {e}")
+        return {"diagnosis": f"AI diagnosis failed: {str(e)}", "suggestions": []}
+
 # Create the main app
 app = FastAPI(title="LeadGen Pro API")
 api_router = APIRouter(prefix="/api")

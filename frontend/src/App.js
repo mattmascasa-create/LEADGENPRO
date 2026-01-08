@@ -233,6 +233,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/integrations"
+        element={
+          <AdminRoute>
+            <CRMIntegrationsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/call-lists"
         element={
           <ProtectedRoute>

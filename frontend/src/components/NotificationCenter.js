@@ -17,25 +17,6 @@ const NotificationCenter = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchNotifications();
-    
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -51,6 +32,14 @@ const NotificationCenter = () => {
       console.error('Failed to fetch notifications:', err);
     }
   };
+
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const markAsRead = async (notificationId) => {
     try {

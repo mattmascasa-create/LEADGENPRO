@@ -768,6 +768,7 @@ test_plan:
     - "Google Sign-In Frontend UI"
     - "Google Calendar and Meet Integration"
     - "Google Calendar and Meet Integration Frontend"
+    - "CRM Integrations Page"
 
 agent_communication:
   - agent: "main"

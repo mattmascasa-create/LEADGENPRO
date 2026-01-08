@@ -4,18 +4,83 @@ Handles lead CRUD, bulk import, and lead distribution
 """
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File
-from pydantic import BaseModel, EmailStr
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from motor.motor_asyncio import AsyncIOMotorClient
+from jose import JWTError, jwt
 import uuid
 import csv
 import io
 import logging
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-from ..core import db, get_current_user, User, is_admin, log_activity, EMERGENT_LLM_KEY
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
 logger = logging.getLogger(__name__)
+
+# Database connection
+mongo_url = os.environ.get('MONGO_URL')
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ.get('DB_NAME', 'leadgenpro')]
+
+# Security
+security = HTTPBearer()
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
+ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+
+# Admin emails
+ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com']
+
+# ==================== User Model ====================
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: EmailStr
+    full_name: str
+    role: str
+    company: Optional[str] = None
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials"
+    )
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if user is None:
+        raise credentials_exception
+    return User(**user)
+
+def is_admin(user: User) -> bool:
+    return user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or user.role == 'admin'
+
+async def log_activity(activity_type: str, description: str, user_id: str, lead_id: str = None):
+    """Log an activity to the database"""
+    activity = {
+        "id": str(uuid.uuid4()),
+        "type": activity_type,
+        "description": description,
+        "user_id": user_id,
+        "lead_id": lead_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.activities.insert_one(activity)
 
 # ==================== Request Models ====================
 

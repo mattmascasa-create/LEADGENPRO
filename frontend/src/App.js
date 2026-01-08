@@ -156,6 +156,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/admin/errors"
+        element={
+          <AdminRoute>
+            <AdminErrorsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/employee-dashboard"
         element={
           <ProtectedRoute>

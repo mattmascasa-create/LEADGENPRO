@@ -1875,6 +1875,40 @@ class ChannelCreate(BaseModel):
     description: Optional[str] = None
     type: str = "public"
 
+# ============================================
+# USER PRESENCE & STATUS SYSTEM (SLACK-LIKE)
+# ============================================
+
+class UserStatus(BaseModel):
+    user_id: str
+    status: str = "online"  # online, away, busy, offline
+    status_emoji: Optional[str] = None  # 🍕, 🏠, 🏖️, etc.
+    status_text: Optional[str] = None  # "At lunch", "Working from home"
+    expires_at: Optional[str] = None
+    last_seen: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# Predefined status options
+STATUS_PRESETS = {
+    "online": {"emoji": "🟢", "text": "Online", "color": "green"},
+    "away": {"emoji": "🟡", "text": "Away", "color": "yellow"},
+    "busy": {"emoji": "🔴", "text": "Busy", "color": "red"},
+    "offline": {"emoji": "⚫", "text": "Offline", "color": "gray"},
+    "lunch": {"emoji": "🍕", "text": "At Lunch", "color": "orange"},
+    "wfh": {"emoji": "🏠", "text": "Working from Home", "color": "blue"},
+    "vacation": {"emoji": "🏖️", "text": "On Vacation", "color": "purple"},
+    "meeting": {"emoji": "📅", "text": "In a Meeting", "color": "blue"},
+    "sick": {"emoji": "🤒", "text": "Out Sick", "color": "gray"},
+    "focus": {"emoji": "🎯", "text": "Focus Time", "color": "red"},
+    "commuting": {"emoji": "🚗", "text": "Commuting", "color": "yellow"},
+    "brb": {"emoji": "⏰", "text": "Be Right Back", "color": "yellow"}
+}
+
+class UpdateStatusRequest(BaseModel):
+    status: str  # online, away, busy, offline, or custom
+    status_emoji: Optional[str] = None
+    status_text: Optional[str] = None
+    duration_minutes: Optional[int] = None  # Auto-clear after this time
+
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

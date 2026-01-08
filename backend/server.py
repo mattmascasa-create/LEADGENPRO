@@ -2328,8 +2328,12 @@ async def create_event_with_meet(event_data: CalendarEventCreate, current_user: 
     # Generate Meet link
     meet_link = generate_google_meet_link()
     
+    # Get event data without the meeting_link field to avoid duplication
+    event_dict = event_data.model_dump()
+    event_dict.pop('meeting_link', None)  # Remove existing meeting_link if any
+    
     event = CalendarEvent(
-        **event_data.model_dump(),
+        **event_dict,
         attendee_names=attendee_names,
         created_by=current_user.id,
         meeting_link=meet_link

@@ -5,12 +5,38 @@ import { format, parse, startOfWeek, getDay, addHours } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import { 
   Plus, X, Clock, User, Users, MapPin, Video, Phone,
-  CalendarDays, ChevronLeft, ChevronRight, Trash2, Edit
+  CalendarDays, ChevronLeft, ChevronRight, Trash2, Edit,
+  ExternalLink, Download, Copy, Check
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Google Meet icon SVG
+const GoogleMeetIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+    <path d="M12 12H3V18.5C3 19.33 3.67 20 4.5 20H12V12Z" fill="#00832d"/>
+    <path d="M12 4H4.5C3.67 4 3 4.67 3 5.5V12H12V4Z" fill="#0066da"/>
+    <path d="M21 6.5V17.5L16 13V11L21 6.5Z" fill="#e94235"/>
+    <path d="M12 12V20H19.5C20.33 20 21 19.33 21 18.5V17.5L16 13H12V12Z" fill="#2684fc"/>
+    <path d="M12 4V12H16L21 6.5V5.5C21 4.67 20.33 4 19.5 4H12Z" fill="#00ac47"/>
+  </svg>
+);
+
+// Google Calendar icon SVG
+const GoogleCalendarIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22 6v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2z"/>
+    <path fill="#fff" d="M4 8v10h16V8H4z"/>
+    <path fill="#EA4335" d="M10 13h4v4h-4z"/>
+    <path fill="#FBBC05" d="M10 9h4v4h-4z"/>
+    <path fill="#34A853" d="M6 13h4v4H6z"/>
+    <path fill="#4285F4" d="M14 13h4v4h-4z"/>
+  </svg>
+);
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

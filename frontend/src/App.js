@@ -279,7 +279,15 @@ const AppRouter = () => {
       />
       <Route
         path="/book/:userId"
-        element={<BookingPage />}
+        element={<BookingPageEnhanced />}
+      />
+      <Route
+        path="/scheduling"
+        element={
+          <ProtectedRoute>
+            <SchedulingSettingsPage />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/content-hub"

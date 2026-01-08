@@ -1029,7 +1029,7 @@ class LeadGenProTester:
         self.test_public_get_meeting_types()
         self.test_get_available_slots()
         self.test_create_booking()
-        self.test_delete_meeting_type()
+        self.test_delete_meeting_type()  # Run deletion last
         
         # Priority 3: Lead Management & Pipeline
         print("\n📋 LEAD MANAGEMENT TESTS")

@@ -19,7 +19,9 @@ class LeadGenProTester:
         self.base_url = BACKEND_URL
         self.session = requests.Session()
         self.auth_token = None
+        self.admin_token = None
         self.test_user_id = None
+        self.admin_user_id = None
         self.test_lead_id = None
         self.test_task_id = None
         self.test_channel_id = None

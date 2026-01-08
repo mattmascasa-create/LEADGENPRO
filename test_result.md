@@ -1055,3 +1055,4 @@ agent_communication:
 - [ ] Email notifications on booking (requires RESEND_API_KEY to be configured)
 - [x] Google Sign-In button present - VERIFIED (cannot test actual OAuth flow)
 - [x] Call Analytics Dashboard - VERIFIED (showing real Twilio data)
+- [x] @mentions in Team Chat - VERIFIED (dropdown, notifications, mentions panel)

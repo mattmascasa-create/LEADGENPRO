@@ -24,6 +24,7 @@ import CallListsPage from '@/pages/CallListsPage';
 import CalendarPage from '@/pages/CalendarPage';
 import CallAnalyticsPage from '@/pages/CallAnalyticsPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
+import AdminErrorsPage from '@/pages/AdminErrorsPage';
 import BookingPage from '@/pages/BookingPage';
 import ContentHubPage from '@/pages/ContentHubPage';
 import AIEmailPage from '@/pages/AIEmailPage';
@@ -37,6 +38,8 @@ import MeetingsPage from '@/pages/MeetingsPage';
 // Components
 import AIAssistant from '@/components/AIAssistant';
 import AuthCallback from '@/components/AuthCallback';
+import SupportBot from '@/components/SupportBot';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';

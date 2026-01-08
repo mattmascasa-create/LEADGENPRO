@@ -1007,7 +1007,20 @@ class LeadGenProTester:
         self.test_check_admin_status()
         self.test_google_link_status()
         
-        # Priority 2: Lead Management & Pipeline
+        # Priority 2: Calendly-like Scheduling Tests
+        print("\n📅 CALENDLY-LIKE SCHEDULING TESTS")
+        print("-" * 30)
+        self.test_get_meeting_types()
+        self.test_create_meeting_type()
+        self.test_update_meeting_type()
+        self.test_get_availability()
+        self.test_update_availability()
+        self.test_public_get_meeting_types()
+        self.test_get_available_slots()
+        self.test_create_booking()
+        self.test_delete_meeting_type()
+        
+        # Priority 3: Lead Management & Pipeline
         print("\n📋 LEAD MANAGEMENT TESTS")
         print("-" * 30)
         self.test_create_lead()
@@ -1015,14 +1028,14 @@ class LeadGenProTester:
         self.test_update_lead_stage()
         self.test_delete_lead()
         
-        # Priority 3: Tasks Management
+        # Priority 4: Tasks Management
         print("\n📝 TASK MANAGEMENT TESTS")
         print("-" * 30)
         self.test_create_task()
         self.test_get_tasks()
         self.test_complete_task()
         
-        # Priority 4: Team Chat
+        # Priority 5: Team Chat
         print("\n💬 TEAM CHAT TESTS")
         print("-" * 30)
         self.test_get_chat_channels()

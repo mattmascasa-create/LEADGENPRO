@@ -88,16 +88,20 @@ const TeamChatEnhanced = () => {
       fetchChannels();
       fetchTeamMembers();
       fetchUserStatuses();
+      fetchMentions();
       updateMyPresence();
       
       // Poll for status updates every 10 seconds
       const statusInterval = setInterval(fetchUserStatuses, 10000);
       // Update my presence every 30 seconds
       const presenceInterval = setInterval(updateMyPresence, 30000);
+      // Poll for mentions every 5 seconds
+      const mentionsInterval = setInterval(fetchMentions, 5000);
       
       return () => {
         clearInterval(statusInterval);
         clearInterval(presenceInterval);
+        clearInterval(mentionsInterval);
       };
     }
   }, [isOpen]);

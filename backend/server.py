@@ -823,9 +823,9 @@ async def google_auth(request: GoogleAuthRequest, response: Response):
         logging.error(f"Error contacting Emergent Auth: {e}")
         raise HTTPException(status_code=503, detail="Authentication service unavailable")
 
-@api_router.get("/auth/me/google-status")
-async def get_google_status(current_user: User = Depends(get_current_user)):
-    """Check if user has linked their Google account"""
+@api_router.get("/auth/me/google-link-status")
+async def get_google_link_status(current_user: User = Depends(get_current_user)):
+    """Check if user has linked their Google account for sign-in"""
     user = await db.users.find_one({"id": current_user.id}, {"_id": 0})
     google_session = await db.google_sessions.find_one({"user_id": current_user.id}, {"_id": 0})
     

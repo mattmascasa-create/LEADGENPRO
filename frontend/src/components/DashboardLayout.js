@@ -2,7 +2,7 @@ import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import AICoach from '@/components/AICoach';
 import AICopilot from '@/components/AICopilot';
-import TeamChat from '@/components/TeamChat';
+import TeamChatEnhanced from '@/components/TeamChatEnhanced';
 
 const DashboardLayout = ({ children }) => {
   return (
@@ -19,7 +19,7 @@ const DashboardLayout = ({ children }) => {
         <AICoach />
         <AICopilot />
       </div>
-      <TeamChat />
+      <TeamChatEnhanced />
     </div>
   );
 };

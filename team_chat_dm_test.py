@@ -296,13 +296,13 @@ class TeamChatDMTester:
             error_msg = response.json().get("detail", "Unknown error") if response else "No response"
             self.log_result("GET User Statuses", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
         
-        # Test POST /api/user/status - Update current user's status to "online"
+        # Test PUT /api/users/status - Update current user's status to "online"
         status_update_data = {
             "status": "online",
-            "message": "Available for chat"
+            "status_text": "Available for chat"
         }
         
-        response = self.make_request("POST", "/user/status", status_update_data)
+        response = self.make_request("PUT", "/users/status", status_update_data)
         
         if response and response.status_code in [200, 201]:
             updated_status = response.json()

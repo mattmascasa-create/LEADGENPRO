@@ -315,7 +315,7 @@ async def attempt_auto_fix(category: str, error_type: str, context: dict = None)
                 result["action_taken"] = "Database reconnection"
                 result["message"] = "Database connection restored"
                 result["success"] = True
-            except:
+            except Exception:
                 result["message"] = "Database reconnection failed"
                 
         elif auto_fix == "retry_request":

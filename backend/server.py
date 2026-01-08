@@ -2321,13 +2321,14 @@ async def get_available_slots_for_meeting_type(
         start_hour, start_min = map(int, day_rule.get("start_time", "09:00").split(":"))
         end_hour, end_min = map(int, day_rule.get("end_time", "17:00").split(":"))
         
-        # Generate slots
-        current_time = check_date.replace(hour=start_hour, minute=start_min, second=0, microsecond=0)
-        end_time = check_date.replace(hour=end_hour, minute=end_min, second=0, microsecond=0)
+        # Generate slots - ensure timezone-aware datetimes
+        current_time = check_date.replace(hour=start_hour, minute=start_min, second=0, microsecond=0, tzinfo=timezone.utc)
+        end_time = check_date.replace(hour=end_hour, minute=end_min, second=0, microsecond=0, tzinfo=timezone.utc)
+        now_utc = datetime.now(timezone.utc)
         
         while current_time + timedelta(minutes=duration) <= end_time:
             # Skip past times
-            if current_time < datetime.now(timezone.utc):
+            if current_time < now_utc:
                 current_time += timedelta(minutes=30)
                 continue
             

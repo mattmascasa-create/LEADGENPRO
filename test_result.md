@@ -1030,6 +1030,10 @@ agent_communication:
 - `GET /api/booking/{user_id}/meeting-types` - Public: Get host's meeting types
 - `GET /api/booking/{user_id}/slots/{meeting_type_id}` - Get available slots
 - `POST /api/booking/{user_id}/book` - Create booking
+- `GET /api/calls/logs` - Get call history (Twilio)
+- `GET /api/calls/stats` - Get call statistics
+- `POST /api/calls/{id}/transcribe` - Transcribe call with Whisper
+- `POST /api/calls/{id}/analyze` - AI analyze call
 
 ### Test URLs:
 - Scheduling Settings: `/scheduling`

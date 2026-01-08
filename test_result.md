@@ -755,6 +755,7 @@ test_plan:
     - "Google Sign-In Backend API"
     - "Google Sign-In Frontend UI"
     - "Google Calendar and Meet Integration"
+    - "Google Calendar and Meet Integration Frontend"
 
 agent_communication:
   - agent: "main"

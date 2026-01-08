@@ -715,6 +715,137 @@ async def complete_onboarding(current_user: User = Depends(get_current_user)):
     )
     return {"message": "Onboarding completed"}
 
+# ==================== Google OAuth Sign-In (Emergent Auth) ====================
+# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+
+EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+class GoogleAuthRequest(BaseModel):
+    session_id: str
+
+@api_router.post("/auth/google")
+async def google_auth(request: GoogleAuthRequest, response: Response):
+    """
+    Process Google OAuth session from Emergent Auth.
+    Only allows sign-in if user already exists (admin must create account first).
+    """
+    try:
+        # Get session data from Emergent Auth
+        async with httpx.AsyncClient() as client:
+            auth_response = await client.get(
+                EMERGENT_AUTH_URL,
+                headers={"X-Session-ID": request.session_id},
+                timeout=30
+            )
+        
+        if auth_response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
+        
+        session_data = auth_response.json()
+        google_email = session_data.get("email")
+        google_name = session_data.get("name")
+        google_picture = session_data.get("picture")
+        session_token = session_data.get("session_token")
+        
+        if not google_email:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+        
+        # Check if user exists with this email (admin must create account first)
+        existing_user = await db.users.find_one({"email": google_email}, {"_id": 0})
+        
+        if not existing_user:
+            raise HTTPException(
+                status_code=403, 
+                detail="No account found with this email. Please contact your administrator to create an account first."
+            )
+        
+        # Update user with Google info if not already linked
+        update_data = {
+            "google_linked": True,
+            "google_picture": google_picture,
+            "last_login": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Update name if user doesn't have one
+        if not existing_user.get("full_name") and google_name:
+            update_data["full_name"] = google_name
+        
+        await db.users.update_one(
+            {"email": google_email},
+            {"$set": update_data}
+        )
+        
+        # Store Google session token for future Google API calls
+        await db.google_sessions.update_one(
+            {"user_id": existing_user["id"]},
+            {
+                "$set": {
+                    "user_id": existing_user["id"],
+                    "session_token": session_token,
+                    "google_email": google_email,
+                    "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+            },
+            upsert=True
+        )
+        
+        # Create our own JWT token for the user
+        token_data = {"sub": existing_user["id"], "email": google_email}
+        access_token = jwt.encode(
+            {**token_data, "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES * 48)},  # 24 hours
+            JWT_SECRET,
+            algorithm=ALGORITHM
+        )
+        
+        # Set session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            path="/",
+            max_age=7 * 24 * 60 * 60  # 7 days
+        )
+        
+        # Get updated user data
+        user = await db.users.find_one({"id": existing_user["id"]}, {"_id": 0, "hashed_password": 0})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user,
+            "message": "Successfully signed in with Google"
+        }
+        
+    except httpx.RequestError as e:
+        logging.error(f"Error contacting Emergent Auth: {e}")
+        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+
+@api_router.get("/auth/me/google-status")
+async def get_google_status(current_user: User = Depends(get_current_user)):
+    """Check if user has linked their Google account"""
+    user = await db.users.find_one({"id": current_user.id}, {"_id": 0})
+    google_session = await db.google_sessions.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    return {
+        "google_linked": user.get("google_linked", False),
+        "google_picture": user.get("google_picture"),
+        "session_valid": google_session is not None
+    }
+
+@api_router.post("/auth/logout")
+async def logout(response: Response, current_user: User = Depends(get_current_user)):
+    """Logout and clear session"""
+    # Delete Google session
+    await db.google_sessions.delete_one({"user_id": current_user.id})
+    
+    # Clear cookie
+    response.delete_cookie(key="session_token", path="/")
+    
+    return {"message": "Successfully logged out"}
+
 # Leads routes
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(stage: Optional[str] = None, current_user: User = Depends(get_current_user)):

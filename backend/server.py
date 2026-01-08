@@ -776,8 +776,11 @@ async def google_auth(request: GoogleAuthRequest, response: Response):
         if not existing_user.get("full_name") and google_name:
             update_data["full_name"] = google_name
         
+        # Use existing user's email from DB (not Google's potentially different casing)
+        db_email = existing_user.get("email")
+        
         await db.users.update_one(
-            {"email": google_email},
+            {"email": db_email},
             {"$set": update_data}
         )
         

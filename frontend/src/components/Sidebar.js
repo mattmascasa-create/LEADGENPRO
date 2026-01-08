@@ -60,7 +60,7 @@ const Sidebar = () => {
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Reports', href: '/reports', icon: PieChart },
-    { name: 'CRM Integrations', href: '/integrations', icon: FolderOpen },
+    { name: 'CRM Integrations', href: '/integrations', icon: Link2 },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'User Management', href: '/admin/users', icon: UserCog },
     { name: 'Distribute Leads', href: '/admin/distribute', icon: FolderOpen },

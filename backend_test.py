@@ -25,6 +25,8 @@ class LeadGenProTester:
         self.test_lead_id = None
         self.test_task_id = None
         self.test_channel_id = None
+        self.test_meeting_type_id = None
+        self.test_booking_id = None
         self.results = {
             "passed": 0,
             "failed": 0,

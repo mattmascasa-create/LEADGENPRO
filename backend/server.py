@@ -2108,6 +2108,631 @@ async def get_status_presets(current_user: User = Depends(get_current_user)):
     """Get available status presets"""
     return STATUS_PRESETS
 
+# ============================================
+# CALENDLY-LIKE MEETING SCHEDULING SYSTEM
+# ============================================
+
+class MeetingType(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str  # "Quick Call", "Discovery Call", "Demo", etc.
+    duration: int  # minutes
+    description: Optional[str] = None
+    color: str = "#3B82F6"
+    location: str = "google_meet"  # google_meet, zoom, phone, in_person
+    buffer_before: int = 0  # minutes
+    buffer_after: int = 0  # minutes
+    max_bookings_per_day: Optional[int] = None
+    questions: List[Dict[str, Any]] = []  # Custom intake questions
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class AvailabilityRule(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    day_of_week: int  # 0=Monday, 6=Sunday
+    start_time: str  # "09:00"
+    end_time: str  # "17:00"
+    is_available: bool = True
+
+class MeetingTypeCreate(BaseModel):
+    name: str
+    duration: int
+    description: Optional[str] = None
+    color: str = "#3B82F6"
+    location: str = "google_meet"
+    buffer_before: int = 0
+    buffer_after: int = 0
+    max_bookings_per_day: Optional[int] = None
+    questions: List[Dict[str, Any]] = []
+
+@api_router.get("/meeting-types")
+async def get_meeting_types(current_user: User = Depends(get_current_user)):
+    """Get user's meeting types (like Calendly event types)"""
+    meeting_types = await db.meeting_types.find(
+        {"user_id": current_user.id, "is_active": True}, 
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Return default types if none exist
+    if not meeting_types:
+        default_types = [
+            {"id": str(uuid.uuid4()), "user_id": current_user.id, "name": "Quick Call", "duration": 15, "color": "#10B981", "location": "google_meet", "description": "A brief 15-minute call"},
+            {"id": str(uuid.uuid4()), "user_id": current_user.id, "name": "Discovery Call", "duration": 30, "color": "#3B82F6", "location": "google_meet", "description": "Learn about your needs"},
+            {"id": str(uuid.uuid4()), "user_id": current_user.id, "name": "Product Demo", "duration": 45, "color": "#8B5CF6", "location": "google_meet", "description": "Full product demonstration"},
+            {"id": str(uuid.uuid4()), "user_id": current_user.id, "name": "Strategy Session", "duration": 60, "color": "#F59E0B", "location": "google_meet", "description": "In-depth strategy discussion"},
+        ]
+        for mt in default_types:
+            mt["is_active"] = True
+            mt["created_at"] = datetime.now(timezone.utc).isoformat()
+            await db.meeting_types.insert_one(mt)
+        meeting_types = default_types
+    
+    return meeting_types
+
+@api_router.post("/meeting-types")
+async def create_meeting_type(
+    data: MeetingTypeCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new meeting type"""
+    meeting_type = MeetingType(
+        user_id=current_user.id,
+        **data.model_dump()
+    )
+    doc = meeting_type.model_dump()
+    await db.meeting_types.insert_one(doc)
+    return meeting_type
+
+@api_router.put("/meeting-types/{meeting_type_id}")
+async def update_meeting_type(
+    meeting_type_id: str,
+    data: MeetingTypeCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a meeting type"""
+    result = await db.meeting_types.update_one(
+        {"id": meeting_type_id, "user_id": current_user.id},
+        {"$set": data.model_dump()}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Meeting type not found")
+    return {"message": "Meeting type updated"}
+
+@api_router.delete("/meeting-types/{meeting_type_id}")
+async def delete_meeting_type(
+    meeting_type_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete (deactivate) a meeting type"""
+    await db.meeting_types.update_one(
+        {"id": meeting_type_id, "user_id": current_user.id},
+        {"$set": {"is_active": False}}
+    )
+    return {"message": "Meeting type deleted"}
+
+@api_router.get("/availability")
+async def get_availability(current_user: User = Depends(get_current_user)):
+    """Get user's availability rules"""
+    rules = await db.availability_rules.find(
+        {"user_id": current_user.id}, 
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Return default availability if none set
+    if not rules:
+        default_rules = []
+        for day in range(5):  # Mon-Fri
+            default_rules.append({
+                "id": str(uuid.uuid4()),
+                "user_id": current_user.id,
+                "day_of_week": day,
+                "start_time": "09:00",
+                "end_time": "17:00",
+                "is_available": True
+            })
+        for rule in default_rules:
+            await db.availability_rules.insert_one(rule)
+        rules = default_rules
+    
+    return rules
+
+@api_router.put("/availability")
+async def update_availability(
+    rules: List[Dict[str, Any]],
+    current_user: User = Depends(get_current_user)
+):
+    """Update availability rules"""
+    # Delete existing rules
+    await db.availability_rules.delete_many({"user_id": current_user.id})
+    
+    # Insert new rules
+    for rule in rules:
+        rule["user_id"] = current_user.id
+        rule["id"] = str(uuid.uuid4())
+        await db.availability_rules.insert_one(rule)
+    
+    return {"message": "Availability updated"}
+
+@api_router.get("/booking/{user_id}/meeting-types")
+async def get_public_meeting_types(user_id: str):
+    """Get meeting types for public booking page (no auth required)"""
+    meeting_types = await db.meeting_types.find(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    ).to_list(100)
+    return meeting_types
+
+@api_router.get("/booking/{user_id}/slots/{meeting_type_id}")
+async def get_available_slots_for_meeting_type(
+    user_id: str,
+    meeting_type_id: str,
+    date: Optional[str] = None,
+    days: int = 7
+):
+    """Get available time slots for a specific meeting type"""
+    # Get meeting type
+    meeting_type = await db.meeting_types.find_one(
+        {"id": meeting_type_id, "user_id": user_id},
+        {"_id": 0}
+    )
+    if not meeting_type:
+        raise HTTPException(status_code=404, detail="Meeting type not found")
+    
+    # Get availability rules
+    rules = await db.availability_rules.find(
+        {"user_id": user_id, "is_available": True},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Get existing bookings
+    start_date = datetime.now(timezone.utc)
+    end_date = start_date + timedelta(days=days)
+    
+    existing_bookings = await db.appointments.find({
+        "employee_id": user_id,
+        "scheduled_at": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Generate available slots
+    available_slots = []
+    duration = meeting_type.get("duration", 30)
+    buffer_before = meeting_type.get("buffer_before", 0)
+    buffer_after = meeting_type.get("buffer_after", 0)
+    
+    for day_offset in range(days):
+        check_date = start_date + timedelta(days=day_offset)
+        day_of_week = check_date.weekday()
+        
+        # Find rule for this day
+        day_rule = next((r for r in rules if r.get("day_of_week") == day_of_week), None)
+        if not day_rule:
+            continue
+        
+        # Parse times
+        start_hour, start_min = map(int, day_rule.get("start_time", "09:00").split(":"))
+        end_hour, end_min = map(int, day_rule.get("end_time", "17:00").split(":"))
+        
+        # Generate slots
+        current_time = check_date.replace(hour=start_hour, minute=start_min, second=0, microsecond=0)
+        end_time = check_date.replace(hour=end_hour, minute=end_min, second=0, microsecond=0)
+        
+        while current_time + timedelta(minutes=duration) <= end_time:
+            # Skip past times
+            if current_time < datetime.now(timezone.utc):
+                current_time += timedelta(minutes=30)
+                continue
+            
+            # Check if slot conflicts with existing booking
+            slot_end = current_time + timedelta(minutes=duration)
+            is_available = True
+            
+            for booking in existing_bookings:
+                booking_start = datetime.fromisoformat(booking["scheduled_at"].replace("Z", "+00:00"))
+                booking_end = booking_start + timedelta(minutes=booking.get("duration", 30))
+                
+                # Add buffers
+                buffer_start = booking_start - timedelta(minutes=buffer_before)
+                buffer_end = booking_end + timedelta(minutes=buffer_after)
+                
+                if current_time < buffer_end and slot_end > buffer_start:
+                    is_available = False
+                    break
+            
+            if is_available:
+                available_slots.append(current_time.isoformat())
+            
+            current_time += timedelta(minutes=30)
+    
+    return {
+        "meeting_type": meeting_type,
+        "available_slots": available_slots
+    }
+
+@api_router.post("/booking/{user_id}/book")
+async def create_booking(
+    user_id: str,
+    booking_data: Dict[str, Any]
+):
+    """Create a booking (public endpoint)"""
+    meeting_type_id = booking_data.get("meeting_type_id")
+    scheduled_at = booking_data.get("scheduled_at")
+    guest_name = booking_data.get("name")
+    guest_email = booking_data.get("email")
+    guest_phone = booking_data.get("phone")
+    guest_company = booking_data.get("company")
+    notes = booking_data.get("notes")
+    answers = booking_data.get("answers", {})  # Answers to custom questions
+    
+    if not all([meeting_type_id, scheduled_at, guest_name, guest_email]):
+        raise HTTPException(status_code=400, detail="Missing required fields")
+    
+    # Get meeting type
+    meeting_type = await db.meeting_types.find_one({"id": meeting_type_id}, {"_id": 0})
+    if not meeting_type:
+        raise HTTPException(status_code=404, detail="Meeting type not found")
+    
+    # Get host user
+    host_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not host_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Generate meeting link
+    meeting_link = f"https://meet.google.com/{uuid.uuid4().hex[:3]}-{uuid.uuid4().hex[:4]}-{uuid.uuid4().hex[:3]}"
+    
+    # Create appointment
+    appointment = {
+        "id": str(uuid.uuid4()),
+        "title": f"{meeting_type['name']} with {guest_name}",
+        "lead_id": None,
+        "employee_id": user_id,
+        "scheduled_at": scheduled_at,
+        "duration": meeting_type.get("duration", 30),
+        "status": "scheduled",
+        "meeting_link": meeting_link,
+        "notes": notes,
+        "guest_info": {
+            "name": guest_name,
+            "email": guest_email,
+            "phone": guest_phone,
+            "company": guest_company
+        },
+        "meeting_type": meeting_type,
+        "answers": answers,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.appointments.insert_one(appointment)
+    
+    # Send confirmation emails
+    try:
+        booking_datetime = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+        
+        # Email to host
+        await send_booking_notification_email(
+            host_email=host_user.get("email"),
+            host_name=host_user.get("full_name"),
+            guest_name=guest_name,
+            guest_email=guest_email,
+            booking_datetime=booking_datetime,
+            duration=meeting_type.get("duration", 30),
+            meeting_link=meeting_link,
+            notes=notes
+        )
+        
+        # Email to guest
+        await send_booking_confirmation_email(
+            guest_email=guest_email,
+            guest_name=guest_name,
+            host_name=host_user.get("full_name"),
+            booking_datetime=booking_datetime,
+            duration=meeting_type.get("duration", 30),
+            meeting_link=meeting_link
+        )
+    except Exception as e:
+        logging.error(f"Failed to send booking emails: {e}")
+    
+    return {
+        "booking": appointment,
+        "meeting_link": meeting_link,
+        "message": "Booking confirmed!"
+    }
+
+# ============================================
+# GONG-LIKE CALL ANALYTICS & INTELLIGENCE
+# ============================================
+
+class CallRecording(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    call_id: str
+    user_id: str
+    lead_id: Optional[str] = None
+    recording_url: Optional[str] = None
+    duration_seconds: int = 0
+    transcription: Optional[str] = None
+    summary: Optional[str] = None
+    sentiment: Optional[str] = None  # positive, neutral, negative
+    talk_time: Dict[str, int] = {}  # user_id -> seconds
+    key_moments: List[Dict[str, Any]] = []  # timestamps of important moments
+    action_items: List[str] = []
+    topics: List[str] = []
+    deal_signals: List[Dict[str, Any]] = []  # buying signals, objections, etc.
+    coaching_tips: List[str] = []
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+@api_router.get("/call-analytics")
+async def get_call_analytics(
+    current_user: User = Depends(get_current_user),
+    days: int = 30
+):
+    """Get Gong-like call analytics dashboard data"""
+    start_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    
+    # Get all calls for user
+    calls = await db.call_logs.find({
+        "user_id": current_user.id,
+        "created_at": {"$gte": start_date}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Get recordings with analysis
+    recordings = await db.call_recordings.find({
+        "user_id": current_user.id,
+        "created_at": {"$gte": start_date}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Calculate metrics
+    total_calls = len(calls)
+    total_duration = sum(c.get("duration", 0) for c in calls)
+    avg_duration = total_duration / total_calls if total_calls > 0 else 0
+    
+    # Sentiment breakdown
+    sentiments = {"positive": 0, "neutral": 0, "negative": 0}
+    for r in recordings:
+        s = r.get("sentiment", "neutral")
+        sentiments[s] = sentiments.get(s, 0) + 1
+    
+    # Top topics
+    topic_counts = {}
+    for r in recordings:
+        for topic in r.get("topics", []):
+            topic_counts[topic] = topic_counts.get(topic, 0) + 1
+    top_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # Deal signals
+    all_signals = []
+    for r in recordings:
+        all_signals.extend(r.get("deal_signals", []))
+    
+    buying_signals = [s for s in all_signals if s.get("type") == "buying_signal"]
+    objections = [s for s in all_signals if s.get("type") == "objection"]
+    
+    # Talk ratio (average)
+    talk_ratios = []
+    for r in recordings:
+        talk_time = r.get("talk_time", {})
+        user_time = talk_time.get(current_user.id, 0)
+        total_time = sum(talk_time.values()) or 1
+        talk_ratios.append(user_time / total_time * 100)
+    avg_talk_ratio = sum(talk_ratios) / len(talk_ratios) if talk_ratios else 50
+    
+    # Coaching tips aggregated
+    all_tips = []
+    for r in recordings:
+        all_tips.extend(r.get("coaching_tips", []))
+    tip_counts = {}
+    for tip in all_tips:
+        tip_counts[tip] = tip_counts.get(tip, 0) + 1
+    top_coaching_tips = sorted(tip_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    return {
+        "overview": {
+            "total_calls": total_calls,
+            "total_duration_minutes": round(total_duration / 60, 1),
+            "avg_duration_minutes": round(avg_duration / 60, 1),
+            "avg_talk_ratio": round(avg_talk_ratio, 1)
+        },
+        "sentiment": sentiments,
+        "top_topics": [{"topic": t[0], "count": t[1]} for t in top_topics],
+        "deal_signals": {
+            "buying_signals": len(buying_signals),
+            "objections": len(objections),
+            "recent_signals": all_signals[:10]
+        },
+        "coaching": {
+            "tips": [{"tip": t[0], "occurrences": t[1]} for t in top_coaching_tips]
+        },
+        "recent_calls": calls[:10]
+    }
+
+@api_router.get("/call-recordings")
+async def get_call_recordings(
+    current_user: User = Depends(get_current_user),
+    limit: int = 20
+):
+    """Get list of call recordings with analysis"""
+    recordings = await db.call_recordings.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    return recordings
+
+@api_router.get("/call-recordings/{recording_id}")
+async def get_call_recording_detail(
+    recording_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get detailed call recording with full transcription and analysis"""
+    recording = await db.call_recordings.find_one(
+        {"id": recording_id, "user_id": current_user.id},
+        {"_id": 0}
+    )
+    if not recording:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    return recording
+
+@api_router.post("/call-recordings/{call_id}/analyze")
+async def analyze_call_recording(
+    call_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Analyze a call recording using AI (Gong-like analysis)"""
+    # Get call log
+    call = await db.call_logs.find_one({"call_sid": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    # Check for existing transcription
+    existing = await db.call_recordings.find_one({"call_id": call_id}, {"_id": 0})
+    if existing and existing.get("transcription"):
+        transcription = existing["transcription"]
+    else:
+        # In production, this would fetch and transcribe the recording
+        transcription = call.get("transcription", "")
+    
+    if not transcription:
+        return {"message": "No transcription available for this call"}
+    
+    # Analyze with AI
+    analysis = await analyze_call_with_ai(transcription, call)
+    
+    # Store recording analysis
+    recording_data = {
+        "id": str(uuid.uuid4()),
+        "call_id": call_id,
+        "user_id": current_user.id,
+        "lead_id": call.get("lead_id"),
+        "duration_seconds": call.get("duration", 0),
+        "transcription": transcription,
+        **analysis,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.call_recordings.update_one(
+        {"call_id": call_id},
+        {"$set": recording_data},
+        upsert=True
+    )
+    
+    return recording_data
+
+async def analyze_call_with_ai(transcription: str, call_data: dict) -> dict:
+    """Use AI to analyze call transcription (Gong-like analysis)"""
+    if not EMERGENT_LLM_KEY:
+        return {
+            "summary": "AI analysis unavailable",
+            "sentiment": "neutral",
+            "topics": [],
+            "action_items": [],
+            "deal_signals": [],
+            "coaching_tips": []
+        }
+    
+    try:
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, model="gpt-4o-mini")
+        
+        prompt = f"""Analyze this sales call transcription and provide insights like Gong.io would.
+
+TRANSCRIPTION:
+{transcription[:4000]}
+
+Provide your analysis in JSON format:
+{{
+    "summary": "2-3 sentence summary of the call",
+    "sentiment": "positive/neutral/negative",
+    "topics": ["list", "of", "main", "topics", "discussed"],
+    "action_items": ["action item 1", "action item 2"],
+    "deal_signals": [
+        {{"type": "buying_signal", "text": "quote from call", "timestamp": "approximate"}},
+        {{"type": "objection", "text": "quote from call", "timestamp": "approximate"}}
+    ],
+    "key_moments": [
+        {{"type": "question", "text": "important question asked", "timestamp": "approximate"}},
+        {{"type": "commitment", "text": "commitment made", "timestamp": "approximate"}}
+    ],
+    "talk_ratio_assessment": "Assessment of talk time balance",
+    "coaching_tips": [
+        "Specific coaching tip based on the call",
+        "Another improvement suggestion"
+    ],
+    "next_steps": ["Recommended next step 1", "Recommended next step 2"]
+}}"""
+
+        response = await chat.send_message_async(UserMessage(prompt))
+        
+        try:
+            # Parse JSON from response
+            response_text = response.text
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0]
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0]
+            
+            analysis = json.loads(response_text.strip())
+            return analysis
+        except json.JSONDecodeError:
+            return {
+                "summary": response.text[:500],
+                "sentiment": "neutral",
+                "topics": [],
+                "action_items": [],
+                "deal_signals": [],
+                "coaching_tips": []
+            }
+            
+    except Exception as e:
+        logging.error(f"AI call analysis failed: {e}")
+        return {
+            "summary": "Analysis failed",
+            "sentiment": "neutral",
+            "topics": [],
+            "action_items": [],
+            "deal_signals": [],
+            "coaching_tips": []
+        }
+
+@api_router.get("/call-analytics/leaderboard")
+async def get_call_leaderboard(
+    current_user: User = Depends(get_current_user),
+    days: int = 30
+):
+    """Get team call performance leaderboard"""
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    start_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    
+    # Aggregate calls by user
+    pipeline = [
+        {"$match": {"created_at": {"$gte": start_date}}},
+        {"$group": {
+            "_id": "$user_id",
+            "total_calls": {"$sum": 1},
+            "total_duration": {"$sum": "$duration"},
+            "connected_calls": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}}
+        }},
+        {"$sort": {"total_calls": -1}}
+    ]
+    
+    results = await db.call_logs.aggregate(pipeline).to_list(100)
+    
+    # Enrich with user names
+    leaderboard = []
+    for r in results:
+        user = await db.users.find_one({"id": r["_id"]}, {"_id": 0, "full_name": 1, "email": 1})
+        if user:
+            leaderboard.append({
+                "user_id": r["_id"],
+                "name": user.get("full_name", "Unknown"),
+                "email": user.get("email", ""),
+                "total_calls": r["total_calls"],
+                "total_duration_minutes": round(r["total_duration"] / 60, 1),
+                "connected_calls": r["connected_calls"],
+                "connect_rate": round(r["connected_calls"] / r["total_calls"] * 100, 1) if r["total_calls"] > 0 else 0
+            })
+    
+    return leaderboard
+
 @api_router.post("/chat/messages/{message_id}/reactions")
 async def add_reaction(
     message_id: str,

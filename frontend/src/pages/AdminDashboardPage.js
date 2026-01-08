@@ -98,36 +98,36 @@ const AdminDashboardPage = () => {
     <DashboardLayout>
       <div data-testid="admin-dashboard-page">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-            <p className="text-secondary">Company-wide overview and employee performance</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-foreground mb-1 lg:mb-2">Admin Dashboard</h1>
+            <p className="text-sm lg:text-base text-secondary">Company-wide overview and employee performance</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 lg:gap-3">
             <button
               onClick={handleDistributeRoundRobin}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2"
+              className="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2 text-sm lg:text-base"
             >
               <Send className="w-4 h-4" />
-              Auto-Distribute Leads
+              <span className="hidden sm:inline">Auto-</span>Distribute
             </button>
             <button
               onClick={() => navigate('/admin/users')}
-              className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2"
+              className="px-3 lg:px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 flex items-center gap-2 text-sm lg:text-base"
             >
               <Plus className="w-4 h-4" />
-              Add Employee
+              <span className="hidden sm:inline">Add</span> Employee
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
           {[
-            { icon: Users, label: 'Total Employees', value: stats?.total_employees || 0, color: 'text-blue-600', bg: 'bg-blue-100' },
+            { icon: Users, label: 'Employees', value: stats?.total_employees || 0, color: 'text-blue-600', bg: 'bg-blue-100' },
             { icon: Target, label: 'Active Leads', value: stats?.active_leads || 0, color: 'text-green-600', bg: 'bg-green-100' },
             { icon: Phone, label: 'Calls Today', value: stats?.calls_today || 0, color: 'text-orange-600', bg: 'bg-orange-100' },
-            { icon: Calendar, label: 'Meetings Today', value: stats?.meetings_today || 0, color: 'text-purple-600', bg: 'bg-purple-100' }
+            { icon: Calendar, label: 'Meetings', value: stats?.meetings_today || 0, color: 'text-purple-600', bg: 'bg-purple-100' }
           ].map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -136,13 +136,13 @@ const AdminDashboardPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white p-6 rounded-xl border border-border hover:shadow-md transition-all"
+                className="bg-white p-4 lg:p-6 rounded-xl border border-border hover:shadow-md transition-all"
               >
-                <div className={`${stat.bg} ${stat.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
-                  <Icon className="w-6 h-6" />
+                <div className={`${stat.bg} ${stat.color} w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex items-center justify-center mb-3 lg:mb-4`}>
+                  <Icon className="w-5 h-5 lg:w-6 lg:h-6" />
                 </div>
-                <p className="text-sm text-secondary mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-xs lg:text-sm text-secondary mb-1">{stat.label}</p>
+                <p className="text-2xl lg:text-3xl font-bold text-foreground">{stat.value}</p>
               </motion.div>
             );
           })}

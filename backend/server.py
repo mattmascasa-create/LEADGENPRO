@@ -375,7 +375,7 @@ Provide your response in JSON format:
         # Parse JSON from response
         try:
             # Extract JSON from the response
-            response_text = response.text
+            response_text = response  # response is already a string
             if "```json" in response_text:
                 response_text = response_text.split("```json")[1].split("```")[0]
             elif "```" in response_text:
@@ -385,7 +385,7 @@ Provide your response in JSON format:
             return diagnosis
         except json.JSONDecodeError:
             return {
-                "diagnosis": response.text,
+                "diagnosis": response,  # Use the raw response as diagnosis
                 "fix_steps": ["Check the error details", "Contact system administrator"],
                 "can_auto_fix": False
             }

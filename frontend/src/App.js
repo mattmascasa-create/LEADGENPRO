@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/App.css';
@@ -35,6 +35,7 @@ import MeetingsPage from '@/pages/MeetingsPage';
 
 // Components
 import AIAssistant from '@/components/AIAssistant';
+import AuthCallback from '@/components/AuthCallback';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -49,6 +50,7 @@ const isAdminUser = (user) => {
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return (
@@ -56,6 +58,11 @@ const ProtectedRoute = ({ children }) => {
         <div className="text-primary text-xl">Loading...</div>
       </div>
     );
+  }
+  
+  // If we have user data from state (passed from AuthCallback), use it
+  if (location.state?.user) {
+    return children;
   }
   
   if (!user) {

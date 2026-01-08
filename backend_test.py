@@ -621,23 +621,40 @@ class LeadGenProTester:
         print(f"🌐 Backend URL: {self.base_url}")
         print("=" * 60)
         
-        # Priority 1: Authentication Flow
+        # Priority 1: Authentication Flow (including Google Sign-In)
+        print("\n🔐 AUTHENTICATION TESTS")
+        print("-" * 30)
         self.test_user_registration()
         self.test_user_login()
         self.test_get_current_user()
         
+        # Google Sign-In Tests
+        print("\n🔍 GOOGLE SIGN-IN TESTS")
+        print("-" * 30)
+        self.test_traditional_login_still_works()
+        self.test_google_auth_invalid_session()
+        self.test_google_auth_no_user_found()
+        self.test_check_admin_status()
+        self.test_google_link_status()
+        
         # Priority 2: Lead Management & Pipeline
+        print("\n📋 LEAD MANAGEMENT TESTS")
+        print("-" * 30)
         self.test_create_lead()
         self.test_get_leads()
         self.test_update_lead_stage()
         self.test_delete_lead()
         
         # Priority 3: Tasks Management
+        print("\n📝 TASK MANAGEMENT TESTS")
+        print("-" * 30)
         self.test_create_task()
         self.test_get_tasks()
         self.test_complete_task()
         
         # Priority 4: Team Chat
+        print("\n💬 TEAM CHAT TESTS")
+        print("-" * 30)
         self.test_get_chat_channels()
         self.test_send_chat_message()
         self.test_get_chat_messages()

@@ -956,3 +956,45 @@ agent_communication:
 ## Incorporate User Feedback
 - User reported CSV upload not working - FIXED
 - User reported Google Sign-In not working - NEEDS VERIFICATION
+
+## Session 4 - Calendly-like Scheduling Feature (Fork)
+
+### Features Added:
+1. **Scheduling Settings Page** (`/app/frontend/src/pages/SchedulingSettingsPage.js`)
+   - Meeting Types management (CRUD operations)
+   - Availability settings (weekly hours)
+   - Quick start templates for common meeting types
+   - Booking link display and copy functionality
+   - Preview button to test booking page
+
+2. **Enhanced Booking Page** (`/app/frontend/src/pages/BookingPageEnhanced.js`)
+   - 4-step booking flow (Select Type → Date/Time → Details → Confirmed)
+   - Visual progress stepper
+   - Meeting type cards with descriptions
+   - Calendar with available slots
+   - Guest details form
+   - Confirmation with "Add to Calendar" link
+
+### Backend Endpoints:
+- `GET /api/meeting-types` - Get user's meeting types
+- `POST /api/meeting-types` - Create new meeting type
+- `PUT /api/meeting-types/{id}` - Update meeting type
+- `DELETE /api/meeting-types/{id}` - Delete meeting type
+- `GET /api/availability` - Get user's availability rules
+- `PUT /api/availability` - Update availability rules
+- `GET /api/booking/{user_id}/meeting-types` - Public: Get host's meeting types
+- `GET /api/booking/{user_id}/slots/{meeting_type_id}` - Get available slots
+- `POST /api/booking/{user_id}/book` - Create booking
+
+### Test URLs:
+- Scheduling Settings: `/scheduling`
+- Public Booking Page: `/book/{user_id}`
+
+### Test Credentials:
+- Email: admin@test.com
+- Password: admin123
+
+### Pending Tests:
+- [ ] Full booking flow completion
+- [ ] Email notifications on booking
+- [ ] Google Sign-In verification

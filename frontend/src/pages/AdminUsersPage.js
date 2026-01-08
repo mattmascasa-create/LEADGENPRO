@@ -397,8 +397,10 @@ const AdminUsersPage = () => {
                       >
                         <option value="employee">Employee</option>
                         <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
                       </select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Admin role can only be assigned by system administrators
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Department</label>

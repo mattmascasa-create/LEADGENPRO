@@ -282,6 +282,57 @@ backend:
       - working: true
         agent: "testing"
         comment: "Team chat fully tested: GET /api/chat/channels (auto-creates default channels), POST /api/chat/messages (send), GET /api/chat/messages/{channel_id} (retrieve). Message threading and activity logging working"
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE TEAM CHAT & DM TESTING COMPLETED - All 14 tests passed with 100% success rate using admin@test.com/admin123. RESULTS: ✅ Chat Channels: GET /api/chat/channels returns public channels (general, sales, leads) and DM channels (5 total), POST /api/chat/channels creates new channels successfully ✅ Direct Messages: POST /api/chat/dm/{user_id} creates/gets DM channels, GET /api/chat/dm/list returns DM conversations (fixed sorting bug), found other users for DM testing ✅ Chat Messages: GET /api/chat/messages/{channel_id} retrieves messages (15 messages), POST /api/chat/messages sends messages with @mentions successfully ✅ User Presence: GET /api/users/status returns user statuses with timestamps, PUT /api/users/status updates status to online with last_seen timestamp ✅ Lead Visibility: Admin sees ALL 60 leads from 17 creators including 35 from other users (proper admin access) ✅ User Management: GET /api/admin/users retrieves 15 users, DELETE /api/admin/users/{user_id} deletes test users and verifies removal. Fixed DM list endpoint bug during testing. All Team Chat and Direct Messaging functionality is production-ready."
+
+  - task: "Direct Messages (DM) System"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Direct Messages system fully tested: POST /api/chat/dm/{user_id} creates or gets DM channel with another user, GET /api/chat/dm/list returns all DM conversations for current user with last message info and unread counts. Fixed sorting bug where last_message could be None. DM functionality working perfectly."
+
+  - task: "User Presence and Status"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ User presence system fully tested: GET /api/users/status returns all user statuses with last_seen timestamps, PUT /api/users/status updates current user's status to online/away/busy with proper timestamp tracking. Status system working correctly."
+
+  - task: "Admin Lead Visibility"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Admin lead visibility verified: GET /api/leads shows ALL 60 leads regardless of creator (admin sees leads from 17 different creators including 35 from other users like Monika). Proper admin access control working as expected."
+
+  - task: "Admin User Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Admin user management fully tested: GET /api/admin/users retrieves all users (15 total), DELETE /api/admin/users/{user_id} successfully deletes test users and verifies removal from users list. Admin user management functionality working correctly."
 
   - task: "Bulk Import Leads"
     implemented: true

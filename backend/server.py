@@ -1980,6 +1980,45 @@ async def send_message(msg_data: ChatMessageCreate, current_user: User = Depends
     doc['created_at'] = doc['created_at'].isoformat()
     await db.chat_messages.insert_one(doc)
     
+    # Handle @mentions - create notifications and tasks if needed
+    if msg_data.metadata and msg_data.metadata.get('mentions'):
+        for mentioned_user_id in msg_data.metadata['mentions']:
+            # Create notification for mentioned user
+            notification = {
+                "id": str(uuid.uuid4()),
+                "user_id": mentioned_user_id,
+                "type": "mention",
+                "title": f"@{current_user.full_name} mentioned you",
+                "message": msg_data.content[:100] + "..." if len(msg_data.content) > 100 else msg_data.content,
+                "read": False,
+                "action_url": f"/chat?channel={msg_data.channel_id}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.notifications.insert_one(notification)
+            
+            # Check if message contains meeting request pattern (@user let's meet / schedule)
+            content_lower = msg_data.content.lower()
+            if any(word in content_lower for word in ['meet', 'schedule', 'meeting', 'call', 'sync']):
+                # Create a task for meeting scheduling
+                task = {
+                    "id": str(uuid.uuid4()),
+                    "title": f"Schedule meeting with {current_user.full_name}",
+                    "description": f"Meeting request from chat: {msg_data.content[:200]}",
+                    "assigned_to": mentioned_user_id,
+                    "created_by": current_user.id,
+                    "status": "pending",
+                    "priority": "medium",
+                    "type": "meeting_request",
+                    "metadata": {
+                        "from_chat": True,
+                        "channel_id": msg_data.channel_id,
+                        "requester_id": current_user.id,
+                        "requester_name": current_user.full_name
+                    },
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.tasks.insert_one(task)
+    
     # Log activity
     activity = Activity(
         type="message_sent",
@@ -1990,6 +2029,153 @@ async def send_message(msg_data: ChatMessageCreate, current_user: User = Depends
     activity_doc = activity.model_dump()
     activity_doc['created_at'] = activity_doc['created_at'].isoformat()
     await db.activities.insert_one(activity_doc)
+    
+    return message
+
+# ==================== User Status/Presence Endpoints ====================
+
+@api_router.get("/users/status")
+async def get_all_user_statuses(current_user: User = Depends(get_current_user)):
+    """Get status of all users for presence indicators"""
+    statuses = await db.user_statuses.find({}, {"_id": 0}).to_list(1000)
+    
+    # Auto-expire statuses
+    now = datetime.now(timezone.utc)
+    result = []
+    for status in statuses:
+        if status.get('expires_at'):
+            expires = datetime.fromisoformat(status['expires_at'].replace('Z', '+00:00'))
+            if now > expires:
+                # Reset to online
+                await db.user_statuses.update_one(
+                    {"user_id": status['user_id']},
+                    {"$set": {"status": "online", "status_emoji": None, "status_text": None, "expires_at": None}}
+                )
+                status['status'] = 'online'
+                status['status_emoji'] = None
+                status['status_text'] = None
+        result.append(status)
+    
+    return result
+
+@api_router.get("/users/{user_id}/status")
+async def get_user_status(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific user's status"""
+    status = await db.user_statuses.find_one({"user_id": user_id}, {"_id": 0})
+    if not status:
+        # Return default online status
+        return {
+            "user_id": user_id,
+            "status": "online",
+            "status_emoji": None,
+            "status_text": None,
+            "last_seen": datetime.now(timezone.utc).isoformat()
+        }
+    return status
+
+@api_router.put("/users/status")
+async def update_user_status(
+    request: UpdateStatusRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Update current user's status"""
+    expires_at = None
+    if request.duration_minutes:
+        expires_at = (datetime.now(timezone.utc) + timedelta(minutes=request.duration_minutes)).isoformat()
+    
+    # Get preset or use custom
+    preset = STATUS_PRESETS.get(request.status, {})
+    
+    status_data = {
+        "user_id": current_user.id,
+        "status": request.status,
+        "status_emoji": request.status_emoji or preset.get("emoji"),
+        "status_text": request.status_text or preset.get("text"),
+        "expires_at": expires_at,
+        "last_seen": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.user_statuses.update_one(
+        {"user_id": current_user.id},
+        {"$set": status_data},
+        upsert=True
+    )
+    
+    return status_data
+
+@api_router.get("/users/status/presets")
+async def get_status_presets(current_user: User = Depends(get_current_user)):
+    """Get available status presets"""
+    return STATUS_PRESETS
+
+@api_router.post("/chat/messages/{message_id}/reactions")
+async def add_reaction(
+    message_id: str,
+    reaction: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Add a reaction to a message"""
+    emoji = reaction.get("emoji")
+    if not emoji:
+        raise HTTPException(status_code=400, detail="Emoji is required")
+    
+    # Get message
+    message = await db.chat_messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Add reaction
+    reactions = message.get("reactions", {})
+    if emoji not in reactions:
+        reactions[emoji] = []
+    
+    if current_user.id not in reactions[emoji]:
+        reactions[emoji].append(current_user.id)
+    else:
+        # Toggle off if already reacted
+        reactions[emoji].remove(current_user.id)
+        if not reactions[emoji]:
+            del reactions[emoji]
+    
+    await db.chat_messages.update_one(
+        {"id": message_id},
+        {"$set": {"reactions": reactions}}
+    )
+    
+    return {"reactions": reactions}
+
+@api_router.post("/chat/messages/{message_id}/thread")
+async def reply_to_thread(
+    message_id: str,
+    msg_data: ChatMessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Reply to a message thread"""
+    # Verify parent message exists
+    parent = await db.chat_messages.find_one({"id": message_id})
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent message not found")
+    
+    # Create reply with thread reference
+    message = ChatMessage(
+        **msg_data.model_dump(),
+        sender_id=current_user.id,
+        sender_name=current_user.full_name,
+        metadata={
+            **(msg_data.metadata or {}),
+            "thread_id": message_id,
+            "reply_to": message_id
+        }
+    )
+    doc = message.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.chat_messages.insert_one(doc)
+    
+    # Update parent message thread count
+    await db.chat_messages.update_one(
+        {"id": message_id},
+        {"$inc": {"reply_count": 1}}
+    )
     
     return message
 

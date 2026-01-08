@@ -742,6 +742,7 @@ test_plan:
     - "Team Chat Close Button Enhancement"
     - "Google Sign-In Backend API"
     - "Google Sign-In Frontend UI"
+    - "Google Calendar and Meet Integration"
 
 agent_communication:
   - agent: "main"

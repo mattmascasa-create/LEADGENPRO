@@ -538,11 +538,29 @@ const CalendarPage = () => {
                         href={showEventDetail.meeting_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline"
+                        className="text-primary hover:underline flex items-center gap-1"
                       >
+                        <GoogleMeetIcon />
                         Join Meeting
+                        <ExternalLink className="w-3 h-3" />
                       </a>
+                      <button
+                        onClick={() => copyMeetLink(showEventDetail.meeting_link)}
+                        className="p-1 hover:bg-slate-100 rounded"
+                        title="Copy link"
+                      >
+                        {copiedLink ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-secondary" />}
+                      </button>
                     </div>
+                  )}
+                  {!showEventDetail.meeting_link && showEventDetail.type === 'meeting' && (
+                    <button
+                      onClick={() => handleAddMeetToEvent(showEventDetail.id)}
+                      className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                    >
+                      <GoogleMeetIcon />
+                      Add Google Meet Link
+                    </button>
                   )}
                   {showEventDetail.description && (
                     <div className="pt-4 border-t border-border">

@@ -2457,6 +2457,9 @@ async def create_booking(
     except Exception as e:
         logging.error(f"Failed to send booking emails: {e}")
     
+    # Remove MongoDB _id before returning
+    appointment.pop("_id", None)
+    
     return {
         "booking": appointment,
         "meeting_link": meeting_link,

@@ -543,9 +543,9 @@ const TeamChatEnhanced = () => {
           data-testid="team-chat-btn"
         >
           <MessageSquare className="w-6 h-6" />
-          {Object.values(unreadCounts).some(c => c > 0) && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-              !
+          {(Object.values(unreadCounts).some(c => c > 0) || unreadMentions > 0) && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+              {unreadMentions > 0 ? unreadMentions : '!'}
             </span>
           )}
         </button>

@@ -254,10 +254,10 @@ const SupportBot = ({ currentError = null }) => {
                 <div className="text-center py-8">
                   <Bot className="w-12 h-12 text-primary/30 mx-auto mb-3" />
                   <p className="text-secondary text-sm">
-                    Hi! I'm your AI support assistant. I can help diagnose issues and suggest fixes.
+                    Hi! I&apos;m your AI support assistant. I can help diagnose issues and suggest fixes.
                   </p>
                   <p className="text-secondary/70 text-xs mt-2">
-                    Ask me anything or I'll analyze errors automatically.
+                    Ask me anything or I&apos;ll analyze errors automatically.
                   </p>
                 </div>
               )}

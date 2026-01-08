@@ -28,7 +28,8 @@ import {
   Link2,
   Menu,
   X,
-  AlertTriangle
+  AlertTriangle,
+  CalendarClock
 } from 'lucide-react';
 
 // Admin emails that always have admin access

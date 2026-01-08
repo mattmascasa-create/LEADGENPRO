@@ -750,8 +750,14 @@ async def google_auth(request: GoogleAuthRequest, response: Response):
         if not google_email:
             raise HTTPException(status_code=400, detail="Email not provided by Google")
         
-        # Check if user exists with this email (admin must create account first)
-        existing_user = await db.users.find_one({"email": google_email}, {"_id": 0})
+        # Normalize email to lowercase for case-insensitive matching
+        google_email_lower = google_email.lower()
+        
+        # Check if user exists with this email (case-insensitive)
+        existing_user = await db.users.find_one(
+            {"email": {"$regex": f"^{google_email_lower}$", "$options": "i"}}, 
+            {"_id": 0}
+        )
         
         if not existing_user:
             raise HTTPException(

@@ -1038,6 +1038,7 @@ agent_communication:
 ### Test URLs:
 - Scheduling Settings: `/scheduling`
 - Public Booking Page: `/book/{user_id}`
+- Call Analytics: `/call-analytics`
 
 ### Test Credentials:
 - Email: admin@test.com

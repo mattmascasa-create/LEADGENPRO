@@ -2166,7 +2166,11 @@ async def get_meeting_types(current_user: User = Depends(get_current_user)):
             mt["is_active"] = True
             mt["created_at"] = datetime.now(timezone.utc).isoformat()
             await db.meeting_types.insert_one(mt)
-        meeting_types = default_types
+        # Re-fetch without _id to ensure clean data
+        meeting_types = await db.meeting_types.find(
+            {"user_id": current_user.id, "is_active": True}, 
+            {"_id": 0}
+        ).to_list(100)
     
     return meeting_types
 

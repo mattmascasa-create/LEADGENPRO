@@ -764,7 +764,7 @@ async def google_auth(request: GoogleAuthRequest, response: Response):
         
         # Check if user exists with this email (case-insensitive)
         existing_user = await db.users.find_one(
-            {"email": {"$regex": f"^{google_email_lower}$", "$options": "i"}}, 
+            {"email": {"$regex": f"^{re.escape(google_email_lower)}$", "$options": "i"}}, 
             {"_id": 0}
         )
         

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend API Testing for LeadGen Pro
-Tests all backend endpoints with realistic data
+LeadGen Pro Pre-Deployment Testing
+Testing critical features before deployment with admin@test.com credentials
 """
 
 import requests
@@ -10,9 +10,15 @@ import uuid
 from datetime import datetime, timedelta
 import os
 import sys
+import io
+import csv
 
 # Backend URL from frontend .env
 BACKEND_URL = "https://sales-ai-pro.preview.emergentagent.com/api"
+
+# Test credentials as specified in review request
+TEST_EMAIL = "admin@test.com"
+TEST_PASSWORD = "admin123"
 
 class LeadGenProTester:
     def __init__(self):

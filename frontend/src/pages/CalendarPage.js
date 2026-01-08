@@ -597,6 +597,28 @@ const CalendarPage = () => {
                       Close
                     </button>
                   </div>
+                  
+                  {/* Google Calendar Export Options */}
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm font-medium text-secondary mb-3">Export to Calendar</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleExportToGoogleCalendar(showEventDetail.id)}
+                        className="flex-1 py-2 px-3 border border-border rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2"
+                      >
+                        <GoogleCalendarIcon />
+                        Add to Google Calendar
+                      </button>
+                      <button
+                        onClick={() => handleDownloadICS(showEventDetail.id)}
+                        className="py-2 px-3 border border-border rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2"
+                        title="Download ICS file"
+                      >
+                        <Download className="w-4 h-4" />
+                        ICS
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

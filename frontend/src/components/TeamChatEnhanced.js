@@ -828,6 +828,74 @@ const TeamChatEnhanced = () => {
                 )}
               </AnimatePresence>
 
+              {/* Mentions Panel */}
+              <AnimatePresence>
+                {showMentionsPanel && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-b border-border overflow-hidden bg-blue-50"
+                  >
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+                          <AtSign className="w-4 h-4" />
+                          Mentions
+                          {unreadMentions > 0 && (
+                            <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                              {unreadMentions} new
+                            </span>
+                          )}
+                        </h4>
+                        {unreadMentions > 0 && (
+                          <button
+                            onClick={markAllMentionsAsRead}
+                            className="text-xs text-blue-600 hover:text-blue-800"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {mentions.length === 0 ? (
+                          <p className="text-sm text-blue-700 text-center py-4">
+                            No mentions yet. When someone @mentions you, it will appear here.
+                          </p>
+                        ) : (
+                          mentions.map((mention) => (
+                            <div
+                              key={mention.id}
+                              onClick={() => markMentionAsRead(mention.id)}
+                              className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                                mention.read 
+                                  ? 'bg-white/50 hover:bg-white' 
+                                  : 'bg-white border-l-4 border-blue-500 hover:bg-blue-100'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm ${mention.read ? 'text-slate-600' : 'text-blue-900 font-medium'}`}>
+                                    {mention.title}
+                                  </p>
+                                  <p className="text-xs text-slate-500 mt-1 truncate">
+                                    {mention.message}
+                                  </p>
+                                </div>
+                                <span className="text-xs text-slate-400 whitespace-nowrap">
+                                  {formatDistanceToNow(new Date(mention.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
                 {messages

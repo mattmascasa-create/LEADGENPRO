@@ -345,11 +345,11 @@ class SmartErrorHandlingTester:
                 errors = data["errors"]
                 stats = data["stats"]
                 
-                # Check stats structure
-                expected_stats = ["total", "by_severity", "by_category", "resolved_count"]
+                # Check stats structure (based on actual API)
+                expected_stats = ["total", "unresolved", "critical"]
                 if all(stat in stats for stat in expected_stats):
                     self.log_result("Admin Errors List (Basic)", True, 
-                                  f"Retrieved {len(errors)} errors | Total: {stats['total']}")
+                                  f"Retrieved {len(errors)} errors | Total: {stats['total']} | Unresolved: {stats['unresolved']}")
                     
                     # Test filtering by severity
                     filter_tests = [

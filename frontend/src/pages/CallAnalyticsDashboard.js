@@ -1170,14 +1170,14 @@ const CallAnalyticsDashboard = () => {
                   </div>
                 </div>
 
-                {/* Recording */}
+                {/* Recording with Waveform Visualization */}
                 {selectedCall.recording_url && (
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <Mic className="w-4 h-4" /> Recording
-                    </p>
-                    <audio controls className="w-full" src={selectedCall.recording_url} />
-                  </div>
+                  <WaveformPlayer
+                    audioUrl={selectedCall.recording_url}
+                    duration={selectedCall.duration}
+                    coaching={selectedCall.coaching || coaching[selectedCall.id]}
+                    transcript={selectedCall.transcript}
+                  />
                 )}
 
                 {/* Transcript */}

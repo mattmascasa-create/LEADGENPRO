@@ -3146,6 +3146,40 @@ async def reply_to_thread(
     
     return message
 
+@api_router.delete("/chat/messages/{message_id}")
+async def delete_chat_message(message_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a chat message - only message author or admin can delete"""
+    # Check if user is admin
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    
+    # Find the message
+    message = await db.chat_messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Check permissions - must be message author or admin
+    if message["sender_id"] != current_user.id and not is_admin:
+        raise HTTPException(status_code=403, detail="You can only delete your own messages")
+    
+    # Delete the message
+    await db.chat_messages.delete_one({"id": message_id})
+    
+    # Also delete any replies to this message
+    await db.chat_messages.delete_many({"metadata.reply_to": message_id})
+    
+    # Log activity
+    activity = Activity(
+        type="message_deleted",
+        description=f"Deleted message in channel",
+        user_id=current_user.id,
+        metadata={"message_id": message_id, "channel_id": message.get("channel_id")}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"success": True, "message": "Message deleted"}
+
 # ==================== Voice/Call Endpoints ====================
 
 @api_router.post("/voice/token")

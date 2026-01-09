@@ -165,6 +165,13 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Personalized improvement recommendations
   - Team performance insights
 - **Google OAuth Setup Guide** - Created `/app/GOOGLE_OAUTH_SETUP.md` for two-way calendar sync
+- **Waveform Audio Player** (NEW) - Enhanced call recording playback:
+  - Visual waveform bars with animated playhead
+  - Play/Pause, Skip ±10s, Playback speed (1x-2x)
+  - Volume control and time display
+  - **AI Coaching Insight Markers** on timeline (color-coded dots)
+  - Click markers to jump to coaching moments
+  - Active insight display with suggestions
 
 ### Backend Endpoints (New)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user

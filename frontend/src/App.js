@@ -33,6 +33,8 @@ import AIEmailPage from '@/pages/AIEmailPage';
 import AdvancedReportingPage from '@/pages/AdvancedReportingPage';
 import SettingsPage from '@/pages/SettingsPage';
 import CRMIntegrationsPage from '@/pages/CRMIntegrationsPage';
+import EmailAnalyticsPage from '@/pages/EmailAnalyticsPage';
+import PipelineForecastPage from '@/pages/PipelineForecastPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';

@@ -653,24 +653,22 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
               )}
             </div>
           )}
-
-          {/* Call Outcome Modal */}
-          {showOutcomeModal && (
-            <CallDispositionModal
-              isOpen={showOutcomeModal}
-              onClose={skipOutcomeLog}
-              callId={callId}
-              leadInfo={leadInfo}
-              callDuration={callDuration}
-              onDispositionSaved={() => {
-                setShowOutcomeModal(false);
-                resetDialer();
-                fetchRecentCalls();
-              }}
-            />
-          )}
         </motion.div>
       </motion.div>
+
+      {/* Call Disposition Modal - Separate overlay */}
+      <CallDispositionModal
+        isOpen={showOutcomeModal}
+        onClose={skipOutcomeLog}
+        callId={callId}
+        leadInfo={leadInfo}
+        callDuration={callDuration}
+        onDispositionSaved={() => {
+          setShowOutcomeModal(false);
+          resetDialer();
+          fetchRecentCalls();
+        }}
+      />
     </AnimatePresence>
   );
 };

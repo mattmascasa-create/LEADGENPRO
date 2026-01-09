@@ -4817,8 +4817,9 @@ async def get_ai_call_coaching(call_id: str, current_user: User = Depends(get_cu
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"call-coaching-{call_id}"
-        )
+            session_id=f"call-coaching-{call_id}",
+            system_message="You are an elite sales coach like Gong.io's AI. Provide comprehensive coaching analysis for sales calls."
+        ).with_model("openai", "gpt-4o-mini")
         
         prompt = f"""You are an elite sales coach like Gong.io's AI. Analyze this sales call transcript and provide comprehensive coaching.
 

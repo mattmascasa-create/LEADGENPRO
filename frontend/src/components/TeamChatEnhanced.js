@@ -1117,6 +1117,16 @@ const TeamChatEnhanced = () => {
                             >
                               <Reply className="w-4 h-4 text-secondary" />
                             </button>
+                            {/* Delete button - only show if user can delete */}
+                            {canDeleteMessage(msg.sender_id) && (
+                              <button
+                                onClick={() => deleteMessage(msg.id, msg.sender_id)}
+                                className="p-1.5 hover:bg-red-100 rounded transition-colors"
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            )}
                           </div>
                           
                           {/* Reaction picker */}

@@ -561,6 +561,40 @@ const TeamChatEnhanced = () => {
     }
   };
 
+  // Delete message - author or admin can delete
+  const deleteMessage = async (messageId, senderId) => {
+    // Check if user can delete (is author or admin)
+    const isAuthor = senderId === user?.id;
+    const isAdmin = user?.role === 'admin' || ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com'].includes(user?.email);
+    
+    if (!isAuthor && !isAdmin) {
+      toast.error('You can only delete your own messages');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/chat/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Message deleted');
+      fetchMessages();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete message');
+    }
+  };
+
+  // Check if user can delete a message
+  const canDeleteMessage = (senderId) => {
+    const isAuthor = senderId === user?.id;
+    const isAdmin = user?.role === 'admin' || ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@test.com'].includes(user?.email);
+    return isAuthor || isAdmin;
+  };
+
   // Get user status indicator
   const getUserStatusIndicator = (userId) => {
     const status = userStatuses[userId];

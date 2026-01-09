@@ -614,16 +614,14 @@ const CallAnalyticsDashboard = () => {
                           </button>
                         </div>
 
-                        {/* Recording Player */}
+                        {/* Recording Player with Waveform */}
                         {call.recording_url && (
-                          <div className="p-4 bg-slate-50 rounded-lg">
-                            <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                              <Mic className="w-4 h-4" /> Call Recording
-                            </p>
-                            <audio controls className="w-full" src={call.recording_url}>
-                              Your browser does not support audio.
-                            </audio>
-                          </div>
+                          <WaveformPlayer
+                            audioUrl={call.recording_url}
+                            duration={call.duration}
+                            coaching={call.coaching || coaching[call.id]}
+                            transcript={call.transcript}
+                          />
                         )}
 
                         {/* Quick Transcript Preview */}

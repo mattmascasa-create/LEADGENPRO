@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight, PhoneCall, Calendar, CheckSquare, Square, X } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Building, Upload, Globe, Download, Filter, ChevronRight, PhoneCall, Calendar, CheckSquare, Square, X, Users, Zap, Edit2, MapPin, FileText, Save } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -17,10 +17,16 @@ const LeadsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [sequences, setSequences] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showScraper, setShowScraper] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showSequenceModal, setShowSequenceModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
   const [importing, setImporting] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
@@ -34,18 +40,28 @@ const LeadsPage = () => {
   const [selectedLeadForDialer, setSelectedLeadForDialer] = useState(null);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [selectMode, setSelectMode] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedSequenceId, setSelectedSequenceId] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
+    mobile: '',
     company: '',
     title: '',
+    street_address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    notes: '',
     tags: []
   });
 
   useEffect(() => {
     fetchLeads();
+    fetchUsers();
+    fetchSequences();
     
     // Handle query params from copilot
     const action = searchParams.get('action');

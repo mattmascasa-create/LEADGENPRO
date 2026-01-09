@@ -1668,22 +1668,47 @@ async def update_call_disposition(
     current_user: User = Depends(get_current_user)
 ):
     """Update call disposition after a call ends"""
-    # Update the call log
-    update_data = {
-        "disposition": disposition,
-        "notes": notes
-    }
-    
-    result = await db.call_logs.update_one(
-        {"id": call_id},
-        {"$set": update_data}
-    )
-    
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Call log not found")
-    
-    # Get the call log to find associated lead
+    # First check if call_log exists
     call_log = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    
+    # If no call_log yet, try to create one from pending_call
+    if not call_log:
+        pending_call = await db.pending_calls.find_one({"id": call_id})
+        if pending_call:
+            # Create call_log from pending call data
+            call_log = {
+                "id": call_id,
+                "call_sid": pending_call.get("agent_call_sid"),
+                "lead_id": pending_call.get("lead_id"),
+                "agent_id": pending_call.get("agent_id"),
+                "phone_number": pending_call.get("lead_number"),
+                "direction": "outbound",
+                "outcome": "completed",
+                "duration": 0,
+                "started_at": pending_call.get("created_at"),
+                "ended_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "recording_url": None,
+                "disposition": disposition,
+                "notes": notes
+            }
+            await db.call_logs.insert_one(call_log)
+            # Clean up pending call
+            await db.pending_calls.delete_one({"id": call_id})
+        else:
+            raise HTTPException(status_code=404, detail="Call not found")
+    else:
+        # Update the existing call log
+        update_data = {
+            "disposition": disposition,
+            "notes": notes
+        }
+        await db.call_logs.update_one(
+            {"id": call_id},
+            {"$set": update_data}
+        )
+        # Refresh call_log data
+        call_log = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
     
     # Create activity record with disposition
     activity_description = f"Call - {disposition}"

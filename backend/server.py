@@ -699,31 +699,7 @@ class TrackedEmail(BaseModel):
     click_count: int = 0
     status: str = "sent"  # sent, opened, clicked, replied, bounced
 
-# Email Sequence (Drip Campaign) Models
-class SequenceStep(BaseModel):
-    step_number: int
-    delay_days: int = 0
-    delay_hours: int = 0
-    subject: str
-    body: str
-    send_time: Optional[str] = None  # HH:MM format for specific time
-
-class EmailSequence(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    description: Optional[str] = None
-    steps: List[SequenceStep] = []
-    status: str = "active"  # active, paused, archived
-    trigger: str = "manual"  # manual, lead_created, stage_change
-    exit_on_reply: bool = True
-    exit_on_meeting: bool = True
-    total_enrolled: int = 0
-    total_completed: int = 0
-    total_replied: int = 0
-    created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
+# Sequence Enrollment Model
 class SequenceEnrollment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     sequence_id: str

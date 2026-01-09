@@ -2972,8 +2972,9 @@ async def analyze_call_with_ai(transcription: str, call_data: dict) -> dict:
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"call-transcription-analysis-{uuid.uuid4().hex[:8]}"
-        )
+            session_id=f"call-transcription-analysis-{uuid.uuid4().hex[:8]}",
+            system_message="You are an expert sales call analyst like Gong.io. Analyze sales calls and provide actionable insights."
+        ).with_model("openai", "gpt-4o-mini")
         
         prompt = f"""Analyze this sales call transcription and provide insights like Gong.io would.
 

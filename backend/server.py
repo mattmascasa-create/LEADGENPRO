@@ -439,8 +439,16 @@ class Lead(BaseModel):
     last_name: str
     email: EmailStr
     phone: Optional[str] = None
+    mobile: Optional[str] = None
     company: str
     title: Optional[str] = None
+    # Company Address fields
+    street_address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    # Notes
+    notes: Optional[str] = None
     status: str = "new"
     stage: str = "prospecting"
     score: int = 0
@@ -457,8 +465,14 @@ class LeadCreate(BaseModel):
     last_name: str
     email: EmailStr
     phone: Optional[str] = None
+    mobile: Optional[str] = None
     company: str
     title: Optional[str] = None
+    street_address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    notes: Optional[str] = None
     status: str = "new"
     tags: List[str] = []
 

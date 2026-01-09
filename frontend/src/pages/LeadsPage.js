@@ -843,9 +843,257 @@ const LeadsPage = () => {
           setShowDialer(false);
           setSelectedLeadForDialer(null);
         }}
-        prefilledNumber={selectedLeadForDialer?.phone || ''}
+        prefilledNumber={selectedLeadForDialer?.phone || selectedLeadForDialer?.mobile || ''}
         leadInfo={selectedLeadForDialer}
       />
+
+      {/* Assign Leads Modal */}
+      <AnimatePresence>
+        {showAssignModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-md p-6"
+            >
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Users className="w-6 h-6 text-purple-600" />
+                Assign {selectedLeads.length} Lead(s)
+              </h2>
+              <p className="text-secondary mb-4">Select a user to assign these leads to:</p>
+              
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select User...</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.full_name} ({u.email})</option>
+                ))}
+              </select>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkAssign}
+                  disabled={!selectedUserId}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  Assign Leads
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add to Sequence Modal */}
+      <AnimatePresence>
+        {showSequenceModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-md p-6"
+            >
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Zap className="w-6 h-6 text-orange-600" />
+                Add {selectedLeads.length} Lead(s) to Sequence
+              </h2>
+              <p className="text-secondary mb-4">Select an email sequence:</p>
+              
+              <select
+                value={selectedSequenceId}
+                onChange={(e) => setSelectedSequenceId(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select Sequence...</option>
+                {sequences.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              
+              {sequences.length === 0 && (
+                <p className="text-sm text-yellow-600 mb-4">No sequences found. Create a sequence first in the Sequences page.</p>
+              )}
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSequenceModal(false)}
+                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkSequence}
+                  disabled={!selectedSequenceId}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  Add to Sequence
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Lead Modal */}
+      <AnimatePresence>
+        {showEditModal && editingLead && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl w-full max-w-2xl p-6 my-8"
+            >
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Edit2 className="w-6 h-6 text-primary" />
+                Edit Lead
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={editingLead.first_name}
+                    onChange={(e) => setEditingLead({...editingLead, first_name: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={editingLead.last_name}
+                    onChange={(e) => setEditingLead({...editingLead, last_name: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editingLead.email}
+                    onChange={(e) => setEditingLead({...editingLead, email: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={editingLead.phone || ''}
+                    onChange={(e) => setEditingLead({...editingLead, phone: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Mobile</label>
+                  <input
+                    type="tel"
+                    value={editingLead.mobile || ''}
+                    onChange={(e) => setEditingLead({...editingLead, mobile: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Company</label>
+                  <input
+                    type="text"
+                    value={editingLead.company}
+                    onChange={(e) => setEditingLead({...editingLead, company: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={editingLead.title || ''}
+                    onChange={(e) => setEditingLead({...editingLead, title: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Street Address</label>
+                  <input
+                    type="text"
+                    value={editingLead.street_address || ''}
+                    onChange={(e) => setEditingLead({...editingLead, street_address: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editingLead.city || ''}
+                    onChange={(e) => setEditingLead({...editingLead, city: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">State</label>
+                  <input
+                    type="text"
+                    value={editingLead.state || ''}
+                    onChange={(e) => setEditingLead({...editingLead, state: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">ZIP Code</label>
+                  <input
+                    type="text"
+                    value={editingLead.zip_code || ''}
+                    onChange={(e) => setEditingLead({...editingLead, zip_code: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Notes</label>
+                  <textarea
+                    value={editingLead.notes || ''}
+                    onChange={(e) => setEditingLead({...editingLead, notes: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Add notes about this lead..."
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingLead(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateLead}
+                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 };

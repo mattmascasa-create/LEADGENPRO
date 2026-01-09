@@ -450,102 +450,102 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
 
             {/* Call Status Display */}
             {callStatus === 'calling_agent' && (
-              <div className="py-4">
+              <div className="py-6">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3"
+                  className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
                 >
-                  <PhoneIncoming className="w-8 h-8 text-blue-400" />
+                  <PhoneIncoming className="w-12 h-12 text-blue-400" />
                 </motion.div>
-                <p className="text-blue-400 font-medium">Calling Your Phone</p>
-                <p className="text-slate-500 text-sm mt-1">{statusMessage}</p>
-                <p className="text-slate-400 text-xs mt-2">Answer and press 1 to connect</p>
+                <p className="text-blue-400 font-semibold text-xl">Calling Your Phone...</p>
+                <p className="text-slate-500 mt-2">{statusMessage}</p>
+                <p className="text-slate-400 text-sm mt-3 bg-slate-800/50 py-2 px-4 rounded-full inline-block">Answer and press 1 to connect</p>
               </div>
             )}
 
             {callStatus === 'connecting' && (
-              <div className="py-4">
+              <div className="py-6">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3"
+                  className="w-24 h-24 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
                 >
-                  <PhoneCall className="w-8 h-8 text-yellow-400" />
+                  <PhoneCall className="w-12 h-12 text-yellow-400" />
                 </motion.div>
-                <p className="text-yellow-400 font-medium">Connecting to Lead</p>
-                <p className="text-slate-500 text-sm">{formatPhoneDisplay(phoneNumber)}</p>
-                <div className="flex items-center justify-center gap-2 mt-2 text-white text-xl font-mono">
-                  <Clock className="w-5 h-5 text-slate-400" />
+                <p className="text-yellow-400 font-semibold text-xl">Connecting to Lead...</p>
+                <p className="text-slate-400 mt-1">{formatPhoneDisplay(phoneNumber)}</p>
+                <div className="flex items-center justify-center gap-3 mt-4 text-white text-3xl font-mono">
+                  <Clock className="w-6 h-6 text-slate-400" />
                   {formatDuration(callDuration)}
                 </div>
               </div>
             )}
 
             {callStatus === 'connected' && (
-              <div className="py-4">
-                <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="py-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ repeat: Infinity, duration: 1 }}
                   >
-                    <Circle className="w-3 h-3 text-green-500 fill-green-500" />
+                    <Circle className="w-4 h-4 text-green-500 fill-green-500" />
                   </motion.div>
-                  <span className="text-green-400 font-semibold">Connected</span>
+                  <span className="text-green-400 font-semibold text-xl">Connected</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-white text-4xl font-mono mb-2">
+                <div className="flex items-center justify-center gap-2 text-white text-6xl font-mono mb-3">
                   {formatDuration(callDuration)}
                 </div>
-                <p className="text-slate-400 text-sm">{formatPhoneDisplay(phoneNumber)}</p>
+                <p className="text-slate-400">{formatPhoneDisplay(phoneNumber)}</p>
                 {isRecording && (
-                  <div className="flex items-center justify-center gap-1.5 mt-3 text-red-400 text-sm">
-                    <Circle className="w-2 h-2 fill-red-500 animate-pulse" />
-                    Recording
+                  <div className="flex items-center justify-center gap-2 mt-4 text-red-400">
+                    <Circle className="w-3 h-3 fill-red-500 animate-pulse" />
+                    <span className="font-medium">Recording in progress</span>
                   </div>
                 )}
               </div>
             )}
 
             {callStatus === 'ended' && !showOutcomeModal && (
-              <div className="py-4">
-                <div className="w-14 h-14 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <PhoneOff className="w-7 h-7 text-slate-400" />
+              <div className="py-6">
+                <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <PhoneOff className="w-10 h-10 text-slate-400" />
                 </div>
-                <p className="text-slate-300 font-medium">Call Ended</p>
-                <p className="text-slate-500 text-sm">Duration: {formatDuration(callDuration)}</p>
+                <p className="text-slate-300 font-semibold text-xl">Call Ended</p>
+                <p className="text-slate-500 mt-1">Duration: {formatDuration(callDuration)}</p>
               </div>
             )}
 
             {callStatus === 'failed' && (
-              <div className="py-4">
-                <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <AlertCircle className="w-7 h-7 text-red-400" />
+              <div className="py-6">
+                <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-10 h-10 text-red-400" />
                 </div>
-                <p className="text-red-400 font-medium">Call Failed</p>
-                <p className="text-slate-500 text-sm">{statusMessage || 'Please try again'}</p>
+                <p className="text-red-400 font-semibold text-xl">Call Failed</p>
+                <p className="text-slate-500 mt-1">{statusMessage || 'Please try again'}</p>
               </div>
             )}
           </div>
 
-          {/* Phone Number Display */}
+          {/* Phone Number Display - Larger */}
           {!showOutcomeModal && !showSettings && (
-            <div className="px-5 pb-3">
-              <div className="bg-slate-800/80 rounded-2xl p-4 flex items-center justify-between border border-slate-700/50">
+            <div className="px-6 pb-4">
+              <div className="bg-slate-800/80 rounded-2xl p-5 flex items-center justify-between border border-slate-700/50">
                 <input
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
-                  placeholder="Lead's phone number"
-                  className="bg-transparent text-white text-2xl font-light w-full outline-none placeholder-slate-500 tracking-wide"
+                  placeholder="Enter phone number"
+                  className="bg-transparent text-white text-3xl font-light w-full outline-none placeholder-slate-500 tracking-wide"
                   disabled={isCallActive}
                   data-testid="phone-input"
                 />
                 {phoneNumber && !isCallActive && (
                   <button
                     onClick={handleBackspace}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all ml-2"
+                    className="p-3 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all ml-2"
                   >
-                    <Delete className="w-6 h-6" />
+                    <Delete className="w-7 h-7" />
                   </button>
                 )}
               </div>

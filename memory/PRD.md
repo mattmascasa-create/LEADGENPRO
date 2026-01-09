@@ -194,6 +194,13 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Stage distribution charts
   - Deal Analysis with AI recommendations
   - At-risk deals identification
+- **Command Palette (Cmd+K)** (NEW):
+  - Quick search across leads by name, company, email
+  - Fast navigation to any page
+  - Quick actions: New Lead, New Task, Quick Call, Schedule Meeting
+  - Keyboard shortcuts for power users
+  - Recent searches saved locally
+  - Pro tip hints for efficiency
 
 ### Backend Endpoints (New - Session 2)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user

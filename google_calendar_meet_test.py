@@ -12,7 +12,7 @@ import os
 import sys
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://sales-ai-pro.preview.emergentagent.com/api"
+BACKEND_URL = "https://leadgen-pro-24.preview.emergentagent.com/api"
 
 class GoogleCalendarMeetTester:
     def __init__(self):

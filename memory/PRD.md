@@ -156,11 +156,24 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - Gong-like Call Analytics Dashboard
 - Google Sign-In Integration
 
+### Session 2 Completions (Jan 9, 2026)
+- **Delete Messages in Team Chat** - Author and admin can delete messages with trash icon
+- **AI Call Coaching** - Comprehensive Gong-like coaching with:
+  - Real-time coaching suggestions
+  - Talk-to-listen ratio analysis
+  - Sentiment analysis and alerts
+  - Personalized improvement recommendations
+  - Team performance insights
+- **Google OAuth Setup Guide** - Created `/app/GOOGLE_OAUTH_SETUP.md` for two-way calendar sync
+
 ### Backend Endpoints (New)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user
 - `/api/leads/bulk-sequence` - Add multiple leads to a sequence
 - `/api/calls/{call_id}/disposition` - Update call disposition with notes
 - `/api/calls/dispositions` - Get available disposition options
+- `/api/chat/messages/{message_id}` (DELETE) - Delete a chat message
+- `/api/calls/{call_id}/coaching` (POST) - Get comprehensive AI coaching for a call
+- `/api/calls/coaching/team-insights` (GET) - Get aggregated team coaching insights
 
 ### Backend Endpoints (Existing)
 - `/api/booking/{user_id}` - Get user info for booking

@@ -4885,10 +4885,10 @@ Provide detailed coaching analysis in JSON format:
     }}
 }}"""
 
-        response = await chat.send_message_async(UserMessage(prompt))
+        response = await chat.send_message(UserMessage(prompt))
         
         # Parse the response
-        response_text = response.text
+        response_text = response
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0]
         elif "```" in response_text:

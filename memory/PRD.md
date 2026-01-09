@@ -195,7 +195,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Deal Analysis with AI recommendations
   - At-risk deals identification
 
-### Backend Endpoints (New)
+### Backend Endpoints (New - Session 2)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user
 - `/api/leads/bulk-sequence` - Add multiple leads to a sequence
 - `/api/calls/{call_id}/disposition` - Update call disposition with notes
@@ -203,6 +203,16 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - `/api/chat/messages/{message_id}` (DELETE) - Delete a chat message
 - `/api/calls/{call_id}/coaching` (POST) - Get comprehensive AI coaching for a call
 - `/api/calls/coaching/team-insights` (GET) - Get aggregated team coaching insights
+- `/api/email/tracking/pixel/{email_id}.gif` (GET) - Email open tracking pixel
+- `/api/email/tracking/click/{email_id}/{link_id}` (GET) - Link click tracking
+- `/api/email/tracking/stats` (GET) - Email tracking statistics
+- `/api/email/tracking/{email_id}` (GET) - Detailed tracking for specific email
+- `/api/sequences` (GET, POST) - List and create email sequences
+- `/api/sequences/{sequence_id}` (GET, PUT, DELETE) - Manage specific sequence
+- `/api/sequences/{sequence_id}/enroll` (POST) - Enroll leads in sequence
+- `/api/sequences/{sequence_id}/unenroll/{lead_id}` (POST) - Unenroll lead
+- `/api/forecasting/pipeline` (GET) - Pipeline forecast with weighted probabilities
+- `/api/forecasting/analyze-deal/{lead_id}` (POST) - AI deal analysis
 
 ### Backend Endpoints (Existing)
 - `/api/booking/{user_id}` - Get user info for booking

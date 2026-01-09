@@ -656,54 +656,18 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
 
           {/* Call Outcome Modal */}
           {showOutcomeModal && (
-            <div className="p-5">
-              <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Log Call Outcome
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {callOutcomes.map((outcome) => (
-                  <button
-                    key={outcome.id}
-                    onClick={() => setSelectedOutcome(outcome.id)}
-                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
-                      selectedOutcome === outcome.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-slate-700 hover:border-slate-600 bg-slate-800/50'
-                    }`}
-                  >
-                    <outcome.icon className={`w-5 h-5 ${outcome.color}`} />
-                    <span className="text-white text-sm font-medium">{outcome.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
-                placeholder="Add notes..."
-                className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 resize-none mb-4"
-                rows={2}
-              />
-
-              <div className="flex gap-3">
-                <button
-                  onClick={skipOutcomeLog}
-                  className="flex-1 py-3 border border-slate-600 text-slate-400 rounded-xl hover:bg-slate-800 transition-colors"
-                >
-                  Skip
-                </button>
-                <button
-                  onClick={saveCallOutcome}
-                  disabled={!selectedOutcome || savingOutcome}
-                  className="flex-1 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {savingOutcome ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  Save
-                </button>
-              </div>
-            </div>
+            <CallDispositionModal
+              isOpen={showOutcomeModal}
+              onClose={skipOutcomeLog}
+              callId={callId}
+              leadInfo={leadInfo}
+              callDuration={callDuration}
+              onDispositionSaved={() => {
+                setShowOutcomeModal(false);
+                resetDialer();
+                fetchRecentCalls();
+              }}
+            />
           )}
         </motion.div>
       </motion.div>

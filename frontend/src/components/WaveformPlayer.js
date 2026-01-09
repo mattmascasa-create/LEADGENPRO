@@ -329,17 +329,35 @@ const WaveformPlayer = ({
             <Volume2 className="w-4 h-4 text-primary" />
           </div>
           Call Recording
+          {isAnalyzingAudio && (
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Analyzing audio...
+            </span>
+          )}
         </h4>
-        {coaching && (
-          <button
-            onClick={() => setShowInsights(!showInsights)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm hover:bg-yellow-500/30 transition-colors"
-          >
-            <Lightbulb className="w-4 h-4" />
-            {showInsights ? 'Hide' : 'Show'} AI Insights
-            {showInsights ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Speaker Legend */}
+          {audioAnalyzed && (
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1 text-blue-400">
+                <User className="w-3 h-3" /> Rep
+              </span>
+              <span className="flex items-center gap-1 text-green-400">
+                <Users className="w-3 h-3" /> Customer
+              </span>
+            </div>
+          )}
+          {coaching && (
+            <button
+              onClick={() => setShowInsights(!showInsights)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm hover:bg-yellow-500/30 transition-colors"
+            >
+              <Lightbulb className="w-4 h-4" />
+              {showInsights ? 'Hide' : 'Show'} AI Insights
+              {showInsights ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Waveform Visualization */}
@@ -348,20 +366,33 @@ const WaveformPlayer = ({
         className="relative h-24 bg-slate-800/50 rounded-lg cursor-pointer overflow-hidden"
         onClick={handleSeek}
       >
-        {/* Waveform bars */}
+        {/* Waveform bars with speaker colors */}
         <div className="absolute inset-0 flex items-center justify-around px-2">
-          {waveformData.map((height, i) => {
+          {waveformData.map((bar, i) => {
             const barProgress = (i / waveformData.length) * 100;
             const isPast = barProgress <= progress;
+            const height = typeof bar === 'object' ? bar.height : bar;
+            const speaker = typeof bar === 'object' ? bar.speaker : 'rep';
+            
+            // Color based on speaker detection
+            const getBarColor = () => {
+              if (isPast) {
+                if (speaker === 'rep') return 'bg-blue-500';
+                if (speaker === 'customer') return 'bg-green-500';
+                return 'bg-slate-500';
+              }
+              if (speaker === 'rep') return 'bg-blue-500/40';
+              if (speaker === 'customer') return 'bg-green-500/40';
+              return 'bg-slate-600/40';
+            };
+            
             return (
               <div
                 key={i}
-                className={`w-1 rounded-full transition-all duration-75 ${
-                  isPast ? 'bg-primary' : 'bg-slate-600'
-                }`}
+                className={`w-1 rounded-full transition-all duration-75 ${getBarColor()}`}
                 style={{ 
                   height: `${height * 80}%`,
-                  opacity: isPast ? 1 : 0.5
+                  opacity: isPast ? 1 : 0.6
                 }}
               />
             );

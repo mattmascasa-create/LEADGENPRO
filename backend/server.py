@@ -5311,6 +5311,533 @@ async def send_bulk_email(request: BulkEmailRequest, current_user: User = Depend
         "campaign_id": campaign.id
     }
 
+# ==================== Email Tracking & Analytics ====================
+
+@api_router.get("/email/tracking/pixel/{email_id}.gif")
+async def track_email_open(email_id: str, request: Request):
+    """Tracking pixel endpoint - returns 1x1 transparent GIF"""
+    # Log the open event
+    try:
+        # Update tracked email
+        result = await db.tracked_emails.update_one(
+            {"id": email_id},
+            {
+                "$set": {"opened_at": datetime.now(timezone.utc).isoformat(), "status": "opened"},
+                "$inc": {"open_count": 1}
+            }
+        )
+        
+        if result.modified_count > 0:
+            # Get email details
+            email = await db.tracked_emails.find_one({"id": email_id}, {"_id": 0})
+            
+            # Create tracking event
+            event = EmailTrackingEvent(
+                email_id=email_id,
+                event_type="opened",
+                lead_id=email.get("lead_id") if email else None,
+                campaign_id=email.get("campaign_id") if email else None,
+                sequence_id=email.get("sequence_id") if email else None,
+                user_agent=request.headers.get("user-agent"),
+                ip_address=request.client.host if request.client else None
+            )
+            event_doc = event.model_dump()
+            event_doc['timestamp'] = event_doc['timestamp'].isoformat()
+            await db.email_tracking_events.insert_one(event_doc)
+            
+            # Update campaign stats
+            if email and email.get("campaign_id"):
+                await db.email_campaigns.update_one(
+                    {"id": email["campaign_id"]},
+                    {"$inc": {"opened_count": 1}}
+                )
+    except Exception as e:
+        logging.error(f"Error tracking email open: {e}")
+    
+    # Return 1x1 transparent GIF
+    gif_bytes = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+    return Response(content=gif_bytes, media_type="image/gif")
+
+@api_router.get("/email/tracking/click/{email_id}/{link_id}")
+async def track_email_click(email_id: str, link_id: str, url: str, request: Request):
+    """Track link clicks and redirect to actual URL"""
+    try:
+        # Update tracked email
+        await db.tracked_emails.update_one(
+            {"id": email_id},
+            {
+                "$set": {"clicked_at": datetime.now(timezone.utc).isoformat(), "status": "clicked"},
+                "$inc": {"click_count": 1}
+            }
+        )
+        
+        # Get email details
+        email = await db.tracked_emails.find_one({"id": email_id}, {"_id": 0})
+        
+        # Create tracking event
+        event = EmailTrackingEvent(
+            email_id=email_id,
+            event_type="clicked",
+            lead_id=email.get("lead_id") if email else None,
+            campaign_id=email.get("campaign_id") if email else None,
+            sequence_id=email.get("sequence_id") if email else None,
+            link_url=url,
+            user_agent=request.headers.get("user-agent"),
+            ip_address=request.client.host if request.client else None
+        )
+        event_doc = event.model_dump()
+        event_doc['timestamp'] = event_doc['timestamp'].isoformat()
+        await db.email_tracking_events.insert_one(event_doc)
+        
+        # Update campaign stats
+        if email and email.get("campaign_id"):
+            await db.email_campaigns.update_one(
+                {"id": email["campaign_id"]},
+                {"$inc": {"clicked_count": 1}}
+            )
+    except Exception as e:
+        logging.error(f"Error tracking email click: {e}")
+    
+    # Redirect to actual URL
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=url)
+
+@api_router.get("/email/tracking/stats")
+async def get_email_tracking_stats(
+    days: int = 30,
+    current_user: User = Depends(get_current_user)
+):
+    """Get email tracking statistics"""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Get tracked emails
+    emails = await db.tracked_emails.find(
+        {"sent_at": {"$gte": cutoff.isoformat()}, "sent_by": current_user.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    total_sent = len(emails)
+    total_opened = sum(1 for e in emails if e.get("opened_at"))
+    total_clicked = sum(1 for e in emails if e.get("clicked_at"))
+    total_replied = sum(1 for e in emails if e.get("replied_at"))
+    
+    open_rate = (total_opened / total_sent * 100) if total_sent > 0 else 0
+    click_rate = (total_clicked / total_sent * 100) if total_sent > 0 else 0
+    reply_rate = (total_replied / total_sent * 100) if total_sent > 0 else 0
+    
+    # Get daily breakdown
+    daily_stats = {}
+    for email in emails:
+        date = email.get("sent_at", "")[:10]
+        if date not in daily_stats:
+            daily_stats[date] = {"sent": 0, "opened": 0, "clicked": 0, "replied": 0}
+        daily_stats[date]["sent"] += 1
+        if email.get("opened_at"):
+            daily_stats[date]["opened"] += 1
+        if email.get("clicked_at"):
+            daily_stats[date]["clicked"] += 1
+        if email.get("replied_at"):
+            daily_stats[date]["replied"] += 1
+    
+    return {
+        "summary": {
+            "total_sent": total_sent,
+            "total_opened": total_opened,
+            "total_clicked": total_clicked,
+            "total_replied": total_replied,
+            "open_rate": round(open_rate, 1),
+            "click_rate": round(click_rate, 1),
+            "reply_rate": round(reply_rate, 1)
+        },
+        "daily_breakdown": [
+            {"date": date, **stats}
+            for date, stats in sorted(daily_stats.items())
+        ],
+        "recent_emails": emails[:20]
+    }
+
+@api_router.get("/email/tracking/{email_id}")
+async def get_email_tracking_details(email_id: str, current_user: User = Depends(get_current_user)):
+    """Get detailed tracking for a specific email"""
+    email = await db.tracked_emails.find_one({"id": email_id}, {"_id": 0})
+    if not email:
+        raise HTTPException(status_code=404, detail="Email not found")
+    
+    # Get all events for this email
+    events = await db.email_tracking_events.find(
+        {"email_id": email_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(100)
+    
+    return {
+        "email": email,
+        "events": events
+    }
+
+# ==================== Email Sequences (Drip Campaigns) ====================
+
+@api_router.get("/sequences")
+async def get_sequences(current_user: User = Depends(get_current_user)):
+    """Get all email sequences"""
+    sequences = await db.email_sequences.find(
+        {"created_by": current_user.id},
+        {"_id": 0}
+    ).to_list(100)
+    return sequences
+
+@api_router.post("/sequences")
+async def create_sequence(
+    name: str,
+    description: Optional[str] = None,
+    steps: List[dict] = [],
+    exit_on_reply: bool = True,
+    exit_on_meeting: bool = True,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new email sequence"""
+    sequence = EmailSequence(
+        name=name,
+        description=description,
+        steps=[SequenceStep(**step) for step in steps],
+        exit_on_reply=exit_on_reply,
+        exit_on_meeting=exit_on_meeting,
+        created_by=current_user.id
+    )
+    
+    seq_doc = sequence.model_dump()
+    seq_doc['created_at'] = seq_doc['created_at'].isoformat()
+    seq_doc['updated_at'] = seq_doc['updated_at'].isoformat()
+    seq_doc['steps'] = [s.model_dump() if hasattr(s, 'model_dump') else s for s in seq_doc['steps']]
+    await db.email_sequences.insert_one(seq_doc)
+    
+    return {"success": True, "sequence": seq_doc}
+
+@api_router.get("/sequences/{sequence_id}")
+async def get_sequence(sequence_id: str, current_user: User = Depends(get_current_user)):
+    """Get sequence details with enrollments"""
+    sequence = await db.email_sequences.find_one({"id": sequence_id}, {"_id": 0})
+    if not sequence:
+        raise HTTPException(status_code=404, detail="Sequence not found")
+    
+    # Get enrollments
+    enrollments = await db.sequence_enrollments.find(
+        {"sequence_id": sequence_id},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get lead details for enrollments
+    lead_ids = [e["lead_id"] for e in enrollments]
+    leads = await db.leads.find({"id": {"$in": lead_ids}}, {"_id": 0}).to_list(500)
+    lead_map = {l["id"]: l for l in leads}
+    
+    for enrollment in enrollments:
+        enrollment["lead"] = lead_map.get(enrollment["lead_id"])
+    
+    return {
+        "sequence": sequence,
+        "enrollments": enrollments
+    }
+
+@api_router.put("/sequences/{sequence_id}")
+async def update_sequence(
+    sequence_id: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    steps: Optional[List[dict]] = None,
+    status: Optional[str] = None,
+    exit_on_reply: Optional[bool] = None,
+    exit_on_meeting: Optional[bool] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a sequence"""
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if name is not None:
+        update_data["name"] = name
+    if description is not None:
+        update_data["description"] = description
+    if steps is not None:
+        update_data["steps"] = steps
+    if status is not None:
+        update_data["status"] = status
+    if exit_on_reply is not None:
+        update_data["exit_on_reply"] = exit_on_reply
+    if exit_on_meeting is not None:
+        update_data["exit_on_meeting"] = exit_on_meeting
+    
+    result = await db.email_sequences.update_one(
+        {"id": sequence_id},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Sequence not found")
+    
+    return {"success": True, "message": "Sequence updated"}
+
+@api_router.delete("/sequences/{sequence_id}")
+async def delete_sequence(sequence_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a sequence"""
+    # Remove all enrollments first
+    await db.sequence_enrollments.delete_many({"sequence_id": sequence_id})
+    
+    result = await db.email_sequences.delete_one({"id": sequence_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Sequence not found")
+    
+    return {"success": True, "message": "Sequence deleted"}
+
+@api_router.post("/sequences/{sequence_id}/enroll")
+async def enroll_leads_in_sequence(
+    sequence_id: str,
+    lead_ids: List[str],
+    current_user: User = Depends(get_current_user)
+):
+    """Enroll leads in a sequence"""
+    sequence = await db.email_sequences.find_one({"id": sequence_id}, {"_id": 0})
+    if not sequence:
+        raise HTTPException(status_code=404, detail="Sequence not found")
+    
+    enrolled_count = 0
+    already_enrolled = 0
+    
+    for lead_id in lead_ids:
+        # Check if already enrolled
+        existing = await db.sequence_enrollments.find_one({
+            "sequence_id": sequence_id,
+            "lead_id": lead_id,
+            "status": "active"
+        })
+        
+        if existing:
+            already_enrolled += 1
+            continue
+        
+        # Calculate first email time
+        steps = sequence.get("steps", [])
+        first_step = steps[0] if steps else None
+        
+        if first_step:
+            delay_days = first_step.get("delay_days", 0)
+            delay_hours = first_step.get("delay_hours", 0)
+            next_email_at = datetime.now(timezone.utc) + timedelta(days=delay_days, hours=delay_hours)
+        else:
+            next_email_at = datetime.now(timezone.utc)
+        
+        enrollment = SequenceEnrollment(
+            sequence_id=sequence_id,
+            lead_id=lead_id,
+            current_step=1,
+            status="active",
+            next_email_at=next_email_at,
+            enrolled_by=current_user.id
+        )
+        
+        enroll_doc = enrollment.model_dump()
+        enroll_doc['enrolled_at'] = enroll_doc['enrolled_at'].isoformat()
+        enroll_doc['next_email_at'] = enroll_doc['next_email_at'].isoformat() if enroll_doc['next_email_at'] else None
+        await db.sequence_enrollments.insert_one(enroll_doc)
+        
+        enrolled_count += 1
+    
+    # Update sequence stats
+    await db.email_sequences.update_one(
+        {"id": sequence_id},
+        {"$inc": {"total_enrolled": enrolled_count}}
+    )
+    
+    return {
+        "success": True,
+        "enrolled_count": enrolled_count,
+        "already_enrolled": already_enrolled
+    }
+
+@api_router.post("/sequences/{sequence_id}/unenroll/{lead_id}")
+async def unenroll_lead_from_sequence(
+    sequence_id: str,
+    lead_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Unenroll a lead from a sequence"""
+    result = await db.sequence_enrollments.update_one(
+        {"sequence_id": sequence_id, "lead_id": lead_id, "status": "active"},
+        {"$set": {"status": "unenrolled", "completed_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    return {"success": True, "message": "Lead unenrolled from sequence"}
+
+# ==================== Pipeline Forecasting ====================
+
+@api_router.get("/forecasting/pipeline")
+async def get_pipeline_forecast(current_user: User = Depends(get_current_user)):
+    """Get AI-powered pipeline forecast"""
+    # Get all active leads with deal values
+    leads = await db.leads.find(
+        {"stage": {"$nin": ["lost", "closed"]}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Calculate stage-based probabilities
+    stage_probabilities = {
+        "new": 10,
+        "contacted": 20,
+        "qualified": 40,
+        "proposal": 60,
+        "negotiation": 80,
+        "won": 100,
+        "lost": 0
+    }
+    
+    forecasts = []
+    total_pipeline = 0
+    weighted_pipeline = 0
+    
+    for lead in leads:
+        deal_value = lead.get("deal_value", 0) or 0
+        stage = lead.get("stage", "new")
+        probability = stage_probabilities.get(stage, 20)
+        
+        # Adjust probability based on activity
+        last_contacted = lead.get("last_contacted")
+        if last_contacted:
+            days_since_contact = (datetime.now(timezone.utc) - datetime.fromisoformat(last_contacted.replace('Z', '+00:00'))).days
+            if days_since_contact > 14:
+                probability = max(5, probability - 15)
+            elif days_since_contact < 3:
+                probability = min(95, probability + 10)
+        
+        weighted_value = deal_value * (probability / 100)
+        total_pipeline += deal_value
+        weighted_pipeline += weighted_value
+        
+        forecasts.append({
+            "lead_id": lead["id"],
+            "lead_name": f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip(),
+            "company": lead.get("company"),
+            "deal_value": deal_value,
+            "stage": stage,
+            "probability": probability,
+            "weighted_value": weighted_value,
+            "last_contacted": last_contacted
+        })
+    
+    # Sort by weighted value
+    forecasts.sort(key=lambda x: x["weighted_value"], reverse=True)
+    
+    # Calculate monthly forecast
+    monthly_forecast = weighted_pipeline * 0.3  # Assume 30% close in current month
+    quarterly_forecast = weighted_pipeline * 0.7  # 70% close in quarter
+    
+    # Stage distribution
+    stage_distribution = {}
+    for f in forecasts:
+        stage = f["stage"]
+        if stage not in stage_distribution:
+            stage_distribution[stage] = {"count": 0, "value": 0, "weighted": 0}
+        stage_distribution[stage]["count"] += 1
+        stage_distribution[stage]["value"] += f["deal_value"]
+        stage_distribution[stage]["weighted"] += f["weighted_value"]
+    
+    return {
+        "summary": {
+            "total_pipeline": total_pipeline,
+            "weighted_pipeline": round(weighted_pipeline, 2),
+            "monthly_forecast": round(monthly_forecast, 2),
+            "quarterly_forecast": round(quarterly_forecast, 2),
+            "total_deals": len(forecasts),
+            "avg_deal_size": round(total_pipeline / len(forecasts), 2) if forecasts else 0,
+            "avg_probability": round(sum(f["probability"] for f in forecasts) / len(forecasts), 1) if forecasts else 0
+        },
+        "stage_distribution": [
+            {"stage": stage, **data}
+            for stage, data in stage_distribution.items()
+        ],
+        "top_deals": forecasts[:10],
+        "at_risk_deals": [f for f in forecasts if f["probability"] < 30][:10]
+    }
+
+@api_router.post("/forecasting/analyze-deal/{lead_id}")
+async def analyze_deal_forecast(lead_id: str, current_user: User = Depends(get_current_user)):
+    """Get AI analysis for a specific deal"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Get activity history
+    activities = await db.activities.find(
+        {"lead_id": lead_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    
+    # Get call history
+    calls = await db.call_logs.find(
+        {"lead_id": lead_id},
+        {"_id": 0}
+    ).to_list(10)
+    
+    # Get email history
+    emails = await db.tracked_emails.find(
+        {"lead_id": lead_id},
+        {"_id": 0}
+    ).to_list(10)
+    
+    # Calculate engagement score
+    engagement_score = 0
+    engagement_score += len(activities) * 5
+    engagement_score += len(calls) * 10
+    engagement_score += sum(1 for e in emails if e.get("opened_at")) * 15
+    engagement_score += sum(1 for e in emails if e.get("clicked_at")) * 20
+    engagement_score = min(100, engagement_score)
+    
+    # Determine confidence factors and risks
+    confidence_factors = []
+    risk_factors = []
+    
+    if engagement_score > 50:
+        confidence_factors.append("High engagement level")
+    if lead.get("stage") in ["proposal", "negotiation"]:
+        confidence_factors.append("Advanced pipeline stage")
+    if calls and any(c.get("outcome") == "connected" for c in calls):
+        confidence_factors.append("Successful call connections")
+    if any(e.get("replied_at") for e in emails):
+        confidence_factors.append("Email replies received")
+    
+    last_contacted = lead.get("last_contacted")
+    if last_contacted:
+        days_since = (datetime.now(timezone.utc) - datetime.fromisoformat(last_contacted.replace('Z', '+00:00'))).days
+        if days_since > 14:
+            risk_factors.append(f"No contact in {days_since} days")
+    else:
+        risk_factors.append("Never contacted")
+    
+    if engagement_score < 30:
+        risk_factors.append("Low engagement score")
+    if lead.get("stage") == "new":
+        risk_factors.append("Still in early stage")
+    
+    # Calculate probability
+    base_probability = {"new": 10, "contacted": 20, "qualified": 40, "proposal": 60, "negotiation": 80}.get(lead.get("stage"), 20)
+    adjusted_probability = base_probability + (engagement_score - 50) * 0.3
+    adjusted_probability = max(5, min(95, adjusted_probability))
+    
+    return {
+        "lead": lead,
+        "analysis": {
+            "close_probability": round(adjusted_probability, 1),
+            "engagement_score": engagement_score,
+            "confidence_factors": confidence_factors,
+            "risk_factors": risk_factors,
+            "activity_count": len(activities),
+            "call_count": len(calls),
+            "email_count": len(emails),
+            "emails_opened": sum(1 for e in emails if e.get("opened_at")),
+            "recommendation": "Schedule a follow-up call" if risk_factors else "Continue current approach"
+        }
+    }
+
 # ==================== Google Drive OAuth ====================
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')

@@ -1551,6 +1551,164 @@ async def bulk_import_leads(
         errors=errors[:10]  # Return first 10 errors
     )
 
+
+# ==================== Bulk Lead Operations ====================
+
+class BulkAssignRequest(BaseModel):
+    lead_ids: List[str]
+    user_id: str
+
+class BulkSequenceRequest(BaseModel):
+    lead_ids: List[str]
+    sequence_id: str
+
+class BulkOperationResult(BaseModel):
+    success: int
+    failed: int
+    message: str
+
+@api_router.post("/leads/bulk-assign", response_model=BulkOperationResult)
+async def bulk_assign_leads(request: BulkAssignRequest, current_user: User = Depends(get_current_user)):
+    """Assign multiple leads to a user"""
+    # Verify target user exists
+    target_user = await db.users.find_one({"id": request.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Target user not found")
+    
+    success_count = 0
+    for lead_id in request.lead_ids:
+        result = await db.leads.update_one(
+            {"id": lead_id},
+            {"$set": {
+                "assigned_to": request.user_id,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        if result.modified_count > 0:
+            success_count += 1
+            
+            # Log activity
+            await db.activities.insert_one({
+                "id": str(uuid.uuid4()),
+                "type": "lead_assigned",
+                "description": f"Lead assigned to {target_user.get('full_name', 'user')}",
+                "user_id": current_user.id,
+                "lead_id": lead_id,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+    
+    return BulkOperationResult(
+        success=success_count,
+        failed=len(request.lead_ids) - success_count,
+        message=f"Successfully assigned {success_count} leads to {target_user.get('full_name', 'user')}"
+    )
+
+@api_router.post("/leads/bulk-sequence", response_model=BulkOperationResult)
+async def bulk_add_to_sequence(request: BulkSequenceRequest, current_user: User = Depends(get_current_user)):
+    """Add multiple leads to an email sequence"""
+    # Verify sequence exists
+    sequence = await db.sequences.find_one({"id": request.sequence_id}, {"_id": 0})
+    if not sequence:
+        raise HTTPException(status_code=404, detail="Sequence not found")
+    
+    success_count = 0
+    for lead_id in request.lead_ids:
+        # Check if lead is already in sequence
+        existing = await db.sequence_enrollments.find_one({
+            "lead_id": lead_id,
+            "sequence_id": request.sequence_id
+        })
+        
+        if not existing:
+            enrollment = {
+                "id": str(uuid.uuid4()),
+                "lead_id": lead_id,
+                "sequence_id": request.sequence_id,
+                "current_step": 0,
+                "status": "active",
+                "enrolled_by": current_user.id,
+                "enrolled_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.sequence_enrollments.insert_one(enrollment)
+            success_count += 1
+            
+            # Log activity
+            await db.activities.insert_one({
+                "id": str(uuid.uuid4()),
+                "type": "added_to_sequence",
+                "description": f"Added to sequence: {sequence.get('name', 'Unknown')}",
+                "user_id": current_user.id,
+                "lead_id": lead_id,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+    
+    return BulkOperationResult(
+        success=success_count,
+        failed=len(request.lead_ids) - success_count,
+        message=f"Successfully added {success_count} leads to {sequence.get('name', 'sequence')}"
+    )
+
+@api_router.get("/calls/dispositions")
+async def get_call_dispositions():
+    """Get available call disposition options"""
+    return CALL_DISPOSITIONS
+
+@api_router.put("/calls/{call_id}/disposition")
+async def update_call_disposition(
+    call_id: str,
+    disposition: str,
+    notes: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update call disposition after a call ends"""
+    # Update the call log
+    update_data = {
+        "disposition": disposition,
+        "notes": notes
+    }
+    
+    result = await db.call_logs.update_one(
+        {"id": call_id},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Call log not found")
+    
+    # Get the call log to find associated lead
+    call_log = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    
+    # Create activity record with disposition
+    activity_description = f"Call - {disposition}"
+    if notes:
+        activity_description += f" - {notes}"
+    
+    await db.activities.insert_one({
+        "id": str(uuid.uuid4()),
+        "type": "call_disposition",
+        "description": activity_description,
+        "user_id": current_user.id,
+        "lead_id": call_log.get("lead_id"),
+        "metadata": {
+            "call_id": call_id,
+            "disposition": disposition,
+            "notes": notes,
+            "phone_number": call_log.get("phone_number"),
+            "duration": call_log.get("duration")
+        },
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Update lead's last_contacted timestamp
+    if call_log.get("lead_id"):
+        await db.leads.update_one(
+            {"id": call_log["lead_id"]},
+            {"$set": {"last_contacted": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    return {"message": "Disposition updated", "disposition": disposition}
+
+
 # Website Scraper
 class ScrapeRequest(BaseModel):
     url: str

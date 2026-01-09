@@ -85,41 +85,41 @@ const CallDispositionModal = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+          className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
         >
           {/* Header */}
-          <div className="p-6 border-b border-border bg-gradient-to-r from-green-50 to-blue-50">
+          <div className="p-8 border-b border-border bg-gradient-to-r from-green-50 to-blue-50">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Phone className="w-6 h-6 text-green-600" />
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Phone className="w-8 h-8 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">Call Complete</h2>
+                  <h2 className="text-2xl font-bold text-foreground">Call Complete</h2>
                   {leadInfo && (
-                    <p className="text-secondary">
+                    <p className="text-lg text-secondary">
                       {leadInfo.first_name} {leadInfo.last_name} - {leadInfo.company}
                     </p>
                   )}
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-green-600">{formatDuration(callDuration)}</p>
-                <p className="text-xs text-secondary">Call Duration</p>
+                <p className="text-4xl font-bold text-green-600">{formatDuration(callDuration)}</p>
+                <p className="text-sm text-secondary">Call Duration</p>
               </div>
             </div>
           </div>
 
           {/* Disposition Selection */}
-          <div className="p-6">
-            <h3 className="font-semibold text-foreground mb-4">What was the outcome of this call?</h3>
+          <div className="p-8">
+            <h3 className="font-semibold text-lg text-foreground mb-5">What was the outcome of this call?</h3>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
               {DISPOSITION_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedDisposition === option.value;
@@ -127,36 +127,36 @@ const CallDispositionModal = ({
                   <button
                     key={option.value}
                     onClick={() => setSelectedDisposition(option.value)}
-                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                    className={`p-5 rounded-2xl border-2 transition-all text-left ${
                       isSelected 
                         ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
                         : 'border-border hover:border-primary/50 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${option.color}`}>
-                        <Icon className="w-4 h-4" />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${option.color}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
-                      {isSelected && <CheckCircle className="w-5 h-5 text-primary ml-auto" />}
+                      {isSelected && <CheckCircle className="w-6 h-6 text-primary ml-auto" />}
                     </div>
-                    <p className="font-medium text-sm">{option.value}</p>
-                    <p className="text-xs text-secondary mt-1">{option.description}</p>
+                    <p className="font-semibold">{option.value}</p>
+                    <p className="text-sm text-secondary mt-1">{option.description}</p>
                   </button>
                 );
               })}
             </div>
 
-            {/* Notes */}
-            <div className="mb-6">
-              <label className="block font-semibold text-foreground mb-2">
+            {/* Notes - Larger */}
+            <div className="mb-8">
+              <label className="block font-semibold text-lg text-foreground mb-3">
                 Call Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add details about this call... (e.g., 'Talked to assistant, said to call back at 2 PM')"
-                rows={4}
-                className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                rows={6}
+                className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none text-lg"
               />
               <p className="text-xs text-secondary mt-2">
                 This will be logged in the lead's activity history

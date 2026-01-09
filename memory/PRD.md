@@ -165,13 +165,35 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Personalized improvement recommendations
   - Team performance insights
 - **Google OAuth Setup Guide** - Created `/app/GOOGLE_OAUTH_SETUP.md` for two-way calendar sync
-- **Waveform Audio Player** (NEW) - Enhanced call recording playback:
+- **Waveform Audio Player** - Enhanced call recording playback:
   - Visual waveform bars with animated playhead
   - Play/Pause, Skip ±10s, Playback speed (1x-2x)
   - Volume control and time display
   - **AI Coaching Insight Markers** on timeline (color-coded dots)
   - Click markers to jump to coaching moments
   - Active insight display with suggestions
+- **Web Audio API Integration** (NEW) - Real waveform visualization:
+  - Analyzes actual audio frequency data
+  - **Speaker Detection Colors**: Blue (rep), Green (customer), Gray (silence)
+  - Shows real audio peaks and valleys
+- **Email Tracking & Analytics** (NEW):
+  - Tracking pixel for email opens (`/api/email/tracking/pixel/{email_id}.gif`)
+  - Link click tracking with redirect
+  - Email Analytics Dashboard (`/email-analytics`)
+  - Open rate, click rate, reply rate metrics
+  - Daily trend charts and email funnel visualization
+- **Email Sequences (Drip Campaigns)** (NEW):
+  - Create multi-step email sequences
+  - Enroll/unenroll leads from sequences
+  - Auto-pause on reply or meeting booked
+  - Sequence performance tracking
+- **Pipeline Revenue Forecasting** (NEW):
+  - AI-powered deal probability predictions
+  - Weighted pipeline calculations
+  - Monthly and quarterly forecasts
+  - Stage distribution charts
+  - Deal Analysis with AI recommendations
+  - At-risk deals identification
 
 ### Backend Endpoints (New)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user

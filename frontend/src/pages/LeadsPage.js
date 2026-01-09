@@ -704,10 +704,28 @@ const LeadsPage = () => {
                           {lead.phone}
                         </div>
                       )}
+                      {lead.mobile && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-green-500" />
+                          {lead.mobile} (Mobile)
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <Building className="w-4 h-4" />
                         {lead.company}
                       </div>
+                      {lead.city && lead.state && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          {lead.city}, {lead.state}
+                        </div>
+                      )}
+                      {lead.notes && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <FileText className="w-4 h-4" />
+                          <span className="truncate">{lead.notes}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -715,7 +733,17 @@ const LeadsPage = () => {
                     {/* Action Buttons */}
                     {!selectMode && (
                       <>
-                        {lead.phone && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditLead(lead);
+                          }}
+                          className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                          title="Edit Lead"
+                        >
+                          <Edit2 className="w-5 h-5 text-slate-600" />
+                        </button>
+                        {(lead.phone || lead.mobile) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

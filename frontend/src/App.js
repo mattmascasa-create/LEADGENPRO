@@ -369,6 +369,7 @@ function AppContent() {
           <AppRouter />
           <AIAssistant />
           <SupportBot />
+          <CommandPalette />
           <ToastContainer 
             position="top-right"
             autoClose={3000}

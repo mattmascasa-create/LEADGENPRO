@@ -552,19 +552,20 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             </div>
           )}
 
-          {/* Dial Pad */}
+          {/* Dial Pad - Larger */}
           {!isCallActive && !showOutcomeModal && !showSettings && (
-            <div className="px-5 pb-3">
-              <div className="grid grid-cols-3 gap-2">
+            <div className="px-6 pb-4">
+              <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
                 {dialPadButtons.flat().map((btn) => (
                   <button
                     key={btn.digit}
                     onClick={() => handleDigitPress(btn.digit)}
-                    className="h-16 rounded-2xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/30 text-white transition-all active:scale-95 flex flex-col items-center justify-center"
+                    className="h-18 rounded-2xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/30 text-white transition-all active:scale-95 flex flex-col items-center justify-center"
+                    style={{height: '72px'}}
                     data-testid={`dial-${btn.digit}`}
                   >
-                    <span className="text-2xl font-light">{btn.digit}</span>
-                    {btn.letters && <span className="text-[10px] text-slate-500 tracking-widest">{btn.letters}</span>}
+                    <span className="text-3xl font-light">{btn.digit}</span>
+                    {btn.letters && <span className="text-xs text-slate-500 tracking-widest">{btn.letters}</span>}
                   </button>
                 ))}
               </div>
@@ -573,23 +574,23 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
 
           {/* Recording Toggle */}
           {!isCallActive && !showOutcomeModal && !showSettings && (
-            <div className="px-5 pb-3">
+            <div className="px-6 pb-4">
               <button
                 onClick={() => setIsRecording(!isRecording)}
-                className={`w-full flex items-center justify-between p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                className={`w-full flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border ${
                   isRecording 
                     ? 'bg-red-500/10 border-red-500/30' 
                     : 'bg-slate-800/60 border-slate-700/30'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Circle className={`w-5 h-5 ${isRecording ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
-                  <span className={`text-sm font-medium ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
+                  <Circle className={`w-6 h-6 ${isRecording ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
+                  <span className={`font-medium ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
                     Record this call
                   </span>
                 </div>
-                <div className={`w-11 h-6 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}>
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                <div className={`w-12 h-7 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}>
+                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
                 </div>
               </button>
             </div>
@@ -597,24 +598,24 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
 
           {/* Recent Calls */}
           {!isCallActive && !showOutcomeModal && !showSettings && recentCalls.length > 0 && (
-            <div className="px-5 pb-3">
+            <div className="px-6 pb-4">
               <button
                 onClick={() => setShowRecentCalls(!showRecentCalls)}
-                className="w-full text-left text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+                className="w-full text-left text-slate-400 hover:text-white transition-colors flex items-center gap-2"
               >
-                <Clock className="w-4 h-4" />
+                <Clock className="w-5 h-5" />
                 Recent calls ({recentCalls.length})
               </button>
               {showRecentCalls && (
-                <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
                   {recentCalls.map((call, idx) => (
                     <button
                       key={idx}
                       onClick={() => redialNumber(call.phone_number)}
-                      className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
                     >
-                      <span className="text-white text-sm">{formatPhoneDisplay(call.phone_number)}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      <span className="text-white">{formatPhoneDisplay(call.phone_number)}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
                         call.outcome === 'connected' ? 'bg-green-500/20 text-green-400' :
                         call.outcome === 'no_answer' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-slate-600 text-slate-400'

@@ -82,6 +82,10 @@ const CallAnalyticsDashboard = () => {
     }
   };
 
+  const [coaching, setCoaching] = useState({});
+  const [teamInsights, setTeamInsights] = useState(null);
+  const [loadingCoaching, setLoadingCoaching] = useState({});
+
   const transcribeCall = async (callId) => {
     setTranscribing(prev => ({ ...prev, [callId]: true }));
     try {
@@ -133,6 +137,51 @@ const CallAnalyticsDashboard = () => {
       setAnalyzing(prev => ({ ...prev, [callId]: false }));
     }
   };
+
+  // Get AI Coaching for a specific call
+  const getCallCoaching = async (callId) => {
+    setLoadingCoaching(prev => ({ ...prev, [callId]: true }));
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/calls/${callId}/coaching`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      
+      if (response.data.success) {
+        toast.success('AI Coaching generated!');
+        setCoaching(prev => ({ ...prev, [callId]: response.data.coaching }));
+        setCallLogs(prev => prev.map(call => 
+          call.id === callId 
+            ? { ...call, coaching: response.data.coaching }
+            : call
+        ));
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to get coaching. Make sure the call is transcribed first.');
+    } finally {
+      setLoadingCoaching(prev => ({ ...prev, [callId]: false }));
+    }
+  };
+
+  // Fetch team coaching insights
+  const fetchTeamInsights = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/calls/coaching/team-insights?days=${timeRange}`,
+        { headers: getAuthHeaders() }
+      );
+      setTeamInsights(response.data);
+    } catch (error) {
+      console.error('Failed to fetch team insights');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'coaching') {
+      fetchTeamInsights();
+    }
+  }, [activeTab, timeRange]);
 
   const formatDuration = (seconds) => {
     if (!seconds) return '0:00';

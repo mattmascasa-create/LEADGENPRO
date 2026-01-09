@@ -689,6 +689,245 @@ const CallAnalyticsDashboard = () => {
         {/* Coaching Tab */}
         {activeTab === 'coaching' && analytics && (
           <div className="space-y-6">
+            {/* Team Insights Summary */}
+            {teamInsights && (
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Team Performance Insights
+                </h3>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-3xl font-bold">{Math.round(teamInsights.team_avg_score)}</p>
+                    <p className="text-sm opacity-80">Team Avg Score</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-3xl font-bold">{teamInsights.total_calls_analyzed || 0}</p>
+                    <p className="text-sm opacity-80">Calls Analyzed</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-3xl font-bold">{teamInsights.score_distribution?.excellent || 0}</p>
+                    <p className="text-sm opacity-80">Excellent Calls (80+)</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-3xl font-bold">{teamInsights.score_distribution?.needs_work || 0}</p>
+                    <p className="text-sm opacity-80">Need Improvement</p>
+                  </div>
+                </div>
+                
+                {/* Top Performers */}
+                {teamInsights.top_performers?.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Top Performers:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {teamInsights.top_performers.slice(0, 3).map((perf, i) => (
+                        <span key={i} className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {perf.name} ({Math.round(perf.avg_score)})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Get AI Coaching for Calls */}
+            <div className="bg-white rounded-xl border border-border p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-500" />
+                Get Deep AI Coaching
+              </h3>
+              <p className="text-secondary mb-4">
+                Select a transcribed call to receive comprehensive AI coaching with real-time suggestions, sentiment analysis, and personalized improvement tips.
+              </p>
+              
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {callLogs.filter(call => call.transcript).map(call => (
+                  <div key={call.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{call.phone_number}</p>
+                        <p className="text-sm text-secondary">
+                          {format(new Date(call.created_at), 'MMM d, yyyy h:mm a')} • {formatDuration(call.duration)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => getCallCoaching(call.id)}
+                      disabled={loadingCoaching[call.id]}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {loadingCoaching[call.id] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : coaching[call.id] ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          View Coaching
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Get Coaching
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+                
+                {callLogs.filter(call => call.transcript).length === 0 && (
+                  <div className="text-center py-8 text-secondary">
+                    <Mic className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No transcribed calls available</p>
+                    <p className="text-sm">Transcribe a call first to get AI coaching</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Display Coaching Results */}
+            {Object.entries(coaching).map(([callId, coachingData]) => (
+              <motion.div
+                key={callId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl border border-border overflow-hidden"
+              >
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-border">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="w-5 h-5 text-purple-600" />
+                    AI Coaching Results
+                    <span className="ml-auto px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-bold">
+                      Score: {coachingData.overall_score || 'N/A'}/100
+                    </span>
+                  </h4>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  {/* Real-time Suggestions */}
+                  {coachingData.real_time_suggestions?.length > 0 && (
+                    <div>
+                      <h5 className="font-medium mb-3 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        Real-time Coaching Moments
+                      </h5>
+                      <div className="space-y-2">
+                        {coachingData.real_time_suggestions.slice(0, 5).map((suggestion, i) => (
+                          <div key={i} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm font-medium text-yellow-800">{suggestion.moment}</p>
+                            <p className="text-sm text-yellow-700 mt-1">{suggestion.suggestion}</p>
+                            <span className="inline-block mt-2 px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs rounded">
+                              {suggestion.skill}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Talk to Listen Analysis */}
+                  {coachingData.talk_to_listen_analysis && (
+                    <div>
+                      <h5 className="font-medium mb-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-blue-500" />
+                        Talk-to-Listen Ratio
+                      </h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <p className="text-3xl font-bold text-blue-700">
+                            {coachingData.talk_to_listen_analysis.rep_talk_percentage || 0}%
+                          </p>
+                          <p className="text-sm text-blue-600">Your Talk Time</p>
+                        </div>
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <p className="text-3xl font-bold text-green-700">
+                            {coachingData.talk_to_listen_analysis.customer_talk_percentage || 0}%
+                          </p>
+                          <p className="text-sm text-green-600">Customer Talk Time</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm text-secondary">
+                        {coachingData.talk_to_listen_analysis.recommendation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Sentiment Analysis */}
+                  {coachingData.sentiment_analysis && (
+                    <div>
+                      <h5 className="font-medium mb-3 flex items-center gap-2">
+                        {coachingData.sentiment_analysis.overall_sentiment === 'positive' 
+                          ? <ThumbsUp className="w-4 h-4 text-green-500" />
+                          : coachingData.sentiment_analysis.overall_sentiment === 'negative'
+                            ? <ThumbsDown className="w-4 h-4 text-red-500" />
+                            : <Target className="w-4 h-4 text-yellow-500" />
+                        }
+                        Sentiment Analysis
+                      </h5>
+                      <div className={`p-4 rounded-lg ${
+                        coachingData.sentiment_analysis.overall_sentiment === 'positive' 
+                          ? 'bg-green-50' 
+                          : coachingData.sentiment_analysis.overall_sentiment === 'negative'
+                            ? 'bg-red-50'
+                            : 'bg-yellow-50'
+                      }`}>
+                        <p className="font-medium capitalize">
+                          Overall: {coachingData.sentiment_analysis.overall_sentiment}
+                        </p>
+                        {coachingData.sentiment_analysis.alerts?.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sm font-medium text-red-600">Alerts:</p>
+                            <ul className="text-sm text-red-700">
+                              {coachingData.sentiment_analysis.alerts.map((alert, i) => (
+                                <li key={i}>• {alert}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Coaching Recommendations */}
+                  {coachingData.coaching_recommendations && (
+                    <div>
+                      <h5 className="font-medium mb-3 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-yellow-500" />
+                        Personalized Recommendations
+                      </h5>
+                      <div className="space-y-3">
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm font-medium text-green-800">Top Strength</p>
+                          <p className="text-green-700">{coachingData.coaching_recommendations.top_strength}</p>
+                        </div>
+                        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                          <p className="text-sm font-medium text-orange-800">Priority Improvement</p>
+                          <p className="text-orange-700">{coachingData.coaching_recommendations.priority_improvement}</p>
+                        </div>
+                        {coachingData.coaching_recommendations.specific_tips?.length > 0 && (
+                          <div className="space-y-2">
+                            {coachingData.coaching_recommendations.specific_tips.map((tip, i) => (
+                              <div key={i} className="p-3 bg-slate-50 rounded-lg">
+                                <p className="text-sm font-medium">{tip.skill}: {tip.tip}</p>
+                                {tip.example && (
+                                  <p className="text-sm text-secondary mt-1 italic">Example: "{tip.example}"</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+
             <div className="bg-white rounded-xl border border-border p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-yellow-500" />

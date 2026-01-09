@@ -629,26 +629,26 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             </div>
           )}
 
-          {/* Call Button */}
+          {/* Call Button - Larger */}
           {!showOutcomeModal && !showSettings && (
-            <div className="p-5 pt-2">
+            <div className="p-6 pt-2">
               {!isCallActive ? (
                 <button
                   onClick={initiateCall}
                   disabled={!phoneNumber || phoneNumber.replace(/\D/g, '').length < 10 || !user?.phone}
-                  className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-3 text-white font-semibold text-lg transition-all active:scale-95 shadow-lg shadow-green-500/30 disabled:shadow-none"
+                  className="w-full h-20 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-3 text-white font-semibold text-xl transition-all active:scale-95 shadow-lg shadow-green-500/30 disabled:shadow-none"
                   data-testid="call-btn"
                 >
-                  <Phone className="w-6 h-6" />
-                  {!user?.phone ? 'Set Your Phone First' : 'Call'}
+                  <Phone className="w-7 h-7" />
+                  {!user?.phone ? 'Set Your Phone Number First' : 'Start Call'}
                 </button>
               ) : (
                 <button
                   onClick={endCall}
-                  className="w-full h-16 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center gap-3 text-white font-semibold text-lg transition-all active:scale-95 shadow-lg shadow-red-500/30"
+                  className="w-full h-20 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center gap-3 text-white font-semibold text-xl transition-all active:scale-95 shadow-lg shadow-red-500/30"
                   data-testid="end-call-btn"
                 >
-                  <PhoneOff className="w-6 h-6" />
+                  <PhoneOff className="w-7 h-7" />
                   End Call
                 </button>
               )}

@@ -31,7 +31,8 @@ import {
   AlertTriangle,
   CalendarClock,
   TrendingUp,
-  MailCheck
+  MailCheck,
+  Search
 } from 'lucide-react';
 
 // Admin emails that always have admin access

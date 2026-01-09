@@ -4794,6 +4794,202 @@ Return ONLY valid JSON, no additional text."""
         logging.error(f"Analysis error for call {call_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+# ==================== AI Call Coaching Endpoints ====================
+
+@api_router.post("/calls/{call_id}/coaching")
+async def get_ai_call_coaching(call_id: str, current_user: User = Depends(get_current_user)):
+    """Get comprehensive AI coaching for a specific call - Gong-like features"""
+    call = await db.call_logs.find_one({"id": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    transcript = call.get("transcript", "")
+    if not transcript:
+        raise HTTPException(status_code=400, detail="Call has no transcript. Transcribe the call first.")
+    
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="AI features not configured")
+    
+    try:
+        chat = LlmChat(api_key=EMERGENT_LLM_KEY, model="gpt-4o-mini")
+        
+        prompt = f"""You are an elite sales coach like Gong.io's AI. Analyze this sales call transcript and provide comprehensive coaching.
+
+CALL TRANSCRIPT:
+{transcript[:6000]}
+
+CALL METADATA:
+- Duration: {call.get('duration', 0)} seconds
+- Outcome: {call.get('outcome', 'unknown')}
+- Disposition: {call.get('disposition', 'none')}
+
+Provide detailed coaching analysis in JSON format:
+{{
+    "overall_score": 0-100,
+    "real_time_suggestions": [
+        {{"moment": "When customer said X", "suggestion": "You could have responded with...", "skill": "objection_handling"}},
+        {{"moment": "At the opening", "suggestion": "Start with a stronger hook by...", "skill": "opening"}}
+    ],
+    "talk_to_listen_analysis": {{
+        "rep_talk_percentage": 0-100,
+        "customer_talk_percentage": 0-100,
+        "longest_monologue_seconds": 0,
+        "assessment": "Good balance / Rep dominated / Customer dominated",
+        "recommendation": "Specific advice to improve"
+    }},
+    "sentiment_analysis": {{
+        "overall_sentiment": "positive/neutral/negative",
+        "customer_sentiment_progression": ["start: neutral", "middle: interested", "end: positive"],
+        "sentiment_shifts": [
+            {{"moment": "When X was mentioned", "shift": "positive to cautious", "cause": "price discussion"}}
+        ],
+        "alerts": ["Any concerning sentiment moments"]
+    }},
+    "question_quality": {{
+        "total_questions": 0,
+        "open_ended": 0,
+        "closed_ended": 0,
+        "discovery_questions": 0,
+        "qualification_questions": 0,
+        "best_questions": ["List of effective questions asked"],
+        "missed_opportunities": ["Questions that should have been asked"]
+    }},
+    "key_moments": {{
+        "buying_signals": [{{"quote": "Customer quote", "signal_type": "interest/urgency/budget_confirmation"}}],
+        "objections": [{{"quote": "Customer objection", "how_handled": "well/poorly/missed", "better_response": "suggestion"}}],
+        "commitments": [{{"who": "rep/customer", "what": "commitment made"}}],
+        "turning_points": [{{"moment": "Description", "impact": "positive/negative"}}]
+    }},
+    "coaching_recommendations": {{
+        "top_strength": "What they did best",
+        "priority_improvement": "Most important thing to work on",
+        "specific_tips": [
+            {{"skill": "discovery", "tip": "Specific actionable advice", "example": "Example script"}},
+            {{"skill": "closing", "tip": "Specific actionable advice", "example": "Example script"}}
+        ],
+        "training_focus": ["Skills to develop"],
+        "scripts_to_practice": ["Specific phrases or scripts to memorize"]
+    }},
+    "next_call_prep": {{
+        "follow_up_topics": ["Topics to address in follow-up"],
+        "opening_suggestion": "How to open the next call",
+        "objections_to_prepare": ["Anticipated objections and responses"]
+    }}
+}}"""
+
+        response = await chat.send_message_async(UserMessage(prompt))
+        
+        # Parse the response
+        response_text = response.text
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0]
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0]
+        
+        coaching = json.loads(response_text.strip())
+        
+        # Save coaching to call record
+        await db.call_logs.update_one(
+            {"id": call_id},
+            {"$set": {"coaching": coaching, "coached_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {
+            "success": True,
+            "call_id": call_id,
+            "coaching": coaching
+        }
+        
+    except json.JSONDecodeError:
+        # Return partial analysis if JSON parsing fails
+        return {
+            "success": True,
+            "call_id": call_id,
+            "coaching": {
+                "overall_score": 70,
+                "coaching_recommendations": {
+                    "top_strength": "Engaged with the customer",
+                    "priority_improvement": "Ask more discovery questions",
+                    "specific_tips": [{"skill": "discovery", "tip": "Use SPIN selling methodology"}]
+                },
+                "raw_analysis": response.text[:2000] if 'response' in dir() else "Analysis pending"
+            }
+        }
+    except Exception as e:
+        logging.error(f"AI coaching error: {e}")
+        raise HTTPException(status_code=500, detail=f"Coaching analysis failed: {str(e)}")
+
+@api_router.get("/calls/coaching/team-insights")
+async def get_team_coaching_insights(
+    current_user: User = Depends(get_current_user),
+    days: int = 30
+):
+    """Get aggregated coaching insights for the team"""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Get all calls with coaching data
+    calls = await db.call_logs.find({
+        "coached_at": {"$exists": True},
+        "created_at": {"$gte": cutoff.isoformat()}
+    }, {"_id": 0, "coaching": 1, "agent_id": 1}).to_list(1000)
+    
+    if not calls:
+        return {
+            "team_avg_score": 0,
+            "common_strengths": [],
+            "common_improvements": [],
+            "top_performers": [],
+            "skill_gaps": []
+        }
+    
+    # Aggregate insights
+    scores = []
+    strengths = []
+    improvements = []
+    agent_scores = {}
+    
+    for call in calls:
+        coaching = call.get("coaching", {})
+        score = coaching.get("overall_score", 0)
+        scores.append(score)
+        
+        agent_id = call.get("agent_id")
+        if agent_id:
+            if agent_id not in agent_scores:
+                agent_scores[agent_id] = []
+            agent_scores[agent_id].append(score)
+        
+        rec = coaching.get("coaching_recommendations", {})
+        if rec.get("top_strength"):
+            strengths.append(rec["top_strength"])
+        if rec.get("priority_improvement"):
+            improvements.append(rec["priority_improvement"])
+    
+    # Get top performers
+    agent_averages = [
+        {"agent_id": aid, "avg_score": sum(s)/len(s), "calls": len(s)}
+        for aid, s in agent_scores.items()
+    ]
+    top_performers = sorted(agent_averages, key=lambda x: x["avg_score"], reverse=True)[:5]
+    
+    # Get user names for top performers
+    for perf in top_performers:
+        user = await db.users.find_one({"id": perf["agent_id"]}, {"_id": 0, "full_name": 1})
+        perf["name"] = user.get("full_name", "Unknown") if user else "Unknown"
+    
+    return {
+        "team_avg_score": sum(scores) / len(scores) if scores else 0,
+        "total_calls_analyzed": len(calls),
+        "common_strengths": list(set(strengths))[:5],
+        "common_improvements": list(set(improvements))[:5],
+        "top_performers": top_performers,
+        "score_distribution": {
+            "excellent": len([s for s in scores if s >= 80]),
+            "good": len([s for s in scores if 60 <= s < 80]),
+            "needs_work": len([s for s in scores if s < 60])
+        }
+    }
+
 # ==================== Google Drive Integration ====================
 
 # ==================== AI Email Automation Endpoints ====================

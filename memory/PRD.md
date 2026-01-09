@@ -15,6 +15,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Department
   - Phone/Contact info
   - Company
+- [x] **Admin Lead Visibility** - Admins can see ALL leads regardless of who created them (FIXED Jan 9, 2026)
 
 ### Lead Management
 - [x] Lead CRUD operations
@@ -24,6 +25,10 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [x] Website scraping for contacts
 - [x] Lead distribution by admins
 - [x] Drag-and-drop Kanban pipeline
+- [x] **Bulk Actions** (NEW - Jan 9, 2026):
+  - Bulk assign leads to users
+  - Bulk add leads to email sequences
+  - Edit lead modal with expanded fields (mobile, address, notes)
 
 ### VoIP & Dialer System (Improved - v2)
 - [x] Click-to-call via Twilio VoIP
@@ -37,6 +42,11 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - **Call notes** - Add notes to each call log
   - **Call status indicators** - Connecting, Ringing, Connected, Ended, Failed
   - Live call timer with animated status
+- [x] **Post-Call Disposition Modal** (NEW - Jan 9, 2026):
+  - 12 disposition options matching enterprise CRM standards
+  - Notes field for call details
+  - Automatic activity logging
+  - Lead last_contacted timestamp update
 - [x] **Twilio Integration** - Robust call handling with:
   - Proper webhook endpoints for call status events (`/api/voice/events`)
   - Recording completion callbacks (`/api/voice/recording-callback`)

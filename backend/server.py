@@ -505,8 +505,16 @@ class EmailSequence(BaseModel):
     description: Optional[str] = None
     steps: List[Dict[str, Any]] = []
     active: bool = True
-    created_by: str
+    status: str = "active"  # active, paused, archived
+    trigger: str = "manual"  # manual, lead_created, stage_change
+    exit_on_reply: bool = True
+    exit_on_meeting: bool = True
+    total_enrolled: int = 0
+    total_completed: int = 0
+    total_replied: int = 0
+    created_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = None
 
 class EmailSequenceCreate(BaseModel):
     name: str

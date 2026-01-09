@@ -659,6 +659,87 @@ class ScheduledEmail(BaseModel):
     created_by: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Email Tracking Models
+class EmailTrackingEvent(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email_id: str
+    event_type: str  # sent, delivered, opened, clicked, replied, bounced
+    lead_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    sequence_id: Optional[str] = None
+    link_url: Optional[str] = None
+    user_agent: Optional[str] = None
+    ip_address: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TrackedEmail(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subject: str
+    body: str
+    to_email: str
+    to_name: Optional[str] = None
+    lead_id: Optional[str] = None
+    campaign_id: Optional[str] = None
+    sequence_id: Optional[str] = None
+    sequence_step: Optional[int] = None
+    sent_by: str
+    sent_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    opened_at: Optional[datetime] = None
+    clicked_at: Optional[datetime] = None
+    replied_at: Optional[datetime] = None
+    open_count: int = 0
+    click_count: int = 0
+    status: str = "sent"  # sent, opened, clicked, replied, bounced
+
+# Email Sequence (Drip Campaign) Models
+class SequenceStep(BaseModel):
+    step_number: int
+    delay_days: int = 0
+    delay_hours: int = 0
+    subject: str
+    body: str
+    send_time: Optional[str] = None  # HH:MM format for specific time
+
+class EmailSequence(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    steps: List[SequenceStep] = []
+    status: str = "active"  # active, paused, archived
+    trigger: str = "manual"  # manual, lead_created, stage_change
+    exit_on_reply: bool = True
+    exit_on_meeting: bool = True
+    total_enrolled: int = 0
+    total_completed: int = 0
+    total_replied: int = 0
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SequenceEnrollment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sequence_id: str
+    lead_id: str
+    current_step: int = 1
+    status: str = "active"  # active, paused, completed, exited_reply, exited_meeting
+    enrolled_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    next_email_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    enrolled_by: Optional[str] = None
+
+# Pipeline Forecasting Models
+class DealForecast(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lead_id: str
+    deal_value: float
+    close_probability: float  # AI-predicted probability 0-100
+    expected_close_date: Optional[datetime] = None
+    stage: str
+    confidence_factors: List[str] = []
+    risk_factors: List[str] = []
+    ai_recommendation: Optional[str] = None
+    forecast_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Stats(BaseModel):
     total_leads: int
     total_users: int

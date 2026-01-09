@@ -72,23 +72,129 @@ const LeadsPage = () => {
 
   const fetchLeads = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/leads`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/leads`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setLeads(response.data);
     } catch (error) {
       toast.error('Failed to load leads');
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to load users');
+    }
+  };
+
+  const fetchSequences = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/sequences`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSequences(response.data);
+    } catch (error) {
+      console.error('Failed to load sequences');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/api/leads`, formData);
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_URL}/api/leads`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Lead created successfully!');
       setShowForm(false);
-      setFormData({ first_name: '', last_name: '', email: '', phone: '', company: '', title: '', tags: [] });
+      setFormData({ first_name: '', last_name: '', email: '', phone: '', mobile: '', company: '', title: '', street_address: '', city: '', state: '', zip_code: '', notes: '', tags: [] });
       fetchLeads();
     } catch (error) {
       toast.error('Failed to create lead');
+    }
+  };
+
+  // Bulk assign leads to user
+  const handleBulkAssign = async () => {
+    if (!selectedUserId) {
+      toast.error('Please select a user');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/leads/bulk-assign`, {
+        lead_ids: selectedLeads.map(l => l.id),
+        user_id: selectedUserId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(response.data.message);
+      setShowAssignModal(false);
+      setSelectedLeads([]);
+      setSelectMode(false);
+      fetchLeads();
+    } catch (error) {
+      toast.error('Failed to assign leads');
+    }
+  };
+
+  // Bulk add leads to sequence
+  const handleBulkSequence = async () => {
+    if (!selectedSequenceId) {
+      toast.error('Please select a sequence');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/leads/bulk-sequence`, {
+        lead_ids: selectedLeads.map(l => l.id),
+        sequence_id: selectedSequenceId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(response.data.message);
+      setShowSequenceModal(false);
+      setSelectedLeads([]);
+      setSelectMode(false);
+    } catch (error) {
+      toast.error('Failed to add leads to sequence');
+    }
+  };
+
+  // Edit lead
+  const handleEditLead = (lead) => {
+    setEditingLead({
+      ...lead,
+      mobile: lead.mobile || '',
+      street_address: lead.street_address || '',
+      city: lead.city || '',
+      state: lead.state || '',
+      zip_code: lead.zip_code || '',
+      notes: lead.notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateLead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/leads/${editingLead.id}`, editingLead, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Lead updated successfully!');
+      setShowEditModal(false);
+      setEditingLead(null);
+      fetchLeads();
+    } catch (error) {
+      toast.error('Failed to update lead');
     }
   };
 

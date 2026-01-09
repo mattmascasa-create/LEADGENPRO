@@ -67,6 +67,16 @@ const Sidebar = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Listen for openQuickCall event from Command Palette
+  useEffect(() => {
+    const handleOpenQuickCall = () => {
+      setShowDialer(true);
+    };
+    
+    window.addEventListener('openQuickCall', handleOpenQuickCall);
+    return () => window.removeEventListener('openQuickCall', handleOpenQuickCall);
+  }, []);
+
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);

@@ -553,7 +553,8 @@ class CallLog(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     lead_id: Optional[str] = None
     phone_number: str
-    outcome: str
+    outcome: str  # connected, no_answer, voicemail, etc.
+    disposition: Optional[str] = None  # Left VM, Set Meeting, Not Interested, Bad Number, Wrong POC, Gatekeeper, etc.
     duration: int = 0  # in seconds
     notes: Optional[str] = None
     call_sid: Optional[str] = None
@@ -566,12 +567,29 @@ class CallLog(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CallLogCreate(BaseModel):
-    lead_id: str
+    lead_id: Optional[str] = None
     phone_number: str
     outcome: str
+    disposition: Optional[str] = None
     duration: int = 0
     notes: Optional[str] = None
     call_sid: Optional[str] = None
+
+# Call Disposition Options
+CALL_DISPOSITIONS = [
+    "No Answer",
+    "Left Voicemail", 
+    "Gatekeeper",
+    "Bad Number",
+    "No Longer with Company",
+    "Wrong POC",
+    "Not Interested",
+    "Referral",
+    "Call Back",
+    "Set Meeting",
+    "Sent Info",
+    "DNC - Do Not Call"
+]
 
 class VoiceTokenRequest(BaseModel):
     identity: str

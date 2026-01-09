@@ -316,6 +316,22 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/email-analytics"
+        element={
+          <ProtectedRoute>
+            <EmailAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/forecasting"
+        element={
+          <ProtectedRoute>
+            <PipelineForecastPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>

@@ -1222,10 +1222,17 @@ async def logout(response: Response, current_user: User = Depends(get_current_us
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(stage: Optional[str] = None, current_user: User = Depends(get_current_user)):
     query = {}
-    if current_user.role == "employee":
-        query["assigned_to"] = current_user.id
-    elif current_user.role == "client":
-        query["created_by"] = current_user.id
+    
+    # Check if user is an admin (by role or by ADMIN_EMAILS list)
+    is_admin = current_user.email.lower() in [e.lower() for e in ADMIN_EMAILS] or current_user.role == 'admin'
+    
+    # Admins see ALL leads (no filter on assigned_to or created_by)
+    if not is_admin:
+        if current_user.role == "employee":
+            query["assigned_to"] = current_user.id
+        elif current_user.role == "client":
+            query["created_by"] = current_user.id
+    # Admins: query remains empty, returning ALL leads
     
     if stage:
         query["stage"] = stage

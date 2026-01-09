@@ -178,6 +178,24 @@ const Sidebar = () => {
           )}
         </div>
 
+        {/* Quick Search Shortcut */}
+        <div className="px-3 lg:px-4 pt-3">
+          <button 
+            onClick={() => {
+              // Trigger Cmd+K programmatically
+              const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true });
+              window.dispatchEvent(event);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors group"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left text-sm">Quick search...</span>
+            <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-slate-700 rounded text-[10px] text-slate-400 group-hover:bg-slate-600">
+              <span>⌘</span><span>K</span>
+            </kbd>
+          </button>
+        </div>
+
         {/* Quick Call Button */}
         <div className="px-3 lg:px-4 pt-3 lg:pt-4">
           <button

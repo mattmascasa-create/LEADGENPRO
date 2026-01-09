@@ -366,23 +366,23 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-700/50"
+          className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-700/50"
           data-testid="phone-dialer"
         >
           {/* Header */}
-          <div className="p-5 text-center relative">
+          <div className="p-6 text-center relative">
             {!isCallActive && !showOutcomeModal && (
-              <div className="absolute right-4 top-4 flex gap-2">
+              <div className="absolute right-5 top-5 flex gap-2">
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className={`p-2 rounded-full transition-all ${showSettings ? 'bg-primary text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}`}
+                  className={`p-2.5 rounded-full transition-all ${showSettings ? 'bg-primary text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}`}
                   title="Settings"
                 >
                   <Settings className="w-5 h-5" />
                 </button>
                 <button
                   onClick={onClose}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-full transition-all"
+                  className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-full transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -391,36 +391,36 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             
             {/* Lead Info */}
             {leadInfo && !showSettings && (
-              <div className="mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-primary/30">
-                  <User className="w-8 h-8 text-white" />
+              <div className="mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-primary/30">
+                  <User className="w-10 h-10 text-white" />
                 </div>
-                <p className="text-white font-semibold text-lg">{leadInfo.first_name} {leadInfo.last_name}</p>
-                <p className="text-slate-400 text-sm">{leadInfo.company}</p>
+                <p className="text-white font-semibold text-xl">{leadInfo.first_name} {leadInfo.last_name}</p>
+                <p className="text-slate-400">{leadInfo.company}</p>
               </div>
             )}
 
             {!leadInfo && !isCallActive && !showSettings && (
-              <div className="mb-2">
-                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-green-500/30">
-                  <Phone className="w-7 h-7 text-white" />
+              <div className="mb-4">
+                <div className="w-18 h-18 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-500/30" style={{width: '72px', height: '72px'}}>
+                  <Phone className="w-9 h-9 text-white" />
                 </div>
-                <h2 className="text-white font-semibold text-lg">Click-to-Call</h2>
-                <p className="text-slate-500 text-xs mt-1">We'll call your phone, then connect you</p>
+                <h2 className="text-white font-semibold text-xl">Click-to-Call Dialer</h2>
+                <p className="text-slate-500 text-sm mt-1">We'll call your phone first, then connect you to the lead</p>
               </div>
             )}
 
-            {/* Settings Panel */}
+            {/* Settings Panel - Now Larger */}
             {showSettings && !isCallActive && (
-              <div className="text-left mt-8">
-                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <div className="text-left mt-8 max-w-md mx-auto">
+                <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
                   <Settings className="w-5 h-5 text-primary" />
                   Your Phone Number
                 </h3>
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 mb-4">
-                  <div className="flex items-start gap-2 mb-3">
-                    <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-slate-400 text-xs">
+                <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-4">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-slate-400 text-sm">
                       When you make a call, we'll ring your phone first. Answer and press 1 to connect to the lead.
                     </p>
                   </div>
@@ -428,20 +428,20 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
                     type="tel"
                     value={agentPhone}
                     onChange={(e) => setAgentPhone(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
-                    placeholder="Your phone number"
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 mb-3"
+                    placeholder="Your phone number (e.g., +1 555 123 4567)"
+                    className="w-full px-4 py-4 bg-slate-700/50 border border-slate-600 rounded-xl text-white text-lg placeholder-slate-500 mb-4"
                   />
                   <button
                     onClick={saveAgentPhone}
                     disabled={savingPhone}
-                    className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-primary text-white rounded-xl font-medium text-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {savingPhone ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     Save Phone Number
                   </button>
                 </div>
                 {user?.phone && (
-                  <p className="text-green-400 text-sm text-center">
+                  <p className="text-green-400 text-center">
                     ✓ Your phone: {formatPhoneDisplay(user.phone)}
                   </p>
                 )}

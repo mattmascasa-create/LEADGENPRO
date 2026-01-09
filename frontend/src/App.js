@@ -44,6 +44,7 @@ import AIAssistant from '@/components/AIAssistant';
 import AuthCallback from '@/components/AuthCallback';
 import SupportBot from '@/components/SupportBot';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import CommandPalette from '@/components/CommandPalette';
 
 // Auth Context
 import { AuthProvider, useAuth } from '@/context/AuthContext';

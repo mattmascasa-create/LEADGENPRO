@@ -263,13 +263,13 @@ const Sidebar = () => {
             <span>Sign Out</span>
           </button>
         </div>
-
-        {/* Phone Dialer Modal */}
-        <PhoneDialer 
-          isOpen={showDialer} 
-          onClose={() => setShowDialer(false)} 
-        />
       </div>
+
+      {/* Phone Dialer Modal - Outside sidebar for proper centering */}
+      <PhoneDialer 
+        isOpen={showDialer} 
+        onClose={() => setShowDialer(false)} 
+      />
     </>
   );
 };

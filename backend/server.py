@@ -2970,7 +2970,10 @@ async def analyze_call_with_ai(transcription: str, call_data: dict) -> dict:
         }
     
     try:
-        chat = LlmChat(api_key=EMERGENT_LLM_KEY, model="gpt-4o-mini")
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"call-transcription-analysis-{uuid.uuid4().hex[:8]}"
+        )
         
         prompt = f"""Analyze this sales call transcription and provide insights like Gong.io would.
 

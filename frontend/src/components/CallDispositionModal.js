@@ -158,40 +158,40 @@ const CallDispositionModal = ({
                 rows={6}
                 className="w-full px-5 py-4 border-2 border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none text-lg"
               />
-              <p className="text-xs text-secondary mt-2">
+              <p className="text-sm text-secondary mt-2">
                 This will be logged in the lead's activity history
               </p>
             </div>
 
             {/* Preview */}
             {selectedDisposition && (
-              <div className="bg-slate-50 rounded-xl p-4 mb-6">
-                <p className="text-sm font-medium text-secondary mb-2">Activity Preview:</p>
-                <p className="text-foreground">
+              <div className="bg-slate-50 rounded-2xl p-5 mb-8">
+                <p className="font-medium text-secondary mb-2">Activity Preview:</p>
+                <p className="text-lg text-foreground">
                   <span className="font-semibold">Call - {selectedDisposition}</span>
                   {notes && <span className="text-secondary"> - {notes}</span>}
                 </p>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-3">
+            {/* Actions - Larger Buttons */}
+            <div className="flex gap-4">
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 border border-border rounded-xl hover:bg-slate-50 transition-colors font-medium"
+                className="flex-1 px-6 py-5 border-2 border-border rounded-2xl hover:bg-slate-50 transition-colors font-semibold text-lg"
               >
                 Skip for Now
               </button>
               <button
                 onClick={handleSave}
                 disabled={!selectedDisposition || saving}
-                className="flex-1 px-4 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-5 bg-primary text-white rounded-2xl hover:bg-primary/90 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {saving ? (
                   <>Saving...</>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
+                    <Save className="w-6 h-6" />
                     Save Disposition
                   </>
                 )}

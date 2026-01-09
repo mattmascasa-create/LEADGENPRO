@@ -9,6 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import CallDispositionModal from './CallDispositionModal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

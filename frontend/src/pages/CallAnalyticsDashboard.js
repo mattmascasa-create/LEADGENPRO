@@ -11,6 +11,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import DashboardLayout from '@/components/DashboardLayout';
+import WaveformPlayer from '@/components/WaveformPlayer';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart as RechartsPieChart, Pie, Cell, LineChart, Line, Legend

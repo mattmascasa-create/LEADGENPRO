@@ -8,7 +8,7 @@ import {
   Clock, CalendarDays, ExternalLink, ChevronDown, ChevronRight,
   Smile, ThumbsUp, Heart, Star, Bookmark, Coffee, Home,
   Plane, Thermometer, Target, Car, Bell, Settings,
-  Circle, Minus, Moon, BellRing, BellDot
+  Circle, Minus, Moon, BellRing, BellDot, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';

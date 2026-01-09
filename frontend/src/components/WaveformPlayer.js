@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Loader2, Lightbulb, AlertTriangle, ThumbsUp, MessageSquare,
-  Zap, Target, Clock, ChevronDown, ChevronUp
+  Zap, Target, Clock, ChevronDown, ChevronUp, User, Users
 } from 'lucide-react';
 
 const WaveformPlayer = ({ 
@@ -16,6 +16,8 @@ const WaveformPlayer = ({
   const audioRef = useRef(null);
   const canvasRef = useRef(null);
   const progressRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(duration || 0);
@@ -26,22 +28,99 @@ const WaveformPlayer = ({
   const [activeInsight, setActiveInsight] = useState(null);
   const [showInsights, setShowInsights] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
+  const [audioAnalyzed, setAudioAnalyzed] = useState(false);
 
-  // Generate mock waveform data (in production, this would come from actual audio analysis)
-  useEffect(() => {
-    const generateWaveform = () => {
-      const bars = 100;
-      const data = [];
-      for (let i = 0; i < bars; i++) {
-        // Create a realistic-looking waveform pattern
-        const base = Math.sin(i * 0.1) * 0.3;
-        const noise = Math.random() * 0.5;
-        const speech = Math.sin(i * 0.05) * 0.2;
-        data.push(Math.abs(base + noise + speech));
+  // Analyze audio with Web Audio API to get real waveform data
+  const analyzeAudioWaveform = useCallback(async () => {
+    if (!audioUrl || audioAnalyzed || isAnalyzingAudio) return;
+    
+    setIsAnalyzingAudio(true);
+    
+    try {
+      // Create audio context
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      
+      // Fetch the audio file
+      const response = await fetch(audioUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Decode the audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Get the raw audio data (use first channel)
+      const rawData = audioBuffer.getChannelData(0);
+      const samples = 150; // Number of bars in waveform
+      const blockSize = Math.floor(rawData.length / samples);
+      const waveform = [];
+      
+      for (let i = 0; i < samples; i++) {
+        let sum = 0;
+        const start = i * blockSize;
+        
+        // Calculate RMS (root mean square) for this block
+        for (let j = 0; j < blockSize; j++) {
+          sum += rawData[start + j] * rawData[start + j];
+        }
+        
+        const rms = Math.sqrt(sum / blockSize);
+        // Normalize and add some minimum height
+        const normalizedHeight = Math.min(1, rms * 3) * 0.9 + 0.1;
+        
+        // Detect if this segment is likely speech vs silence
+        const isSpeech = rms > 0.02;
+        
+        waveform.push({
+          height: normalizedHeight,
+          isSpeech,
+          // Estimate speaker based on amplitude patterns (simplified)
+          speaker: rms > 0.05 ? 'rep' : rms > 0.02 ? 'customer' : 'silence'
+        });
       }
-      setWaveformData(data);
-    };
-    generateWaveform();
+      
+      setWaveformData(waveform);
+      setAudioAnalyzed(true);
+      setAudioDuration(audioBuffer.duration);
+      
+      // Close the context to free resources
+      await audioContext.close();
+      
+    } catch (error) {
+      console.error('Error analyzing audio:', error);
+      // Fall back to generated waveform
+      generateFallbackWaveform();
+    } finally {
+      setIsAnalyzingAudio(false);
+    }
+  }, [audioUrl, audioAnalyzed, isAnalyzingAudio]);
+
+  // Fallback waveform generation
+  const generateFallbackWaveform = () => {
+    const bars = 150;
+    const data = [];
+    for (let i = 0; i < bars; i++) {
+      const base = Math.sin(i * 0.1) * 0.3;
+      const noise = Math.random() * 0.5;
+      const speech = Math.sin(i * 0.05) * 0.2;
+      data.push({
+        height: Math.abs(base + noise + speech) * 0.8 + 0.1,
+        isSpeech: Math.random() > 0.2,
+        speaker: Math.random() > 0.5 ? 'rep' : 'customer'
+      });
+    }
+    setWaveformData(data);
+  };
+
+  // Analyze audio when URL changes
+  useEffect(() => {
+    if (audioUrl) {
+      setAudioAnalyzed(false);
+      analyzeAudioWaveform();
+    } else {
+      generateFallbackWaveform();
+    }
   }, [audioUrl]);
 
   // Parse coaching insights to get timestamped markers

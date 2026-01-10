@@ -336,21 +336,22 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [ ] Continue backend refactoring (Phase 2+: auth, leads, calendar routes)
 
 ## Backend Refactoring Progress (Jan 10, 2026)
-**COMPLETED - Phase 1 through Phase 5**
+**COMPLETED - Phase 1 through Phase 6**
 - Created `/app/backend/core/` module:
   - `config.py` - Environment variables
   - `database.py` - MongoDB connection
   - `security.py` - JWT auth, User models, auth helpers
-- Created `/app/backend/routes/` module:
-  - `notifications.py` - All notification endpoints (~700 lines)
-  - `push.py` - Web push notification endpoints (~150 lines)
-  - `auth.py` - All authentication endpoints (~240 lines)
-  - `leads.py` - Lead CRUD, bulk ops, scraping (~350 lines)
-  - `calendar.py` - Calendar events, appointments, Meet integration (~256 lines)
-  - `calls.py` - Voice/Twilio, call logs, click-to-call (~713 lines)
-- Created `/app/backend/send_daily_digest.py` - Cron script for daily digest
-- Set up crontab for daily digest email (8 AM UTC)
-- **Total Impact**: Reduced server.py from ~9,100 to ~6,690 lines (~2,410 lines extracted, 26.5% reduction)
+- Created `/app/backend/routes/` module (8 files):
+  - `notifications.py` - Notification system (~700 lines)
+  - `push.py` - Web push (~150 lines)
+  - `auth.py` - Authentication (~240 lines)
+  - `leads.py` - Lead management (~350 lines)
+  - `calendar.py` - Calendar/appointments (~256 lines)
+  - `calls.py` - Voice/Twilio (~713 lines)
+  - `chat.py` - Team chat, DMs, reactions (~370 lines)
+  - `booking.py` - Public booking (~320 lines)
+- Created `/app/backend/send_daily_digest.py` - Daily digest cron job
+- **Total Impact**: Reduced server.py from ~9,100 to ~5,998 lines (~3,102 lines extracted, **34% reduction**)
 
 **See**: `/app/backend/REFACTORING.md` for full plan and next steps
 

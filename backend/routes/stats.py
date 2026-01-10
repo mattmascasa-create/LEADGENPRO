@@ -248,7 +248,7 @@ async def get_ai_insights(current_user: User = Depends(get_current_user)):
             message=f"You have {len(stale_leads)} leads that haven't been contacted in 3+ days",
             confidence=0.95,
             action_items=["Schedule follow-up calls", "Send reminder emails"],
-            lead_ids=[l["id"] for l in stale_leads],
+            lead_ids=[lead["id"] for lead in stale_leads],
             priority="high"
         ))
     
@@ -265,7 +265,7 @@ async def get_ai_insights(current_user: User = Depends(get_current_user)):
             message=f"{len(hot_leads)} high-priority leads ready for outreach",
             confidence=0.92,
             action_items=["Prioritize these contacts", "Use personalized approach"],
-            lead_ids=[l["id"] for l in hot_leads],
+            lead_ids=[lead["id"] for lead in hot_leads],
             priority="high"
         ))
     
@@ -282,7 +282,7 @@ async def get_ai_insights(current_user: User = Depends(get_current_user)):
             message=f"{len(at_risk)} deals at risk - no activity in 7+ days",
             confidence=0.85,
             action_items=["Re-engage immediately", "Schedule meeting or call"],
-            lead_ids=[l["id"] for l in at_risk],
+            lead_ids=[lead["id"] for lead in at_risk],
             priority="high"
         ))
     

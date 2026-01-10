@@ -6162,6 +6162,329 @@ async def create_google_calendar_event(
         logging.error(f"Failed to create calendar event: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== TWO-WAY GOOGLE CALENDAR SYNC ====================
+
+class CalendarSyncRequest(BaseModel):
+    sync_direction: str = "both"  # "to_google", "from_google", "both"
+    days_ahead: int = 30
+    days_back: int = 7
+
+@api_router.post("/google/calendar/sync")
+async def sync_google_calendar(
+    sync_request: CalendarSyncRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Full two-way sync between LeadGen Pro and Google Calendar"""
+    service = await get_calendar_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected. Please connect your Google account first.")
+    
+    sync_results = {
+        "pushed_to_google": 0,
+        "pulled_from_google": 0,
+        "errors": [],
+        "synced_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    now = datetime.now(timezone.utc)
+    time_min = (now - timedelta(days=sync_request.days_back)).isoformat()
+    time_max = (now + timedelta(days=sync_request.days_ahead)).isoformat()
+    
+    try:
+        # PUSH: LeadGen Pro events -> Google Calendar
+        if sync_request.sync_direction in ["to_google", "both"]:
+            leadgen_events = await db.calendar_events.find({
+                "created_by": current_user.id,
+                "start": {"$gte": time_min, "$lte": time_max}
+            }, {"_id": 0}).to_list(500)
+            
+            for event in leadgen_events:
+                # Check if already synced
+                if event.get("google_event_id"):
+                    continue
+                
+                try:
+                    google_event = {
+                        'summary': event['title'],
+                        'description': event.get('description', '') + f"\n\n[Synced from LeadGen Pro - ID: {event['id']}]",
+                        'start': {
+                            'dateTime': event['start'] if 'T' in event['start'] else event['start'] + 'T00:00:00Z',
+                            'timeZone': 'UTC',
+                        },
+                        'end': {
+                            'dateTime': event['end'] if 'T' in event['end'] else event['end'] + 'T23:59:59Z',
+                            'timeZone': 'UTC',
+                        }
+                    }
+                    
+                    if event.get('meeting_link'):
+                        google_event['description'] += f"\n\nMeeting Link: {event['meeting_link']}"
+                        google_event['location'] = event['meeting_link']
+                    
+                    created = service.events().insert(
+                        calendarId='primary',
+                        body=google_event
+                    ).execute()
+                    
+                    # Store Google event ID for future syncs
+                    await db.calendar_events.update_one(
+                        {"id": event['id']},
+                        {"$set": {
+                            "google_event_id": created['id'],
+                            "google_synced_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                    sync_results["pushed_to_google"] += 1
+                    
+                except Exception as e:
+                    sync_results["errors"].append(f"Push error for {event['title']}: {str(e)}")
+        
+        # PULL: Google Calendar events -> LeadGen Pro
+        if sync_request.sync_direction in ["from_google", "both"]:
+            google_events = service.events().list(
+                calendarId='primary',
+                timeMin=time_min,
+                timeMax=time_max,
+                maxResults=500,
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute().get('items', [])
+            
+            for g_event in google_events:
+                google_id = g_event['id']
+                
+                # Check if already exists in LeadGen Pro
+                existing = await db.calendar_events.find_one({"google_event_id": google_id})
+                if existing:
+                    continue
+                
+                # Also check by matching title and time (for events created elsewhere)
+                start_time = g_event.get('start', {}).get('dateTime') or g_event.get('start', {}).get('date')
+                if not start_time:
+                    continue
+                
+                try:
+                    end_time = g_event.get('end', {}).get('dateTime') or g_event.get('end', {}).get('date')
+                    
+                    new_event = {
+                        "id": str(uuid.uuid4()),
+                        "title": g_event.get('summary', 'Untitled Event'),
+                        "description": g_event.get('description', ''),
+                        "start": start_time,
+                        "end": end_time or start_time,
+                        "location": g_event.get('location', ''),
+                        "meeting_link": g_event.get('hangoutLink', ''),
+                        "created_by": current_user.id,
+                        "attendees": [att.get('email') for att in g_event.get('attendees', []) if att.get('email')],
+                        "google_event_id": google_id,
+                        "google_synced_at": datetime.now(timezone.utc).isoformat(),
+                        "source": "google_calendar",
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    await db.calendar_events.insert_one(new_event)
+                    sync_results["pulled_from_google"] += 1
+                    
+                except Exception as e:
+                    sync_results["errors"].append(f"Pull error for {g_event.get('summary', 'Unknown')}: {str(e)}")
+        
+        # Update sync status
+        await db.google_credentials.update_one(
+            {"user_id": current_user.id},
+            {"$set": {
+                "last_calendar_sync": datetime.now(timezone.utc).isoformat(),
+                "sync_stats": sync_results
+            }}
+        )
+        
+        return {
+            "success": True,
+            "message": f"Sync complete! Pushed {sync_results['pushed_to_google']} events to Google, pulled {sync_results['pulled_from_google']} events from Google.",
+            "results": sync_results
+        }
+        
+    except Exception as e:
+        logging.error(f"Calendar sync failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+@api_router.put("/google/calendar/events/{event_id}")
+async def update_google_calendar_event(
+    event_id: str,
+    title: Optional[str] = None,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    description: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update an event in Google Calendar (two-way sync)"""
+    service = await get_calendar_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected")
+    
+    # Find the local event
+    local_event = await db.calendar_events.find_one({"id": event_id})
+    if not local_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    google_event_id = local_event.get("google_event_id")
+    
+    # Update local event
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if title:
+        update_data["title"] = title
+    if start_time:
+        update_data["start"] = start_time.isoformat()
+    if end_time:
+        update_data["end"] = end_time.isoformat()
+    if description:
+        update_data["description"] = description
+    
+    await db.calendar_events.update_one({"id": event_id}, {"$set": update_data})
+    
+    # If synced to Google, update there too
+    if google_event_id:
+        try:
+            existing = service.events().get(calendarId='primary', eventId=google_event_id).execute()
+            
+            if title:
+                existing['summary'] = title
+            if start_time:
+                existing['start'] = {'dateTime': start_time.isoformat(), 'timeZone': 'UTC'}
+            if end_time:
+                existing['end'] = {'dateTime': end_time.isoformat(), 'timeZone': 'UTC'}
+            if description:
+                existing['description'] = description
+            
+            service.events().update(
+                calendarId='primary',
+                eventId=google_event_id,
+                body=existing
+            ).execute()
+            
+            return {"success": True, "message": "Event updated in both LeadGen Pro and Google Calendar"}
+        except Exception as e:
+            logging.error(f"Failed to update Google event: {e}")
+            return {"success": True, "message": "Event updated locally but Google sync failed", "error": str(e)}
+    
+    return {"success": True, "message": "Event updated locally"}
+
+@api_router.delete("/google/calendar/events/{event_id}")
+async def delete_google_calendar_event(
+    event_id: str,
+    delete_from_google: bool = True,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete an event from LeadGen Pro and optionally from Google Calendar"""
+    local_event = await db.calendar_events.find_one({"id": event_id})
+    if not local_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    google_event_id = local_event.get("google_event_id")
+    
+    # Delete from Google if connected and requested
+    if google_event_id and delete_from_google:
+        service = await get_calendar_service(current_user)
+        if service:
+            try:
+                service.events().delete(calendarId='primary', eventId=google_event_id).execute()
+            except Exception as e:
+                logging.error(f"Failed to delete from Google Calendar: {e}")
+    
+    # Delete locally
+    await db.calendar_events.delete_one({"id": event_id})
+    
+    return {"success": True, "message": "Event deleted"}
+
+@api_router.get("/google/calendar/sync-status")
+async def get_google_calendar_sync_status(current_user: User = Depends(get_current_user)):
+    """Get detailed Google Calendar sync status"""
+    creds_doc = await db.google_credentials.find_one({"user_id": current_user.id})
+    
+    if not creds_doc:
+        return {
+            "connected": False,
+            "can_sync": False,
+            "message": "Google Calendar not connected. Connect your Google account to enable two-way sync."
+        }
+    
+    has_calendar_scope = GOOGLE_SCOPES['calendar'] in creds_doc.get("scopes", [])
+    
+    # Count synced events
+    synced_count = await db.calendar_events.count_documents({
+        "created_by": current_user.id,
+        "google_event_id": {"$exists": True, "$ne": None}
+    })
+    
+    pending_count = await db.calendar_events.count_documents({
+        "created_by": current_user.id,
+        "google_event_id": {"$exists": False}
+    })
+    
+    return {
+        "connected": True,
+        "can_sync": has_calendar_scope,
+        "email": creds_doc.get("email"),
+        "last_sync": creds_doc.get("last_calendar_sync"),
+        "sync_stats": creds_doc.get("sync_stats"),
+        "events_synced": synced_count,
+        "events_pending": pending_count,
+        "message": "Two-way sync enabled" if has_calendar_scope else "Calendar permissions not granted"
+    }
+
+@api_router.post("/google/calendar/push-event/{event_id}")
+async def push_single_event_to_google(
+    event_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Push a single LeadGen Pro event to Google Calendar"""
+    service = await get_calendar_service(current_user)
+    if not service:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected")
+    
+    event = await db.calendar_events.find_one({"id": event_id})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if event.get("google_event_id"):
+        return {"success": False, "message": "Event already synced to Google Calendar"}
+    
+    try:
+        google_event = {
+            'summary': event['title'],
+            'description': event.get('description', ''),
+            'start': {
+                'dateTime': event['start'] if 'T' in event['start'] else event['start'] + 'T00:00:00Z',
+                'timeZone': 'UTC',
+            },
+            'end': {
+                'dateTime': event['end'] if 'T' in event['end'] else event['end'] + 'T23:59:59Z',
+                'timeZone': 'UTC',
+            }
+        }
+        
+        if event.get('meeting_link'):
+            google_event['location'] = event['meeting_link']
+        
+        created = service.events().insert(calendarId='primary', body=google_event).execute()
+        
+        await db.calendar_events.update_one(
+            {"id": event_id},
+            {"$set": {
+                "google_event_id": created['id'],
+                "google_synced_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "success": True,
+            "google_event_id": created['id'],
+            "google_link": created.get('htmlLink'),
+            "message": "Event pushed to Google Calendar"
+        }
+    except Exception as e:
+        logging.error(f"Failed to push event to Google: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Legacy Drive endpoints (keep for backward compatibility)
 @api_router.get("/drive/status")
 async def get_drive_status(current_user: User = Depends(get_current_user)):

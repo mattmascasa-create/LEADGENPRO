@@ -8200,6 +8200,224 @@ async def get_my_stats(current_user: User = Depends(get_current_user)):
         "connect_rate": round((connected_calls / total_calls * 100) if total_calls > 0 else 0, 1)
     }
 
+# ==================== SMART NOTIFICATIONS SYSTEM ====================
+
+class NotificationType:
+    HOT_LEAD = "hot_lead"
+    STALE_DEAL = "stale_deal"
+    EMAIL_OPENED = "email_opened"
+    MEETING_REMINDER = "meeting_reminder"
+    TASK_DUE = "task_due"
+    NEW_LEAD_ASSIGNED = "new_lead_assigned"
+    DEAL_STAGE_CHANGE = "deal_stage_change"
+
+class SmartNotification(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    type: str
+    title: str
+    message: str
+    lead_id: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+    read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.get("/notifications")
+async def get_notifications(
+    unread_only: bool = False,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's smart notifications"""
+    query = {"user_id": current_user.id}
+    if unread_only:
+        query["read"] = False
+    
+    notifications = await db.notifications.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    
+    unread_count = await db.notifications.count_documents({
+        "user_id": current_user.id, "read": False
+    })
+    
+    return {
+        "notifications": notifications,
+        "unread_count": unread_count
+    }
+
+@api_router.post("/notifications/mark-read")
+async def mark_notifications_read(
+    notification_ids: List[str] = None,
+    mark_all: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Mark notifications as read"""
+    if mark_all:
+        await db.notifications.update_many(
+            {"user_id": current_user.id, "read": False},
+            {"$set": {"read": True}}
+        )
+        return {"success": True, "message": "All notifications marked as read"}
+    
+    if notification_ids:
+        await db.notifications.update_many(
+            {"id": {"$in": notification_ids}, "user_id": current_user.id},
+            {"$set": {"read": True}}
+        )
+        return {"success": True, "message": f"{len(notification_ids)} notifications marked as read"}
+    
+    return {"success": False, "message": "No notifications specified"}
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a notification"""
+    result = await db.notifications.delete_one({
+        "id": notification_id, "user_id": current_user.id
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"success": True}
+
+@api_router.get("/notifications/generate")
+async def generate_smart_notifications(current_user: User = Depends(get_current_user)):
+    """Generate smart notifications based on current data (can be called periodically)"""
+    notifications_created = []
+    now = datetime.now(timezone.utc)
+    
+    # 1. Hot Leads - High score leads that haven't been contacted recently
+    hot_leads_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
+    hot_leads_query.update({
+        "score": {"$gte": 70},
+        "$or": [
+            {"last_contacted": None},
+            {"last_contacted": {"$lt": (now - timedelta(days=3)).isoformat()}}
+        ]
+    })
+    hot_leads = await db.leads.find(hot_leads_query, {"_id": 0}).to_list(10)
+    
+    for lead in hot_leads:
+        existing = await db.notifications.find_one({
+            "user_id": current_user.id,
+            "lead_id": lead["id"],
+            "type": NotificationType.HOT_LEAD,
+            "created_at": {"$gte": (now - timedelta(hours=24)).isoformat()}
+        })
+        if not existing:
+            notif = SmartNotification(
+                user_id=current_user.id,
+                type=NotificationType.HOT_LEAD,
+                title="🔥 Hot Lead Needs Attention",
+                message=f"{lead['first_name']} {lead['last_name']} ({lead['company']}) has a score of {lead['score']} but hasn't been contacted recently.",
+                lead_id=lead["id"],
+                data={"score": lead["score"], "company": lead["company"]}
+            )
+            doc = notif.model_dump()
+            doc["created_at"] = doc["created_at"].isoformat()
+            await db.notifications.insert_one(doc)
+            notifications_created.append(notif.title)
+    
+    # 2. Stale Deals - Deals in negotiation/proposal for too long
+    stale_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
+    stale_query.update({
+        "stage": {"$in": ["proposal", "negotiation"]},
+        "updated_at": {"$lt": (now - timedelta(days=7)).isoformat()}
+    })
+    stale_deals = await db.leads.find(stale_query, {"_id": 0}).to_list(10)
+    
+    for lead in stale_deals:
+        existing = await db.notifications.find_one({
+            "user_id": current_user.id,
+            "lead_id": lead["id"],
+            "type": NotificationType.STALE_DEAL,
+            "created_at": {"$gte": (now - timedelta(days=3)).isoformat()}
+        })
+        if not existing:
+            deal_value = lead.get("deal_value", 0)
+            notif = SmartNotification(
+                user_id=current_user.id,
+                type=NotificationType.STALE_DEAL,
+                title="⚠️ Stale Deal Alert",
+                message=f"Deal with {lead['company']} (${deal_value:,.0f}) has been in {lead['stage']} for over a week.",
+                lead_id=lead["id"],
+                data={"stage": lead["stage"], "deal_value": deal_value}
+            )
+            doc = notif.model_dump()
+            doc["created_at"] = doc["created_at"].isoformat()
+            await db.notifications.insert_one(doc)
+            notifications_created.append(notif.title)
+    
+    # 3. Upcoming Meetings (within 1 hour)
+    upcoming_meetings = await db.calendar_events.find({
+        "created_by": current_user.id,
+        "start": {
+            "$gte": now.isoformat(),
+            "$lte": (now + timedelta(hours=1)).isoformat()
+        }
+    }, {"_id": 0}).to_list(10)
+    
+    for meeting in upcoming_meetings:
+        existing = await db.notifications.find_one({
+            "user_id": current_user.id,
+            "type": NotificationType.MEETING_REMINDER,
+            "data.event_id": meeting["id"],
+            "created_at": {"$gte": (now - timedelta(hours=2)).isoformat()}
+        })
+        if not existing:
+            notif = SmartNotification(
+                user_id=current_user.id,
+                type=NotificationType.MEETING_REMINDER,
+                title="📅 Meeting Starting Soon",
+                message=f"'{meeting['title']}' starts in less than an hour.",
+                data={"event_id": meeting["id"], "title": meeting["title"]}
+            )
+            doc = notif.model_dump()
+            doc["created_at"] = doc["created_at"].isoformat()
+            await db.notifications.insert_one(doc)
+            notifications_created.append(notif.title)
+    
+    # 4. Tasks Due Today
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    due_tasks = await db.tasks.find({
+        "assigned_to": current_user.id,
+        "status": {"$ne": "completed"},
+        "due_date": {
+            "$gte": today_start.isoformat(),
+            "$lte": today_end.isoformat()
+        }
+    }, {"_id": 0}).to_list(10)
+    
+    for task in due_tasks:
+        existing = await db.notifications.find_one({
+            "user_id": current_user.id,
+            "type": NotificationType.TASK_DUE,
+            "data.task_id": task.get("id"),
+            "created_at": {"$gte": today_start.isoformat()}
+        })
+        if not existing:
+            notif = SmartNotification(
+                user_id=current_user.id,
+                type=NotificationType.TASK_DUE,
+                title="✅ Task Due Today",
+                message=f"'{task.get('title', 'Task')}' is due today.",
+                data={"task_id": task.get("id"), "title": task.get("title")}
+            )
+            doc = notif.model_dump()
+            doc["created_at"] = doc["created_at"].isoformat()
+            await db.notifications.insert_one(doc)
+            notifications_created.append(notif.title)
+    
+    return {
+        "success": True,
+        "notifications_created": len(notifications_created),
+        "details": notifications_created
+    }
+
 # Check if user is admin helper endpoint
 @api_router.get("/auth/check-admin")
 async def check_admin_status(current_user: User = Depends(get_current_user)):

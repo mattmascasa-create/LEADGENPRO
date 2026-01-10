@@ -67,11 +67,14 @@ const NotificationStatsWidget = () => {
     try {
       const response = await axios.get(`${API_URL}/api/notifications/generate`, getAuthHeaders());
       if (response.data.notifications_created > 0) {
-        toast.success(`Generated ${response.data.notifications_created} new alerts`);
-        fetchData();
+        toast.success(`${response.data.notifications_created} new alert${response.data.notifications_created > 1 ? 's' : ''}!`, {
+          icon: '🔔',
+          autoClose: 3000
+        });
       } else {
-        toast.info('No new alerts');
+        toast.info('All caught up!', { autoClose: 2000 });
       }
+      fetchData();
     } catch (error) {
       toast.error('Failed to refresh');
     } finally {

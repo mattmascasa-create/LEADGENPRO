@@ -358,7 +358,11 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - **Integrations**: Twilio (VoIP), Emergent LLM Key (AI features, Whisper STT), Resend (email notifications)
 
 ### Key Files
-- `/app/backend/server.py` - All API endpoints
+- `/app/backend/server.py` - Main API server (~8,250 lines, refactoring in progress)
+- `/app/backend/routes/notifications.py` - Notification endpoints (modular)
+- `/app/backend/routes/push.py` - Push notification endpoints (modular)
+- `/app/backend/core/security.py` - Auth utilities (modular)
+- `/app/backend/send_daily_digest.py` - Cron job for daily digest emails
 - `/app/frontend/src/pages/AdvancedReportingPage.js` - Reporting dashboard
 - `/app/frontend/src/components/TeamChat.js` - Enhanced team messaging
 - `/app/frontend/src/components/AIAssistant.js` - AI Sales Coach with Next Actions

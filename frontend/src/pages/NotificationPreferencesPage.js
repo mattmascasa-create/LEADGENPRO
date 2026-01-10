@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Bell, Flame, AlertTriangle, Mail, Calendar, CheckSquare,
   User, TrendingUp, Moon, Clock, ArrowLeft, Save, Loader2,
-  Smartphone, Send
+  Smartphone, Send, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';

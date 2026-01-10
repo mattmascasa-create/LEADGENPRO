@@ -37,12 +37,13 @@ import tempfile
 from pywebpush import webpush, WebPushException
 
 # Import modular routes
-from routes import notifications_router, push_router, auth_router, leads_router
+from routes import notifications_router, push_router, auth_router, leads_router, calendar_router
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
     send_push_to_user, should_send_notification, create_lead_assigned_notification
 )
 from routes.leads import Lead, LeadCreate, Activity, calculate_lead_score
+from routes.calendar import Appointment, AppointmentCreate, CalendarEvent, CalendarEventCreate
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

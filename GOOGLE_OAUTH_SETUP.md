@@ -79,12 +79,12 @@ Before creating credentials, you must configure the consent screen (what users s
    
    - **Authorized JavaScript origins**:
      ```
-     https://sales-automation-22.preview.emergentagent.com
+     https://leadpro-backend.preview.emergentagent.com
      ```
    
    - **Authorized redirect URIs**:
      ```
-     https://sales-automation-22.preview.emergentagent.com/api/google/calendar/callback
+     https://leadpro-backend.preview.emergentagent.com/api/google/calendar/callback
      ```
 
 6. Click **"Create"**

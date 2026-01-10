@@ -1,136 +1,86 @@
-# LeadGen Pro - Backend Refactoring Guide
+# LeadGen Pro Backend Refactoring Plan
 
-## Overview
+## Current State
+- `server.py`: ~9,100 lines (monolithic)
+- All endpoints, models, and business logic in one file
 
-The `server.py` file has grown to **6,765 lines** with **144 endpoints**. This document outlines the modular structure being implemented to improve maintainability.
-
-## Current Status
-
-### ✅ Completed
-- `/app/backend/routes/auth_routes.py` - Authentication (ready to use)
-- `/app/backend/routes/leads_routes.py` - Lead management (ready to use)
-- `/app/backend/models/schemas.py` - All Pydantic models
-- Removed dead code: `/app/frontend/src/components/TeamChat.js`
-
-### 🔄 In Progress
-- Main server.py still contains all endpoints (working)
-- Modular routes are ready but not yet integrated to avoid breaking changes
-
-## Target Structure
-
+## Target Architecture
 ```
 /app/backend/
-├── server.py                 # Main app entry point (minimal)
+├── server.py              # Main app entry, minimal (~200 lines)
 ├── core/
-│   ├── __init__.py          # Database, security, shared utilities
-│   └── config.py            # Environment configuration
+│   ├── __init__.py
+│   ├── config.py          # Environment variables ✅ DONE
+│   ├── database.py        # MongoDB setup ✅ DONE
+│   └── security.py        # JWT, password hashing
 ├── models/
 │   ├── __init__.py
-│   └── schemas.py           # All Pydantic models ✅
+│   ├── user.py            # User, UserCreate, UserLogin models
+│   ├── lead.py            # Lead, LeadCreate models
+│   ├── notification.py    # SmartNotification, NotificationPreferences
+│   └── ...
 ├── routes/
-│   ├── __init__.py          # Router registry ✅
-│   ├── auth_routes.py       # Authentication ✅
-│   ├── leads_routes.py      # Lead management ✅
-│   ├── appointments.py      # Appointments & booking
-│   ├── chat.py              # Team chat
-│   ├── voice.py             # Twilio voice/calls
-│   ├── analytics.py         # Call analytics
-│   ├── scheduling.py        # Calendly-like scheduling
-│   ├── admin.py             # Admin operations
-│   ├── tasks.py             # Task management
-│   ├── errors.py            # Error handling system
-│   ├── notifications.py     # Notifications
-│   ├── calendar.py          # Calendar events
-│   ├── sequences.py         # Email sequences
-│   └── templates.py         # Email templates
+│   ├── __init__.py        ✅ UPDATED
+│   ├── auth.py            # /auth/* endpoints
+│   ├── leads.py           # /leads/* endpoints
+│   ├── notifications.py   # ✅ DONE - Smart notifications, push, digest
+│   ├── calendar.py        # Calendar & Google Calendar sync
+│   ├── calls.py           # Twilio voice, call logs, analytics
+│   ├── chat.py            # Team chat endpoints
+│   ├── admin.py           # Admin-only endpoints
+│   └── ...
 ├── services/
 │   ├── __init__.py
-│   ├── email_service.py     # Resend email
-│   ├── twilio_service.py    # Twilio voice/SMS
-│   ├── ai_service.py        # LLM integrations
-│   └── google_service.py    # Google APIs
+│   ├── ai.py              # AI insights, call coaching
+│   ├── email.py           # Resend email service
+│   ├── push.py            # Web push notifications
+│   └── twilio.py          # Twilio integration
 └── utils/
     ├── __init__.py
-    └── helpers.py           # Shared helper functions
+    └── helpers.py         # Common utility functions
 ```
 
-## How to Migrate an Endpoint
+## Refactoring Priority
 
-1. **Create the route file** in `/app/backend/routes/`
-2. **Copy relevant endpoints** from server.py
-3. **Update imports** to be self-contained
-4. **Test thoroughly** before removing from server.py
-5. **Include router** in server.py:
-   ```python
-   from routes.auth_routes import router as auth_router
-   app.include_router(auth_router, prefix="/api")
-   ```
+### Phase 1 (Completed)
+- [x] Create `core/config.py` - Environment variables
+- [x] Create `core/database.py` - MongoDB connection
+- [x] Create `routes/notifications.py` - Notification logic extracted
 
-## Endpoint Groups (for extraction)
+### Phase 2 (Next)
+- [ ] Extract auth endpoints to `routes/auth.py`
+- [ ] Extract leads endpoints to `routes/leads.py`
+- [ ] Create `core/security.py` for auth utilities
 
-### Authentication (~220 lines)
-- POST /auth/register
-- POST /auth/login
-- GET /auth/me
-- PUT /auth/profile
-- PUT /auth/onboarding
-- POST /auth/google
-- GET /auth/me/google-link-status
-- POST /auth/logout
+### Phase 3
+- [ ] Extract calendar endpoints to `routes/calendar.py`
+- [ ] Extract call/voice endpoints to `routes/calls.py`
+- [ ] Extract chat endpoints to `routes/chat.py`
 
-### Leads (~350 lines)
-- GET /leads
-- POST /leads
-- GET /leads/{lead_id}
-- PUT /leads/{lead_id}
-- DELETE /leads/{lead_id}
-- POST /leads/{lead_id}/stage
-- POST /leads/bulk-import
-- POST /leads/scrape
+### Phase 4
+- [ ] Extract admin endpoints to `routes/admin.py`
+- [ ] Extract AI services to `services/ai.py`
+- [ ] Clean up server.py to import from modules
 
-### Voice/Twilio (~600 lines)
-- POST /voice/token
-- POST /voice/call
-- POST /voice/connect/{call_id}
-- POST /voice/call-complete/{call_id}
-- ... and more
+## Benefits
+1. **Maintainability**: Smaller, focused files
+2. **Testing**: Easier to unit test individual modules
+3. **Collaboration**: Multiple developers can work on different files
+4. **Performance**: Faster code navigation and IDE support
+5. **Debugging**: Easier to locate and fix issues
 
-### Chat (~300 lines)
-- GET /chat/channels
-- POST /chat/channels
-- GET /chat/messages/{channel_id}
-- POST /chat/messages
-- POST /chat/messages/{message_id}/reactions
-- POST /chat/messages/{message_id}/thread
+## Migration Strategy
+- Gradual migration (keep server.py working during transition)
+- Extract one module at a time
+- Test thoroughly after each extraction
+- Update imports in server.py to use new modules
 
-### Scheduling (~400 lines)
-- GET /meeting-types
-- POST /meeting-types
-- PUT /meeting-types/{id}
-- DELETE /meeting-types/{id}
-- GET /availability
-- PUT /availability
-- GET /booking/{user_id}/meeting-types
-- GET /booking/{user_id}/slots/{meeting_type_id}
-- POST /booking/{user_id}/book
-
-### Call Analytics (~300 lines)
-- GET /call-analytics
-- GET /call-recordings
-- POST /call-recordings/{call_id}/analyze
-- GET /call-analytics/leaderboard
-
-## Testing After Refactoring
-
-After each module extraction:
-1. Restart backend: `sudo supervisorctl restart backend`
-2. Run API tests: `curl -X POST $API_URL/api/auth/login ...`
-3. Check frontend functionality
-4. Use testing subagent for comprehensive tests
+## Files Created This Session
+1. `/app/backend/core/config.py` - All environment variables
+2. `/app/backend/core/database.py` - MongoDB connection
+3. `/app/backend/routes/notifications.py` - Notification models and helpers
 
 ## Notes
-
-- Each route file should be self-contained with its own imports
-- Avoid circular imports by not sharing db connections across files
-- Keep models in the central schemas.py file
-- Use environment variables for all configuration
+- The full refactor is estimated at 2-3 sessions
+- Server.py remains functional during incremental refactoring
+- New features should be added to the new module structure when possible

@@ -6674,6 +6674,8 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(leads_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 app.include_router(calls_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
+app.include_router(booking_router, prefix="/api")
 
 app.include_router(api_router)
 

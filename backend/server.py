@@ -37,7 +37,7 @@ import tempfile
 from pywebpush import webpush, WebPushException
 
 # Import modular routes
-from routes import notifications_router, push_router
+from routes import notifications_router, push_router, auth_router
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
     send_push_to_user, should_send_notification, create_lead_assigned_notification

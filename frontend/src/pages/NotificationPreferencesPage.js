@@ -121,6 +121,23 @@ const NotificationPreferencesPage = () => {
     }
   };
 
+  const sendTestDigest = async () => {
+    setSendingDigest(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/notifications/send-digest`, {}, getAuthHeaders());
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send digest email');
+    } finally {
+      setSendingDigest(false);
+    }
+  };
+
+  const previewDigest = () => {
+    const token = localStorage.getItem('token');
+    window.open(`${API_URL}/api/notifications/digest-preview?token=${token}`, '_blank');
+  };
+
   const togglePreference = (key) => {
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
   };

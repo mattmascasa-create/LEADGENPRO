@@ -1,8 +1,8 @@
 # LeadGen Pro Backend Refactoring Plan
 
 ## Current State
-- `server.py`: ~8,010 lines (reduced from ~9,100)
-- Notifications, Push, Auth endpoints moved to modular routes
+- `server.py`: ~7,659 lines (reduced from ~9,100)
+- Notifications, Push, Auth, and Leads endpoints moved to modular routes
 - Core configuration extracted to separate modules
 
 ## Target Architecture
@@ -23,7 +23,7 @@
 ├── routes/
 │   ├── __init__.py        ✅ UPDATED
 │   ├── auth.py            # ✅ DONE - /auth/* endpoints
-│   ├── leads.py           # /leads/* endpoints
+│   ├── leads.py           # ✅ DONE - /leads/* CRUD, bulk operations, scraping
 │   ├── notifications.py   # ✅ DONE - Smart notifications, preferences, digest
 │   ├── push.py            # ✅ DONE - Web push notifications
 │   ├── calendar.py        # Calendar & Google Calendar sync
@@ -59,42 +59,48 @@
 
 ### Phase 2 (Completed ✅)
 - [x] Create `routes/auth.py` - All authentication endpoints extracted
-  - /auth/register
-  - /auth/login
-  - /auth/me
-  - /auth/profile
-  - /auth/onboarding
-  - /auth/google (Emergent OAuth)
-  - /auth/me/google-link-status
-  - /auth/logout
-  - /auth/check-admin
+  - /auth/register, /auth/login, /auth/me, /auth/profile
+  - /auth/onboarding, /auth/google, /auth/logout, /auth/check-admin
 - [x] Update `core/security.py` with UserCreate, UserLogin, Token models
 
 **Impact:** Removed ~240 additional lines from server.py
 
-**Total Progress:** Server.py reduced from ~9,100 to ~8,010 lines (~1,090 lines extracted)
-
-### Phase 3 (Next Priority)
-- [ ] Extract leads endpoints to `routes/leads.py`
-  - /leads CRUD
+### Phase 3 (Completed ✅)
+- [x] Create `routes/leads.py` - All lead management endpoints extracted
+  - GET/POST/PUT/DELETE /leads (CRUD)
+  - /leads/{id}/stage
   - /leads/bulk-import
   - /leads/bulk-assign
   - /leads/bulk-sequence
   - /leads/scrape
-- [ ] Extract appointments endpoints
+- [x] Includes Lead, LeadCreate, Activity models
+- [x] Includes calculate_lead_score helper function
 
-### Phase 4
+**Impact:** Removed ~350 additional lines from server.py
+
+**Total Progress:** Server.py reduced from ~9,100 to ~7,659 lines (~1,441 lines extracted)
+
+### Phase 4 (Next Priority)
 - [ ] Extract calendar endpoints to `routes/calendar.py`
-- [ ] Extract call/voice endpoints to `routes/calls.py`
-- [ ] Extract chat endpoints to `routes/chat.py`
+  - Calendar CRUD
+  - Google Calendar sync
+  - Calendar availability
+- [ ] Extract appointment endpoints
 
 ### Phase 5
+- [ ] Extract call/voice endpoints to `routes/calls.py`
+  - Twilio integration
+  - Call logs
+  - Call analytics
+
+### Phase 6
+- [ ] Extract chat endpoints to `routes/chat.py`
 - [ ] Extract admin endpoints to `routes/admin.py`
 - [ ] Extract AI services to `services/ai.py`
 - [ ] Clean up server.py to be minimal entry point
 
 ## Benefits Achieved
-1. **Maintainability**: Auth and Notification logic now in focused, testable modules
+1. **Maintainability**: Auth, Notification, and Lead logic now in focused, testable modules
 2. **Separation of Concerns**: Each route file handles one domain
 3. **Automated Operations**: Daily digest runs automatically via cron
 4. **Testing**: Easier to unit test individual modules
@@ -112,9 +118,10 @@
 3. `/app/backend/core/security.py` - Auth utilities, User models
 4. `/app/backend/routes/notifications.py` - Complete notification system
 5. `/app/backend/routes/push.py` - Web push endpoints
-6. `/app/backend/routes/auth.py` - Authentication endpoints (NEW)
-7. `/app/backend/routes/__init__.py` - Router exports
-8. `/app/backend/send_daily_digest.py` - Cron script
+6. `/app/backend/routes/auth.py` - Authentication endpoints
+7. `/app/backend/routes/leads.py` - Lead management endpoints (NEW)
+8. `/app/backend/routes/__init__.py` - Router exports
+9. `/app/backend/send_daily_digest.py` - Cron script
 
 ## Cron Job Setup
 ```bash
@@ -124,7 +131,8 @@
 
 ## Notes
 - The main GET /notifications endpoint remains in server.py (includes admin error handling)
-- All other notification and auth endpoints are in modular routes
+- All other notification, auth, and leads endpoints are in modular routes
 - Server.py remains functional during incremental refactoring
 - New features should be added to the new module structure when possible
+- Old route files (leads_routes.py, auth_routes.py) are deprecated - use new modules
 - Estimated remaining work: 2-3 more sessions for full refactor

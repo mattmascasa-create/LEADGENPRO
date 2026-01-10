@@ -13,7 +13,7 @@ import os
 import sys
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://leadgen-pro-24.preview.emergentagent.com/api"
+BACKEND_URL = "https://crm-commander-1.preview.emergentagent.com/api"
 
 # Test credentials as specified in review request
 TEST_EMAIL = "admin@test.com"

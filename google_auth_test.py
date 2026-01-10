@@ -9,7 +9,7 @@ import json
 import sys
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://leadgen-pro-24.preview.emergentagent.com/api"
+BACKEND_URL = "https://crm-commander-1.preview.emergentagent.com/api"
 
 class GoogleAuthTester:
     def __init__(self):
@@ -183,7 +183,7 @@ class GoogleAuthTester:
         print("   📝 6. Verify 'Don't have an account? Contact your administrator.' message")
         
         # Check if frontend is accessible
-        frontend_url = "https://leadgen-pro-24.preview.emergentagent.com"
+        frontend_url = "https://crm-commander-1.preview.emergentagent.com"
         
         try:
             response = requests.get(frontend_url, timeout=30)

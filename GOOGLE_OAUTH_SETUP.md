@@ -79,12 +79,12 @@ Before creating credentials, you must configure the consent screen (what users s
    
    - **Authorized JavaScript origins**:
      ```
-     https://leadgen-pro-24.preview.emergentagent.com
+     https://crm-commander-1.preview.emergentagent.com
      ```
    
    - **Authorized redirect URIs**:
      ```
-     https://leadgen-pro-24.preview.emergentagent.com/api/google/calendar/callback
+     https://crm-commander-1.preview.emergentagent.com/api/google/calendar/callback
      ```
 
 6. Click **"Create"**

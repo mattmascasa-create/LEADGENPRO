@@ -14,7 +14,7 @@ import os
 import sys
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://leadgen-pro-24.preview.emergentagent.com/api"
+BACKEND_URL = "https://crm-commander-1.preview.emergentagent.com/api"
 
 class SmartErrorHandlingTester:
     def __init__(self):
@@ -113,7 +113,7 @@ class SmartErrorHandlingTester:
                 "request_data": {"action": "get_leads"},
                 "stack_trace": "TokenExpiredError: JWT token expired at 2024-01-08T10:30:00Z",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/leads"
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/leads"
             },
             {
                 "error_type": "file_upload_failed",
@@ -122,7 +122,7 @@ class SmartErrorHandlingTester:
                 "request_data": {"filename": "leads.csv"},
                 "stack_trace": "HTTPException: Authorization header required",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/leads"
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/leads"
             },
             {
                 "error_type": "database_connection_failed",
@@ -131,7 +131,7 @@ class SmartErrorHandlingTester:
                 "request_data": {"query": "find_all"},
                 "stack_trace": "ConnectionError: MongoDB connection timeout",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/dashboard"
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/dashboard"
             },
             {
                 "error_type": "network_timeout",
@@ -140,7 +140,7 @@ class SmartErrorHandlingTester:
                 "request_data": {"message": "How do I add a lead?"},
                 "stack_trace": "TimeoutError: Request timeout after 30 seconds",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/dashboard"
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/dashboard"
             }
         ]
         
@@ -509,7 +509,7 @@ Bob,Johnson,bob.johnson@startup.io,+1-555-0103,Startup IO,CEO"""
                 "endpoint": "/api/leads",
                 "stack_trace": "TokenExpiredError: JWT token expired",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/leads",
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/leads",
                 "expected_category": "authentication"
             },
             {
@@ -518,7 +518,7 @@ Bob,Johnson,bob.johnson@startup.io,+1-555-0103,Startup IO,CEO"""
                 "endpoint": "/api/leads/bulk-import",
                 "stack_trace": "ValidationError: Invalid CSV format",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/leads",
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/leads",
                 "expected_category": "file_upload"
             },
             {
@@ -527,7 +527,7 @@ Bob,Johnson,bob.johnson@startup.io,+1-555-0103,Startup IO,CEO"""
                 "endpoint": "/api/leads",
                 "stack_trace": "ConnectionError: MongoDB connection failed",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/dashboard",
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/dashboard",
                 "expected_category": "database"
             },
             {
@@ -536,7 +536,7 @@ Bob,Johnson,bob.johnson@startup.io,+1-555-0103,Startup IO,CEO"""
                 "endpoint": "/api/assistant/chat",
                 "stack_trace": "TimeoutError: Request timeout after 30 seconds",
                 "user_agent": "Mozilla/5.0 (Chrome/120.0.0.0)",
-                "page_url": "https://leadgen-pro-24.preview.emergentagent.com/dashboard",
+                "page_url": "https://crm-commander-1.preview.emergentagent.com/dashboard",
                 "expected_category": "network"
             }
         ]

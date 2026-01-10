@@ -265,6 +265,88 @@ const NotificationPreferencesPage = () => {
           </div>
         </div>
 
+        {/* Browser Push Notifications */}
+        <div className="bg-white rounded-xl border border-border overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-border bg-slate-50">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-green-500" />
+              <h2 className="font-semibold">Browser Push Notifications</h2>
+            </div>
+            <p className="text-sm text-secondary mt-1">Get alerts even when the browser tab is closed</p>
+          </div>
+          
+          <div className="p-6">
+            {!pushSupported ? (
+              <div className="text-center py-4">
+                <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-2" />
+                <p className="text-secondary">Push notifications are not supported in your browser</p>
+              </div>
+            ) : pushPermission === 'denied' ? (
+              <div className="text-center py-4">
+                <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-2" />
+                <p className="text-secondary">Notifications blocked. Please enable in browser settings.</p>
+                <p className="text-xs text-secondary mt-2">
+                  Click the lock icon in your address bar → Site settings → Allow notifications
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Enable Push Notifications</h3>
+                      <p className="text-sm text-secondary">Receive alerts on your device</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={togglePushNotifications}
+                    disabled={togglingPush}
+                    className={`w-12 h-7 rounded-full transition-colors relative ${
+                      pushSubscribed ? 'bg-green-500' : 'bg-slate-300'
+                    }`}
+                    data-testid="toggle-push"
+                  >
+                    {togglingPush ? (
+                      <Loader2 className="w-4 h-4 animate-spin absolute top-1.5 left-4 text-white" />
+                    ) : (
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform ${
+                        pushSubscribed ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    )}
+                  </button>
+                </div>
+                
+                {pushSubscribed && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between pt-4 border-t border-border"
+                  >
+                    <div>
+                      <p className="text-sm text-green-600 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        Push notifications active
+                      </p>
+                      <p className="text-xs text-secondary mt-1">Test your setup with a sample notification</p>
+                    </div>
+                    <button
+                      onClick={sendTestPush}
+                      disabled={testingPush}
+                      className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {testingPush ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Send Test
+                    </button>
+                  </motion.div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Quiet Hours */}
         <div className="bg-white rounded-xl border border-border overflow-hidden mb-6">
           <div className="px-6 py-4 border-b border-border bg-slate-50">

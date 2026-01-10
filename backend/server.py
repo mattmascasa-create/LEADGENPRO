@@ -1061,36 +1061,6 @@ async def send_guest_confirmation_email(
         logging.error(f"Failed to send guest confirmation email: {str(e)}")
         return None
 
-# Appointments routes
-@api_router.get("/appointments", response_model=List[Appointment])
-async def get_appointments(current_user: User = Depends(get_current_user)):
-    query = {}
-    if current_user.role == "employee":
-        query["employee_id"] = current_user.id
-    
-    appointments = await db.appointments.find(query, {"_id": 0}).to_list(1000)
-    return [Appointment(**apt) for apt in appointments]
-
-@api_router.post("/appointments", response_model=Appointment)
-async def create_appointment(apt_data: AppointmentCreate, current_user: User = Depends(get_current_user)):
-    appointment = Appointment(**apt_data.model_dump())
-    doc = appointment.model_dump()
-    doc['scheduled_at'] = doc['scheduled_at'].isoformat()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.appointments.insert_one(doc)
-    
-    # Log activity
-    activity = Activity(
-        type="appointment_created",
-        description=f"Scheduled: {appointment.title}",
-        lead_id=appointment.lead_id,
-        user_id=current_user.id
-    )
-    activity_doc = activity.model_dump()
-    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
-    await db.activities.insert_one(activity_doc)
-    
-    return appointment
 
 # Email Sequences
 @api_router.get("/sequences", response_model=List[EmailSequence])

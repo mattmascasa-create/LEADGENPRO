@@ -39,7 +39,7 @@ from pywebpush import webpush, WebPushException
 # Import modular routes
 from routes import (
     notifications_router, push_router, auth_router, leads_router,
-    calendar_router, calls_router, chat_router, booking_router
+    calendar_router, calls_router, chat_router, booking_router, admin_router
 )
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
@@ -50,6 +50,7 @@ from routes.calendar import Appointment, AppointmentCreate, CalendarEvent, Calen
 from routes.calls import CallLog, CallLogCreate, CallOutcome, CALL_DISPOSITIONS
 from routes.chat import Channel, ChatMessage, ChatMessageCreate, UserStatus, STATUS_PRESETS, UpdateStatusRequest
 from routes.booking import BookingRequest, AvailabilitySlot
+from routes.admin import AdminUserCreate, AdminUserUpdate, DailyGoals
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

@@ -333,15 +333,15 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 ## Future/Backlog (P2)
 - [ ] Connect AI Email "Generate" button to LLM
 - [ ] CRM Integrations (HubSpot/Salesforce placeholders)
-- [ ] Continue backend refactoring (Phase 2+: auth, leads, calendar routes)
+- [ ] Continue backend refactoring (Phase 9+: Public API, misc endpoints)
 
 ## Backend Refactoring Progress (Jan 10, 2026)
-**COMPLETED - Phase 1 through Phase 6**
+**COMPLETED - Phase 1 through Phase 8**
 - Created `/app/backend/core/` module:
   - `config.py` - Environment variables
   - `database.py` - MongoDB connection
   - `security.py` - JWT auth, User models, auth helpers
-- Created `/app/backend/routes/` module (8 files):
+- Created `/app/backend/routes/` module (12 files):
   - `notifications.py` - Notification system (~700 lines)
   - `push.py` - Web push (~150 lines)
   - `auth.py` - Authentication (~240 lines)
@@ -350,8 +350,12 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - `calls.py` - Voice/Twilio (~713 lines)
   - `chat.py` - Team chat, DMs, reactions (~370 lines)
   - `booking.py` - Public booking (~320 lines)
+  - `admin.py` - Admin management (~457 lines) **NEW Phase 7**
+  - `email.py` - Email automation, sequences, tracking (~750 lines) **NEW Phase 8**
+  - `forecasting.py` - Pipeline forecasting, deal analysis (~170 lines) **NEW Phase 8**
+  - `google.py` - Google Drive/Calendar OAuth, sync (~730 lines) **NEW Phase 8**
 - Created `/app/backend/send_daily_digest.py` - Daily digest cron job
-- **Total Impact**: Reduced server.py from ~9,100 to ~5,998 lines (~3,102 lines extracted, **34% reduction**)
+- **Total Impact**: Reduced server.py from ~9,100 to ~3,746 lines (~5,354 lines extracted, **59% reduction**)
 
 **See**: `/app/backend/REFACTORING.md` for full plan and next steps
 

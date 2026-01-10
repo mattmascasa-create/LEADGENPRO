@@ -8350,7 +8350,6 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
                     data={"score": lead["score"], "company": lead["company"]}
                 )
                 await create_notification_with_push(notif)
-                notifications_created.append(notif.title)
     
     # 2. Stale Deals - Deals in negotiation/proposal for too long
     if prefs.get("stale_deal_alerts", True):
@@ -8378,10 +8377,7 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
                     lead_id=lead["id"],
                     data={"stage": lead["stage"], "deal_value": deal_value}
                 )
-                doc = notif.model_dump()
-                doc["created_at"] = doc["created_at"].isoformat()
-                await db.notifications.insert_one(doc)
-                notifications_created.append(notif.title)
+                await create_notification_with_push(notif)
     
     # 3. Upcoming Meetings (within 1 hour)
     if prefs.get("meeting_reminders", True):
@@ -8408,10 +8404,7 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
                     message=f"'{meeting['title']}' starts in less than an hour.",
                     data={"event_id": meeting["id"], "title": meeting["title"]}
                 )
-                doc = notif.model_dump()
-                doc["created_at"] = doc["created_at"].isoformat()
-                await db.notifications.insert_one(doc)
-                notifications_created.append(notif.title)
+                await create_notification_with_push(notif)
     
     # 4. Tasks Due Today
     if prefs.get("task_due_alerts", True):

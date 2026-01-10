@@ -366,11 +366,11 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-700/50"
+          className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-700/50 max-h-[90vh] overflow-y-auto"
           data-testid="phone-dialer"
         >
           {/* Header */}
-          <div className="p-6 text-center relative">
+          <div className="p-4 text-center relative">
             {!isCallActive && !showOutcomeModal && (
               <div className="absolute right-5 top-5 flex gap-2">
                 <button

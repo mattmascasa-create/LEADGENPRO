@@ -120,6 +120,30 @@ from routes.google import (
     GOOGLE_SCOPES
 )
 
+# Export task utilities
+from routes.tasks import (
+    Task,
+    TaskCreate,
+    TaskUpdate
+)
+
+# Export meetings utilities
+from routes.meetings import (
+    MeetingType as MeetingTypeModel,
+    MeetingTypeCreate,
+    AvailabilityRule,
+    UserStatusUpdate
+)
+
+# Export public API utilities
+from routes.public_api import (
+    APIKey,
+    CreateAPIKeyRequest,
+    PublicLeadCreate,
+    WebhookSubscription,
+    get_api_key_user
+)
+
 __all__ = [
     'notifications_router',
     'push_router',

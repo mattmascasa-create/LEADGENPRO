@@ -410,38 +410,38 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
               </div>
             )}
 
-            {/* Settings Panel - Now Larger */}
+            {/* Settings Panel - Compact */}
             {showSettings && !isCallActive && (
-              <div className="text-left mt-8 max-w-md mx-auto">
-                <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-primary" />
+              <div className="text-left mt-4 max-w-sm mx-auto">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-primary" />
                   Your Phone Number
                 </h3>
-                <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-4">
-                  <div className="flex items-start gap-3 mb-4">
-                    <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-slate-400 text-sm">
-                      When you make a call, we'll ring your phone first. Answer and press 1 to connect to the lead.
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 mb-3">
+                  <div className="flex items-start gap-2 mb-3">
+                    <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-slate-400 text-xs">
+                      We'll ring your phone first. Answer and press 1 to connect.
                     </p>
                   </div>
                   <input
                     type="tel"
                     value={agentPhone}
                     onChange={(e) => setAgentPhone(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
-                    placeholder="Your phone number (e.g., +1 555 123 4567)"
-                    className="w-full px-4 py-4 bg-slate-700/50 border border-slate-600 rounded-xl text-white text-lg placeholder-slate-500 mb-4"
+                    placeholder="Your phone (e.g., +1 555 123 4567)"
+                    className="w-full px-3 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 mb-3"
                   />
                   <button
                     onClick={saveAgentPhone}
                     disabled={savingPhone}
-                    className="w-full py-4 bg-primary text-white rounded-xl font-medium text-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {savingPhone ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    Save Phone Number
+                    {savingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Phone
                   </button>
                 </div>
                 {user?.phone && (
-                  <p className="text-green-400 text-center">
+                  <p className="text-green-400 text-center text-sm">
                     ✓ Your phone: {formatPhoneDisplay(user.phone)}
                   </p>
                 )}

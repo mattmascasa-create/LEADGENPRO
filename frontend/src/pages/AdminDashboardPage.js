@@ -221,6 +221,49 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
+        {/* Smart Alerts Widget */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-border">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <button
+                onClick={() => navigate('/leads')}
+                className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-center"
+              >
+                <Target className="w-8 h-8 text-primary mx-auto mb-2" />
+                <p className="text-sm font-medium">View Leads</p>
+              </button>
+              <button
+                onClick={() => navigate('/calendar')}
+                className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-center"
+              >
+                <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                <p className="text-sm font-medium">Calendar</p>
+              </button>
+              <button
+                onClick={() => navigate('/calls')}
+                className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-center"
+              >
+                <Phone className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <p className="text-sm font-medium">Call Logs</p>
+              </button>
+              <button
+                onClick={() => navigate('/team-chat')}
+                className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-center"
+              >
+                <Send className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                <p className="text-sm font-medium">Team Chat</p>
+              </button>
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <NotificationStatsWidget />
+          </div>
+        </div>
+
         {/* Employee Performance Table */}
         <div className="bg-white rounded-xl border border-border overflow-hidden">
           <div className="p-4 lg:p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">

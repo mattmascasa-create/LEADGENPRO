@@ -286,6 +286,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Individual event push/pull options
   - Auto-refresh of expired OAuth tokens
   - Settings page UI with sync controls
+  - **Automatic Background Sync** - 15-minute interval option added
 
 ## Paused Items
 - **Google Drive Content Hub** - OAuth flow paused by user request

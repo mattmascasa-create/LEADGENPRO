@@ -530,7 +530,7 @@ Provide a helpful response with:
     except Exception as e:
         logging.error(f"Support bot error: {e}")
         return {
-            "response": f"I encountered an issue processing your request. Please try again or contact support.",
+            "response": "I encountered an issue processing your request. Please try again or contact support.",
             "error": str(e)
         }
 

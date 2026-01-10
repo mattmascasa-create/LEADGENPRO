@@ -40,7 +40,8 @@ from pywebpush import webpush, WebPushException
 from routes import (
     notifications_router, push_router, auth_router, leads_router,
     calendar_router, calls_router, chat_router, booking_router, admin_router,
-    email_router, forecasting_router, google_router
+    email_router, forecasting_router, google_router, tasks_router, 
+    meetings_router, public_api_router
 )
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
@@ -55,6 +56,9 @@ from routes.admin import AdminUserCreate, AdminUserUpdate, DailyGoals
 from routes.email import EmailTemplate, EmailCampaign, ScheduledEmail, EmailSequence, SequenceEnrollment
 from routes.forecasting import DealForecast
 from routes.google import CalendarSyncRequest, get_google_credentials, get_drive_service, get_calendar_service, GOOGLE_SCOPES
+from routes.tasks import Task, TaskCreate
+from routes.meetings import MeetingType, MeetingTypeCreate, AvailabilityRule
+from routes.public_api import APIKey, CreateAPIKeyRequest, get_api_key_user
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

@@ -588,6 +588,32 @@ const SettingsPage = () => {
                             ← Pull from Google
                           </button>
                         </div>
+
+                        {/* Auto-Sync Toggle */}
+                        <div className="mt-4 pt-4 border-t border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-sm">Automatic Background Sync</h4>
+                              <p className="text-xs text-secondary">Sync calendars every 15 minutes</p>
+                            </div>
+                            <button
+                              onClick={toggleAutoSync}
+                              disabled={togglingAutoSync}
+                              className={`w-12 h-7 rounded-full transition-colors relative ${
+                                autoSyncStatus?.auto_sync_enabled ? 'bg-primary' : 'bg-slate-300'
+                              }`}
+                            >
+                              <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform ${
+                                autoSyncStatus?.auto_sync_enabled ? 'translate-x-6' : 'translate-x-1'
+                              }`} />
+                            </button>
+                          </div>
+                          {autoSyncStatus?.auto_sync_enabled && (
+                            <p className="text-xs text-green-600 mt-2">
+                              ✓ Auto-sync is active
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

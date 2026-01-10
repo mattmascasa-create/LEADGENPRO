@@ -1334,9 +1334,12 @@ const TeamChatEnhanced = () => {
                   <label className="block text-sm font-medium mb-2">Meeting Title</label>
                   <input
                     type="text"
+                    name="meeting_title"
                     value={meetingForm.title}
                     onChange={e => setMeetingForm(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g., Weekly Sync"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1345,6 +1348,7 @@ const TeamChatEnhanced = () => {
                   <label className="block text-sm font-medium mb-2">Date & Time</label>
                   <input
                     type="datetime-local"
+                    name="meeting_datetime"
                     value={meetingForm.scheduled_at}
                     onChange={e => setMeetingForm(prev => ({ ...prev, scheduled_at: e.target.value }))}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

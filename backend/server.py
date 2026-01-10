@@ -661,92 +661,6 @@ class AssistantChatRequest(BaseModel):
     message: str
     context: str = "general"
 
-# Email Models
-class EmailTemplate(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    subject: str
-    body: str
-    category: str = "outreach"
-    variables: List[str] = []
-    created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class EmailCampaign(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    subject: str
-    body: str
-    sent_count: int = 0
-    opened_count: int = 0
-    clicked_count: int = 0
-    replied_count: int = 0
-    created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class ScheduledEmail(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    subject: str
-    body: str
-    recipient_ids: List[str] = []
-    recipient_count: int = 0
-    scheduled_time: datetime
-    status: str = "pending"  # pending, sent, cancelled
-    campaign_id: Optional[str] = None
-    created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-# Email Tracking Models
-class EmailTrackingEvent(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    email_id: str
-    event_type: str  # sent, delivered, opened, clicked, replied, bounced
-    lead_id: Optional[str] = None
-    campaign_id: Optional[str] = None
-    sequence_id: Optional[str] = None
-    link_url: Optional[str] = None
-    user_agent: Optional[str] = None
-    ip_address: Optional[str] = None
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class TrackedEmail(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    subject: str
-    body: str
-    to_email: str
-    to_name: Optional[str] = None
-    lead_id: Optional[str] = None
-    campaign_id: Optional[str] = None
-    sequence_id: Optional[str] = None
-    sequence_step: Optional[int] = None
-    sent_by: str
-    sent_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    opened_at: Optional[datetime] = None
-    clicked_at: Optional[datetime] = None
-    replied_at: Optional[datetime] = None
-    open_count: int = 0
-    click_count: int = 0
-    status: str = "sent"  # sent, opened, clicked, replied, bounced
-
-# Sequence Enrollment Model
-class SequenceEnrollment(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    sequence_id: str
-    lead_id: str
-    current_step: int = 1
-    status: str = "active"  # active, paused, completed, exited_reply, exited_meeting
-    enrolled_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    next_email_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    enrolled_by: Optional[str] = None
-
-# Pipeline Forecasting Models
-class DealForecast(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    lead_id: str
-    deal_value: float
-    close_probability: float  # AI-predicted probability 0-100
-    expected_close_date: Optional[datetime] = None
-    stage: str
     confidence_factors: List[str] = []
     risk_factors: List[str] = []
     ai_recommendation: Optional[str] = None
@@ -1250,12 +1164,6 @@ async def get_call_list(current_user: User = Depends(get_current_user)):
     }
 
 # Log Call Outcome
-class CallOutcome(BaseModel):
-    lead_id: str
-    outcome: str  # contacted, no_answer, voicemail, wrong_number, meeting_scheduled
-    notes: Optional[str] = None
-    meeting_scheduled_at: Optional[datetime] = None
-
 @api_router.post("/call-log")
 async def log_call_outcome(
     outcome: CallOutcome,

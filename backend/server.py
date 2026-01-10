@@ -7990,6 +7990,7 @@ app.include_router(public_api, prefix="/api")
 app.include_router(notifications_router, prefix="/api")
 app.include_router(push_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
+app.include_router(leads_router, prefix="/api")
 
 app.include_router(api_router)
 

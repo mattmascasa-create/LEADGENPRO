@@ -8292,10 +8292,34 @@ async def delete_notification(
 async def generate_smart_notifications(current_user: User = Depends(get_current_user)):
     """Generate smart notifications based on current data (can be called periodically)"""
     notifications_created = []
+    push_notifications_sent = 0
     now = datetime.now(timezone.utc)
     
     # Get user preferences
     prefs = await db.notification_preferences.find_one({"user_id": current_user.id}) or {}
+    push_enabled = prefs.get("push_enabled", False)
+    
+    # Helper to create notification and optionally send push
+    async def create_notification_with_push(notif: SmartNotification):
+        nonlocal push_notifications_sent
+        doc = notif.model_dump()
+        doc["created_at"] = doc["created_at"].isoformat()
+        await db.notifications.insert_one(doc)
+        notifications_created.append(notif.title)
+        
+        # Send push notification if enabled
+        if push_enabled:
+            sent = await send_push_to_user(
+                user_id=notif.user_id,
+                title=notif.title,
+                message=notif.message,
+                data={
+                    "type": notif.type,
+                    "lead_id": notif.lead_id,
+                    "id": notif.id
+                }
+            )
+            push_notifications_sent += sent
     
     # 1. Hot Leads - High score leads that haven't been contacted recently
     if prefs.get("hot_lead_alerts", True):
@@ -8325,9 +8349,7 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
                     lead_id=lead["id"],
                     data={"score": lead["score"], "company": lead["company"]}
                 )
-                doc = notif.model_dump()
-                doc["created_at"] = doc["created_at"].isoformat()
-                await db.notifications.insert_one(doc)
+                await create_notification_with_push(notif)
                 notifications_created.append(notif.title)
     
     # 2. Stale Deals - Deals in negotiation/proposal for too long

@@ -13,6 +13,9 @@ from routes import admin
 from routes import email
 from routes import forecasting
 from routes import google
+from routes import tasks
+from routes import meetings
+from routes import public_api
 
 # Export routers
 notifications_router = notifications.router
@@ -27,6 +30,9 @@ admin_router = admin.router
 email_router = email.router
 forecasting_router = forecasting.router
 google_router = google.router
+tasks_router = tasks.router
+meetings_router = meetings.router
+public_api_router = public_api.router
 
 # Export notification utilities
 from routes.notifications import (

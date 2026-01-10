@@ -238,7 +238,7 @@ const NotificationCenter = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={generateNotifications}
+                  onClick={handleManualRefresh}
                   disabled={generating}
                   className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
                   title="Refresh notifications"

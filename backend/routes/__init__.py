@@ -88,6 +88,32 @@ from routes.admin import (
     DailyGoals
 )
 
+# Export email utilities
+from routes.email import (
+    EmailTemplate,
+    EmailCampaign,
+    ScheduledEmail,
+    EmailSequence,
+    SequenceStep,
+    SequenceEnrollment,
+    EmailGenerateRequest,
+    BulkEmailRequest
+)
+
+# Export forecasting utilities
+from routes.forecasting import (
+    DealForecast
+)
+
+# Export google utilities
+from routes.google import (
+    CalendarSyncRequest,
+    get_google_credentials,
+    get_drive_service,
+    get_calendar_service,
+    GOOGLE_SCOPES
+)
+
 __all__ = [
     'notifications_router',
     'push_router',

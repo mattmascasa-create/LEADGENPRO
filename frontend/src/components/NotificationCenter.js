@@ -303,7 +303,7 @@ const NotificationCenter = () => {
               <span className="text-xs text-secondary">Auto-refreshes every minute</span>
               <button
                 onClick={() => {
-                  navigate('/settings');
+                  navigate('/settings/notifications');
                   setIsOpen(false);
                 }}
                 className="text-xs text-primary hover:underline"

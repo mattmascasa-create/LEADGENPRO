@@ -1164,9 +1164,15 @@ async def get_call_list(current_user: User = Depends(get_current_user)):
     }
 
 # Log Call Outcome
+class CallOutcomeRequest(BaseModel):
+    lead_id: str
+    outcome: str  # contacted, no_answer, voicemail, wrong_number, meeting_scheduled
+    notes: Optional[str] = None
+    meeting_scheduled_at: Optional[datetime] = None
+
 @api_router.post("/call-log")
 async def log_call_outcome(
-    outcome: CallOutcome,
+    outcome: CallOutcomeRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Log the outcome of a call"""

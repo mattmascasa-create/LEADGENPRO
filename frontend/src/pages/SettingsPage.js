@@ -106,9 +106,36 @@ const SettingsPage = () => {
     try {
       await axios.post(`${API_URL}/api/google/disconnect`, {}, getAuthHeaders());
       setGoogleStatus({ connected: false });
+      setCalendarSyncStatus(null);
       toast.success('Google account disconnected');
     } catch (error) {
       toast.error('Failed to disconnect Google account');
+    }
+  };
+
+  const fetchCalendarSyncStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/google/calendar/sync-status`, getAuthHeaders());
+      setCalendarSyncStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch calendar sync status');
+    }
+  };
+
+  const syncCalendar = async (direction = 'both') => {
+    setSyncing(true);
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/google/calendar/sync`,
+        { sync_direction: direction, days_ahead: 30, days_back: 7 },
+        getAuthHeaders()
+      );
+      toast.success(response.data.message);
+      fetchCalendarSyncStatus();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Calendar sync failed');
+    } finally {
+      setSyncing(false);
     }
   };
 

@@ -8464,6 +8464,152 @@ async def get_auto_sync_status(current_user: User = Depends(get_current_user)):
         "last_sync": creds.get("last_calendar_sync") if creds else None
     }
 
+# ==================== NOTIFICATION PREFERENCES ====================
+
+class NotificationPreferences(BaseModel):
+    hot_lead_alerts: bool = True
+    stale_deal_alerts: bool = True
+    email_opened_alerts: bool = True
+    meeting_reminders: bool = True
+    task_due_alerts: bool = True
+    new_lead_assigned: bool = True
+    deal_stage_change: bool = True
+    quiet_hours_enabled: bool = False
+    quiet_hours_start: str = "22:00"  # 10 PM
+    quiet_hours_end: str = "08:00"    # 8 AM
+    email_digest: bool = False  # Daily email summary
+
+@api_router.get("/notifications/preferences")
+async def get_notification_preferences(current_user: User = Depends(get_current_user)):
+    """Get user's notification preferences"""
+    prefs = await db.notification_preferences.find_one({"user_id": current_user.id})
+    
+    if not prefs:
+        # Return defaults
+        return NotificationPreferences().model_dump()
+    
+    # Remove MongoDB _id
+    prefs.pop("_id", None)
+    prefs.pop("user_id", None)
+    return prefs
+
+@api_router.put("/notifications/preferences")
+async def update_notification_preferences(
+    preferences: NotificationPreferences,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user's notification preferences"""
+    prefs_dict = preferences.model_dump()
+    prefs_dict["user_id"] = current_user.id
+    prefs_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.notification_preferences.update_one(
+        {"user_id": current_user.id},
+        {"$set": prefs_dict},
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Notification preferences updated"}
+
+# Helper to check if notification should be sent based on preferences
+async def should_send_notification(user_id: str, notification_type: str) -> bool:
+    """Check if user should receive this notification type based on preferences"""
+    prefs = await db.notification_preferences.find_one({"user_id": user_id})
+    
+    if not prefs:
+        return True  # Default to sending all notifications
+    
+    # Check quiet hours
+    if prefs.get("quiet_hours_enabled", False):
+        now = datetime.now(timezone.utc)
+        current_time = now.strftime("%H:%M")
+        start = prefs.get("quiet_hours_start", "22:00")
+        end = prefs.get("quiet_hours_end", "08:00")
+        
+        # Handle overnight quiet hours (e.g., 22:00 to 08:00)
+        if start > end:
+            if current_time >= start or current_time < end:
+                return False
+        else:
+            if start <= current_time < end:
+                return False
+    
+    # Check notification type preference
+    type_to_pref = {
+        NotificationType.HOT_LEAD: "hot_lead_alerts",
+        NotificationType.STALE_DEAL: "stale_deal_alerts",
+        NotificationType.EMAIL_OPENED: "email_opened_alerts",
+        NotificationType.MEETING_REMINDER: "meeting_reminders",
+        NotificationType.TASK_DUE: "task_due_alerts",
+        NotificationType.NEW_LEAD_ASSIGNED: "new_lead_assigned",
+        NotificationType.DEAL_STAGE_CHANGE: "deal_stage_change",
+    }
+    
+    pref_key = type_to_pref.get(notification_type)
+    if pref_key:
+        return prefs.get(pref_key, True)
+    
+    return True
+
+# ==================== EMAIL OPEN TRACKING NOTIFICATIONS ====================
+
+@api_router.post("/notifications/email-opened")
+async def create_email_opened_notification(
+    lead_id: str,
+    email_subject: str,
+    background_tasks: BackgroundTasks
+):
+    """Create notification when lead opens an email (called by tracking pixel endpoint)"""
+    # Find lead and its assigned user
+    lead = await db.leads.find_one({"id": lead_id})
+    if not lead or not lead.get("assigned_to"):
+        return {"success": False}
+    
+    user_id = lead["assigned_to"]
+    
+    # Check preferences
+    if not await should_send_notification(user_id, NotificationType.EMAIL_OPENED):
+        return {"success": False, "reason": "User disabled email open alerts"}
+    
+    notif = SmartNotification(
+        user_id=user_id,
+        type=NotificationType.EMAIL_OPENED,
+        title="📧 Email Opened!",
+        message=f"{lead['first_name']} {lead['last_name']} opened your email: '{email_subject[:50]}...'",
+        lead_id=lead_id,
+        data={"subject": email_subject, "company": lead.get("company")}
+    )
+    
+    doc = notif.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.notifications.insert_one(doc)
+    
+    return {"success": True}
+
+# ==================== NEW LEAD ASSIGNED NOTIFICATION ====================
+
+async def create_lead_assigned_notification(lead: dict, assigned_to: str):
+    """Create notification when a lead is assigned to a user"""
+    if not await should_send_notification(assigned_to, NotificationType.NEW_LEAD_ASSIGNED):
+        return
+    
+    notif = SmartNotification(
+        user_id=assigned_to,
+        type=NotificationType.NEW_LEAD_ASSIGNED,
+        title="👤 New Lead Assigned",
+        message=f"You've been assigned {lead['first_name']} {lead['last_name']} from {lead.get('company', 'Unknown')}",
+        lead_id=lead["id"],
+        data={
+            "company": lead.get("company"),
+            "deal_value": lead.get("deal_value", 0),
+            "score": lead.get("score", 0)
+        }
+    )
+    
+    doc = notif.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.notifications.insert_one(doc)
+
 # Check if user is admin helper endpoint
 @api_router.get("/auth/check-admin")
 async def check_admin_status(current_user: User = Depends(get_current_user)):

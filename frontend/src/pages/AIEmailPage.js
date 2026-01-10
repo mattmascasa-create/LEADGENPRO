@@ -385,9 +385,13 @@ const AIEmailPage = () => {
                 <div className="flex gap-2 mb-3">
                   <input
                     type="text"
+                    name="ai_prompt"
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     placeholder="Describe the email you want to write..."
+                    spellCheck="true"
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
                     className="flex-1 px-4 py-2 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <button
@@ -418,9 +422,13 @@ const AIEmailPage = () => {
                   <label className="block text-sm font-medium mb-1">Subject Line</label>
                   <input
                     type="text"
+                    name="email_subject"
                     value={emailData.subject}
                     onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
                     placeholder="Enter email subject..."
+                    spellCheck="true"
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -428,10 +436,14 @@ const AIEmailPage = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Email Body</label>
                   <textarea
+                    name="email_body"
                     value={emailData.body}
                     onChange={(e) => setEmailData({ ...emailData, body: e.target.value })}
                     placeholder="Write your email content here... Use {{first_name}}, {{company}}, etc. for personalization"
                     rows={10}
+                    spellCheck="true"
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
                   <p className="text-xs text-secondary mt-1">

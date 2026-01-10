@@ -149,7 +149,13 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Email Digest option (daily summary)
    - Enable All / Disable All quick actions
 
-4. **Browser Push Notifications** (P1) - NEW
+5. **Dashboard Notification Stats Widget** (P2) - NEW
+   - Added `NotificationStatsWidget` component to Admin, Employee, and Main dashboards
+   - Real-time stats grid: Hot Leads, Stale Deals, Tasks Due, Meetings
+   - Recent notifications preview with click-to-navigate
+   - Push notification enable banner
+   - Quick refresh and mark-all-read buttons
+   - Auto-refreshes every 60 seconds
    - Service Worker (`/public/sw.js`) for background notifications
    - VAPID key authentication for secure push
    - `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/status` endpoints

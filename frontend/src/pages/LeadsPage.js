@@ -1060,6 +1060,33 @@ const LeadsPage = () => {
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Deal Value ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={editingLead.deal_value || ''}
+                    onChange={(e) => setEditingLead({...editingLead, deal_value: parseFloat(e.target.value) || 0})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Stage</label>
+                  <select
+                    value={editingLead.stage || 'prospecting'}
+                    onChange={(e) => setEditingLead({...editingLead, stage: e.target.value})}
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="prospecting">Prospecting</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="closed_won">Closed Won</option>
+                    <option value="closed_lost">Closed Lost</option>
+                  </select>
+                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Notes</label>
                   <textarea

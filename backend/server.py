@@ -9090,6 +9090,10 @@ async def check_admin_status(current_user: User = Depends(get_current_user)):
 # Include public API router
 app.include_router(public_api, prefix="/api")
 
+# Include modular routers
+app.include_router(notifications_router, prefix="/api")
+app.include_router(push_router, prefix="/api")
+
 app.include_router(api_router)
 
 app.add_middleware(

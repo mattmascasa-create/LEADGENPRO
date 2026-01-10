@@ -1468,6 +1468,8 @@ app.include_router(google_router, prefix="/api")
 app.include_router(tasks_router, prefix="/api")
 app.include_router(meetings_router, prefix="/api")
 app.include_router(public_api_router, prefix="/api")
+app.include_router(support_router, prefix="/api")
+app.include_router(stats_router, prefix="/api")
 
 app.include_router(api_router)
 

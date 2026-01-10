@@ -76,6 +76,11 @@ ADMIN_EMAILS = ['mattmascasa@gmail.com', 'monika.iordanoff@gmail.com', 'admin@te
 # Emergent LLM Key for AI-powered diagnostics
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
+# VAPID Keys for Web Push Notifications
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '').replace('\\n', '\n')
+VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'admin@leadgenpro.com')
+
 # ============================================
 # SMART ERROR HANDLING & AUTO-FIX SYSTEM
 # ============================================

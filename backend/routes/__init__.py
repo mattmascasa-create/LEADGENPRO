@@ -16,6 +16,8 @@ from routes import google
 from routes import tasks
 from routes import meetings
 from routes import public_api
+from routes import support
+from routes import stats
 
 # Export routers
 notifications_router = notifications.router
@@ -33,6 +35,8 @@ google_router = google.router
 tasks_router = tasks.router
 meetings_router = meetings.router
 public_api_router = public_api.router
+support_router = support.router
+stats_router = stats.router
 
 # Export notification utilities
 from routes.notifications import (

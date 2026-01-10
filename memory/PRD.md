@@ -137,21 +137,29 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Stale Deal alerts (proposal/negotiation stage for 7+ days)
    - Meeting reminders (events starting within 1 hour)
    - Task Due Today alerts
-   - Auto-refreshes every 60 seconds
-   - Mark all read, delete individual notifications
+   - Email Opened alerts
+   - New Lead Assigned alerts
+   - Auto-refreshes every 60 seconds, click to navigate to lead/task
 
-3. **Deal Value Field** (P2)
+3. **Notification Preferences Page** (P1) - NEW
+   - `/settings/notifications` page with full customization
+   - Toggle each alert type on/off
+   - Quiet Hours (pause notifications during set times)
+   - Email Digest option (daily summary)
+   - Enable All / Disable All quick actions
+
+4. **Deal Value Field** (P2)
    - Added `deal_value` to Lead and LeadCreate models
    - Added Deal Value ($) input field in Edit Lead modal
    - Added Stage dropdown for easy pipeline management
-   - Enables real data for Pipeline Forecasting feature
+   - Enables real data for Pipeline Forecasting dashboard
 
-4. **Automatic Calendar Background Sync** (P2)
+5. **Automatic Calendar Background Sync** (P2)
    - Enable/disable auto-sync toggle in Settings
-   - `/api/google/calendar/auto-sync` endpoints
+   - `/api/google/calendar/auto-sync` endpoints for enable/disable/status
    - 15-minute sync interval setting
 
-5. **Phone Dialer UI Optimization**
+6. **Phone Dialer UI Optimization**
    - Made dialer more compact (max-w-md, max-h-[90vh])
    - Reduced padding and element sizes
    - Scrollable if content exceeds viewport

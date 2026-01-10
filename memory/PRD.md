@@ -336,18 +336,19 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - [ ] Continue backend refactoring (Phase 2+: auth, leads, calendar routes)
 
 ## Backend Refactoring Progress (Jan 10, 2026)
-**COMPLETED - Phase 1 & Phase 2**
+**COMPLETED - Phase 1, Phase 2, Phase 3**
 - Created `/app/backend/core/` module:
   - `config.py` - Environment variables
   - `database.py` - MongoDB connection
-  - `security.py` - JWT auth, User models, auth helpers (create_access_token, etc.)
+  - `security.py` - JWT auth, User models, auth helpers
 - Created `/app/backend/routes/` module:
-  - `notifications.py` - All notification endpoints (~700 lines extracted)
-  - `push.py` - Web push notification endpoints (~150 lines extracted)
-  - `auth.py` - All authentication endpoints (~240 lines extracted)
+  - `notifications.py` - All notification endpoints (~700 lines)
+  - `push.py` - Web push notification endpoints (~150 lines)
+  - `auth.py` - All authentication endpoints (~240 lines)
+  - `leads.py` - Lead CRUD, bulk ops, scraping (~350 lines)
 - Created `/app/backend/send_daily_digest.py` - Cron script for daily digest
 - Set up crontab for daily digest email (8 AM UTC)
-- **Total Impact**: Reduced server.py from ~9,100 to ~8,010 lines (~1,090 lines extracted)
+- **Total Impact**: Reduced server.py from ~9,100 to ~7,659 lines (~1,441 lines extracted)
 
 **See**: `/app/backend/REFACTORING.md` for full plan and next steps
 

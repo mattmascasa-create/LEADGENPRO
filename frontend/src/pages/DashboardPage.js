@@ -119,44 +119,52 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Weekly Activity</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
-                <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
-                <YAxis stroke="hsl(215 16% 47%)" />
-                <Tooltip
-                  contentStyle={{
-                    background: '#ffffff',
-                    border: '1px solid hsl(214 32% 91%)',
-                    borderRadius: '0.5rem'
-                  }}
-                />
-                <Bar dataKey="leads" fill="hsl(226 71% 40%)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Charts and Notifications Row */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          {/* Charts - 2 columns */}
+          <div className="lg:col-span-2 grid md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-xl border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-6">Weekly Activity</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
+                  <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
+                  <YAxis stroke="hsl(215 16% 47%)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#ffffff',
+                      border: '1px solid hsl(214 32% 91%)',
+                      borderRadius: '0.5rem'
+                    }}
+                  />
+                  <Bar dataKey="leads" fill="hsl(226 71% 40%)" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-6">Conversion Trend</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
+                  <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
+                  <YAxis stroke="hsl(215 16% 47%)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#ffffff',
+                      border: '1px solid hsl(214 32% 91%)',
+                      borderRadius: '0.5rem'
+                    }}
+                  />
+                  <Line type="monotone" dataKey="deals" stroke="hsl(24 95% 53%)" strokeWidth={3} dot={{ fill: 'hsl(24 95% 53%)' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Conversion Trend</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 32% 91%)" />
-                <XAxis dataKey="name" stroke="hsl(215 16% 47%)" />
-                <YAxis stroke="hsl(215 16% 47%)" />
-                <Tooltip
-                  contentStyle={{
-                    background: '#ffffff',
-                    border: '1px solid hsl(214 32% 91%)',
-                    borderRadius: '0.5rem'
-                  }}
-                />
-                <Line type="monotone" dataKey="deals" stroke="hsl(24 95% 53%)" strokeWidth={3} dot={{ fill: 'hsl(24 95% 53%)' }} />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* Notification Stats Widget - 1 column */}
+          <div className="lg:col-span-1">
+            <NotificationStatsWidget />
           </div>
         </div>
 

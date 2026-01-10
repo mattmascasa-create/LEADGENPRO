@@ -51,6 +51,7 @@ const SettingsPage = () => {
     }
     if (activeTab === 'integrations') {
       fetchGoogleStatus();
+      fetchCalendarSyncStatus();
     }
   }, [activeTab]);
 

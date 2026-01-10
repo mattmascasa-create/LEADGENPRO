@@ -8288,129 +8288,136 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
     notifications_created = []
     now = datetime.now(timezone.utc)
     
-    # 1. Hot Leads - High score leads that haven't been contacted recently
-    hot_leads_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
-    hot_leads_query.update({
-        "score": {"$gte": 70},
-        "$or": [
-            {"last_contacted": None},
-            {"last_contacted": {"$lt": (now - timedelta(days=3)).isoformat()}}
-        ]
-    })
-    hot_leads = await db.leads.find(hot_leads_query, {"_id": 0}).to_list(10)
+    # Get user preferences
+    prefs = await db.notification_preferences.find_one({"user_id": current_user.id}) or {}
     
-    for lead in hot_leads:
-        existing = await db.notifications.find_one({
-            "user_id": current_user.id,
-            "lead_id": lead["id"],
-            "type": NotificationType.HOT_LEAD,
-            "created_at": {"$gte": (now - timedelta(hours=24)).isoformat()}
+    # 1. Hot Leads - High score leads that haven't been contacted recently
+    if prefs.get("hot_lead_alerts", True):
+        hot_leads_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
+        hot_leads_query.update({
+            "score": {"$gte": 70},
+            "$or": [
+                {"last_contacted": None},
+                {"last_contacted": {"$lt": (now - timedelta(days=3)).isoformat()}}
+            ]
         })
-        if not existing:
-            notif = SmartNotification(
-                user_id=current_user.id,
-                type=NotificationType.HOT_LEAD,
-                title="🔥 Hot Lead Needs Attention",
-                message=f"{lead['first_name']} {lead['last_name']} ({lead['company']}) has a score of {lead['score']} but hasn't been contacted recently.",
-                lead_id=lead["id"],
-                data={"score": lead["score"], "company": lead["company"]}
-            )
-            doc = notif.model_dump()
-            doc["created_at"] = doc["created_at"].isoformat()
-            await db.notifications.insert_one(doc)
-            notifications_created.append(notif.title)
+        hot_leads = await db.leads.find(hot_leads_query, {"_id": 0}).to_list(10)
+        
+        for lead in hot_leads:
+            existing = await db.notifications.find_one({
+                "user_id": current_user.id,
+                "lead_id": lead["id"],
+                "type": NotificationType.HOT_LEAD,
+                "created_at": {"$gte": (now - timedelta(hours=24)).isoformat()}
+            })
+            if not existing:
+                notif = SmartNotification(
+                    user_id=current_user.id,
+                    type=NotificationType.HOT_LEAD,
+                    title="🔥 Hot Lead Needs Attention",
+                    message=f"{lead['first_name']} {lead['last_name']} ({lead['company']}) has a score of {lead['score']} but hasn't been contacted recently.",
+                    lead_id=lead["id"],
+                    data={"score": lead["score"], "company": lead["company"]}
+                )
+                doc = notif.model_dump()
+                doc["created_at"] = doc["created_at"].isoformat()
+                await db.notifications.insert_one(doc)
+                notifications_created.append(notif.title)
     
     # 2. Stale Deals - Deals in negotiation/proposal for too long
-    stale_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
-    stale_query.update({
-        "stage": {"$in": ["proposal", "negotiation"]},
-        "updated_at": {"$lt": (now - timedelta(days=7)).isoformat()}
-    })
-    stale_deals = await db.leads.find(stale_query, {"_id": 0}).to_list(10)
-    
-    for lead in stale_deals:
-        existing = await db.notifications.find_one({
-            "user_id": current_user.id,
-            "lead_id": lead["id"],
-            "type": NotificationType.STALE_DEAL,
-            "created_at": {"$gte": (now - timedelta(days=3)).isoformat()}
+    if prefs.get("stale_deal_alerts", True):
+        stale_query = {"assigned_to": current_user.id} if not is_admin_user(current_user) else {}
+        stale_query.update({
+            "stage": {"$in": ["proposal", "negotiation"]},
+            "updated_at": {"$lt": (now - timedelta(days=7)).isoformat()}
         })
-        if not existing:
-            deal_value = lead.get("deal_value", 0)
-            notif = SmartNotification(
-                user_id=current_user.id,
-                type=NotificationType.STALE_DEAL,
-                title="⚠️ Stale Deal Alert",
-                message=f"Deal with {lead['company']} (${deal_value:,.0f}) has been in {lead['stage']} for over a week.",
-                lead_id=lead["id"],
-                data={"stage": lead["stage"], "deal_value": deal_value}
-            )
-            doc = notif.model_dump()
-            doc["created_at"] = doc["created_at"].isoformat()
-            await db.notifications.insert_one(doc)
-            notifications_created.append(notif.title)
+        stale_deals = await db.leads.find(stale_query, {"_id": 0}).to_list(10)
+        
+        for lead in stale_deals:
+            existing = await db.notifications.find_one({
+                "user_id": current_user.id,
+                "lead_id": lead["id"],
+                "type": NotificationType.STALE_DEAL,
+                "created_at": {"$gte": (now - timedelta(days=3)).isoformat()}
+            })
+            if not existing:
+                deal_value = lead.get("deal_value", 0)
+                notif = SmartNotification(
+                    user_id=current_user.id,
+                    type=NotificationType.STALE_DEAL,
+                    title="⚠️ Stale Deal Alert",
+                    message=f"Deal with {lead['company']} (${deal_value:,.0f}) has been in {lead['stage']} for over a week.",
+                    lead_id=lead["id"],
+                    data={"stage": lead["stage"], "deal_value": deal_value}
+                )
+                doc = notif.model_dump()
+                doc["created_at"] = doc["created_at"].isoformat()
+                await db.notifications.insert_one(doc)
+                notifications_created.append(notif.title)
     
     # 3. Upcoming Meetings (within 1 hour)
-    upcoming_meetings = await db.calendar_events.find({
-        "created_by": current_user.id,
-        "start": {
-            "$gte": now.isoformat(),
-            "$lte": (now + timedelta(hours=1)).isoformat()
-        }
-    }, {"_id": 0}).to_list(10)
-    
-    for meeting in upcoming_meetings:
-        existing = await db.notifications.find_one({
-            "user_id": current_user.id,
-            "type": NotificationType.MEETING_REMINDER,
-            "data.event_id": meeting["id"],
-            "created_at": {"$gte": (now - timedelta(hours=2)).isoformat()}
-        })
-        if not existing:
-            notif = SmartNotification(
-                user_id=current_user.id,
-                type=NotificationType.MEETING_REMINDER,
-                title="📅 Meeting Starting Soon",
-                message=f"'{meeting['title']}' starts in less than an hour.",
-                data={"event_id": meeting["id"], "title": meeting["title"]}
-            )
-            doc = notif.model_dump()
-            doc["created_at"] = doc["created_at"].isoformat()
-            await db.notifications.insert_one(doc)
-            notifications_created.append(notif.title)
+    if prefs.get("meeting_reminders", True):
+        upcoming_meetings = await db.calendar_events.find({
+            "created_by": current_user.id,
+            "start": {
+                "$gte": now.isoformat(),
+                "$lte": (now + timedelta(hours=1)).isoformat()
+            }
+        }, {"_id": 0}).to_list(10)
+        
+        for meeting in upcoming_meetings:
+            existing = await db.notifications.find_one({
+                "user_id": current_user.id,
+                "type": NotificationType.MEETING_REMINDER,
+                "data.event_id": meeting["id"],
+                "created_at": {"$gte": (now - timedelta(hours=2)).isoformat()}
+            })
+            if not existing:
+                notif = SmartNotification(
+                    user_id=current_user.id,
+                    type=NotificationType.MEETING_REMINDER,
+                    title="📅 Meeting Starting Soon",
+                    message=f"'{meeting['title']}' starts in less than an hour.",
+                    data={"event_id": meeting["id"], "title": meeting["title"]}
+                )
+                doc = notif.model_dump()
+                doc["created_at"] = doc["created_at"].isoformat()
+                await db.notifications.insert_one(doc)
+                notifications_created.append(notif.title)
     
     # 4. Tasks Due Today
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    due_tasks = await db.tasks.find({
-        "assigned_to": current_user.id,
-        "status": {"$ne": "completed"},
-        "due_date": {
-            "$gte": today_start.isoformat(),
-            "$lte": today_end.isoformat()
-        }
-    }, {"_id": 0}).to_list(10)
-    
-    for task in due_tasks:
-        existing = await db.notifications.find_one({
-            "user_id": current_user.id,
-            "type": NotificationType.TASK_DUE,
-            "data.task_id": task.get("id"),
-            "created_at": {"$gte": today_start.isoformat()}
-        })
-        if not existing:
-            notif = SmartNotification(
-                user_id=current_user.id,
-                type=NotificationType.TASK_DUE,
-                title="✅ Task Due Today",
-                message=f"'{task.get('title', 'Task')}' is due today.",
-                data={"task_id": task.get("id"), "title": task.get("title")}
-            )
-            doc = notif.model_dump()
-            doc["created_at"] = doc["created_at"].isoformat()
-            await db.notifications.insert_one(doc)
-            notifications_created.append(notif.title)
+    if prefs.get("task_due_alerts", True):
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        due_tasks = await db.tasks.find({
+            "assigned_to": current_user.id,
+            "status": {"$ne": "completed"},
+            "due_date": {
+                "$gte": today_start.isoformat(),
+                "$lte": today_end.isoformat()
+            }
+        }, {"_id": 0}).to_list(10)
+        
+        for task in due_tasks:
+            existing = await db.notifications.find_one({
+                "user_id": current_user.id,
+                "type": NotificationType.TASK_DUE,
+                "data.task_id": task.get("id"),
+                "created_at": {"$gte": today_start.isoformat()}
+            })
+            if not existing:
+                notif = SmartNotification(
+                    user_id=current_user.id,
+                    type=NotificationType.TASK_DUE,
+                    title="✅ Task Due Today",
+                    message=f"'{task.get('title', 'Task')}' is due today.",
+                    data={"task_id": task.get("id"), "title": task.get("title")}
+                )
+                doc = notif.model_dump()
+                doc["created_at"] = doc["created_at"].isoformat()
+                await db.notifications.insert_one(doc)
+                notifications_created.append(notif.title)
     
     return {
         "success": True,

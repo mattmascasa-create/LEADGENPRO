@@ -35,6 +35,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import CRMIntegrationsPage from '@/pages/CRMIntegrationsPage';
 import EmailAnalyticsPage from '@/pages/EmailAnalyticsPage';
 import PipelineForecastPage from '@/pages/PipelineForecastPage';
+import NotificationPreferencesPage from '@/pages/NotificationPreferencesPage';
 
 import TasksPage from '@/pages/TasksPage';
 import MeetingsPage from '@/pages/MeetingsPage';

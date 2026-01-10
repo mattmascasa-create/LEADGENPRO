@@ -101,6 +101,12 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 # VAPID Keys for Web Push Notifications
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY')
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '').replace('\\n', '\n')
+
+# Create the main app and router
+app = FastAPI(title="LeadGen Pro API")
+api_router = APIRouter(prefix="/api")
+
+# Models
 class UserRole(str):
     ADMIN = "admin"
     CLIENT = "client"

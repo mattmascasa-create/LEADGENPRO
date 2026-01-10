@@ -391,22 +391,22 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             
             {/* Lead Info */}
             {leadInfo && !showSettings && (
-              <div className="mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-primary/30">
-                  <User className="w-10 h-10 text-white" />
+              <div className="mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-primary/30">
+                  <User className="w-7 h-7 text-white" />
                 </div>
-                <p className="text-white font-semibold text-xl">{leadInfo.first_name} {leadInfo.last_name}</p>
-                <p className="text-slate-400">{leadInfo.company}</p>
+                <p className="text-white font-semibold text-lg">{leadInfo.first_name} {leadInfo.last_name}</p>
+                <p className="text-slate-400 text-sm">{leadInfo.company}</p>
               </div>
             )}
 
             {!leadInfo && !isCallActive && !showSettings && (
-              <div className="mb-4">
-                <div className="w-18 h-18 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-500/30" style={{width: '72px', height: '72px'}}>
-                  <Phone className="w-9 h-9 text-white" />
+              <div className="mb-3">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg shadow-green-500/30">
+                  <Phone className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-white font-semibold text-xl">Click-to-Call Dialer</h2>
-                <p className="text-slate-500 text-sm mt-1">We'll call your phone first, then connect you to the lead</p>
+                <h2 className="text-white font-semibold text-lg">Click-to-Call Dialer</h2>
+                <p className="text-slate-500 text-xs mt-1">We'll call your phone first, then connect you</p>
               </div>
             )}
 

@@ -342,6 +342,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/settings/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationPreferencesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/tasks"
         element={
           <ProtectedRoute>

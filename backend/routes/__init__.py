@@ -10,6 +10,9 @@ from routes import calls
 from routes import chat
 from routes import booking
 from routes import admin
+from routes import email
+from routes import forecasting
+from routes import google
 
 # Export routers
 notifications_router = notifications.router
@@ -21,6 +24,9 @@ calls_router = calls.router
 chat_router = chat.router
 booking_router = booking.router
 admin_router = admin.router
+email_router = email.router
+forecasting_router = forecasting.router
+google_router = google.router
 
 # Export notification utilities
 from routes.notifications import (

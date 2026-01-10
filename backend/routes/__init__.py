@@ -9,6 +9,7 @@ from routes import calendar
 from routes import calls
 from routes import chat
 from routes import booking
+from routes import admin
 
 # Export routers
 notifications_router = notifications.router
@@ -19,6 +20,7 @@ calendar_router = calendar.router
 calls_router = calls.router
 chat_router = chat.router
 booking_router = booking.router
+admin_router = admin.router
 
 # Export notification utilities
 from routes.notifications import (
@@ -62,6 +64,7 @@ from routes.chat import (
     ChatMessage,
     ChatMessageCreate,
     UserStatus,
+    UpdateStatusRequest,
     STATUS_PRESETS
 )
 
@@ -70,6 +73,13 @@ from routes.booking import (
     BookingRequest,
     AvailabilitySlot,
     MeetingType
+)
+
+# Export admin utilities
+from routes.admin import (
+    AdminUserCreate,
+    AdminUserUpdate,
+    DailyGoals
 )
 
 __all__ = [
@@ -81,6 +91,7 @@ __all__ = [
     'calls_router',
     'chat_router',
     'booking_router',
+    'admin_router',
     'NotificationType',
     'SmartNotification',
     'NotificationPreferences',
@@ -105,8 +116,12 @@ __all__ = [
     'ChatMessage',
     'ChatMessageCreate',
     'UserStatus',
+    'UpdateStatusRequest',
     'STATUS_PRESETS',
     'BookingRequest',
     'AvailabilitySlot',
-    'MeetingType'
+    'MeetingType',
+    'AdminUserCreate',
+    'AdminUserUpdate',
+    'DailyGoals'
 ]

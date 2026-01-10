@@ -31,7 +31,7 @@ MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 DB_NAME = os.environ.get('DB_NAME', 'leadgen_pro')
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'LeadGen Pro <onboarding@resend.dev>')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://crm-commander-1.preview.emergentagent.com')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://sales-automation-22.preview.emergentagent.com')
 
 def generate_digest_html(user_name: str, notifications: list, stats: dict) -> str:
     """Generate HTML email for daily digest"""

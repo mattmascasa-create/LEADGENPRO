@@ -14,7 +14,7 @@ import io
 import csv
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://crm-commander-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://sales-automation-22.preview.emergentagent.com/api"
 
 # Test credentials as specified in review request
 TEST_EMAIL = "admin@test.com"

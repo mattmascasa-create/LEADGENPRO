@@ -12,6 +12,7 @@ import {
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import NotificationStatsWidget from '@/components/NotificationStatsWidget';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

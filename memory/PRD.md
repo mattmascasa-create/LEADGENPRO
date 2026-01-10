@@ -288,6 +288,7 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 - **OpenAI Whisper**: Implemented via `emergentintegrations`
 - **Resend**: Implemented but blocked by sandbox mode
 - **Google Drive**: Partially implemented, paused
+- **Google Calendar**: ✅ Two-way sync implemented (Jan 10, 2026)
 
 ## Deployment Configuration
 

@@ -327,16 +327,21 @@ const BookingPage = () => {
 
                   <h2 className="text-2xl font-bold mb-6">Enter Your Details</h2>
 
-                  <form onSubmit={handleBooking} className="space-y-4">
+                  <form onSubmit={handleBooking} className="space-y-4" autoComplete="on">
                     <div>
                       <label className="block text-sm font-medium mb-1">Your Name *</label>
                       <input
                         type="text"
+                        name="name"
                         value={bookingDetails.name}
                         onChange={(e) => setBookingDetails({...bookingDetails, name: e.target.value})}
                         required
+                        autoComplete="name"
+                        spellCheck="true"
+                        autoCapitalize="words"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="John Doe"
+                        data-testid="booking-name-input"
                       />
                     </div>
 
@@ -344,11 +349,16 @@ const BookingPage = () => {
                       <label className="block text-sm font-medium mb-1">Email *</label>
                       <input
                         type="email"
+                        name="email"
                         value={bookingDetails.email}
                         onChange={(e) => setBookingDetails({...bookingDetails, email: e.target.value})}
                         required
+                        autoComplete="email"
+                        spellCheck="false"
+                        autoCapitalize="off"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="john@company.com"
+                        data-testid="booking-email-input"
                       />
                     </div>
 
@@ -356,10 +366,14 @@ const BookingPage = () => {
                       <label className="block text-sm font-medium mb-1">Phone</label>
                       <input
                         type="tel"
+                        name="phone"
                         value={bookingDetails.phone}
                         onChange={(e) => setBookingDetails({...bookingDetails, phone: e.target.value})}
+                        autoComplete="tel"
+                        spellCheck="false"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="+1 (555) 000-0000"
+                        data-testid="booking-phone-input"
                       />
                     </div>
 
@@ -367,21 +381,31 @@ const BookingPage = () => {
                       <label className="block text-sm font-medium mb-1">Company</label>
                       <input
                         type="text"
+                        name="company"
                         value={bookingDetails.company}
                         onChange={(e) => setBookingDetails({...bookingDetails, company: e.target.value})}
+                        autoComplete="organization"
+                        spellCheck="true"
+                        autoCapitalize="words"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Acme Inc."
+                        data-testid="booking-company-input"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium mb-1">Additional Notes</label>
                       <textarea
+                        name="notes"
                         value={bookingDetails.notes}
                         onChange={(e) => setBookingDetails({...bookingDetails, notes: e.target.value})}
                         rows={3}
+                        spellCheck="true"
+                        autoCorrect="on"
+                        autoCapitalize="sentences"
                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                         placeholder="Anything you'd like to discuss..."
+                        data-testid="booking-notes-textarea"
                       />
                     </div>
 
@@ -389,6 +413,7 @@ const BookingPage = () => {
                       type="submit"
                       disabled={isSubmitting}
                       className="w-full py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      data-testid="booking-submit-btn"
                     >
                       {isSubmitting ? 'Scheduling...' : 'Schedule Meeting'}
                     </button>

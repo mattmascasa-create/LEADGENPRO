@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Bell, Flame, AlertTriangle, Mail, Calendar, CheckSquare,
-  User, TrendingUp, Moon, Clock, ArrowLeft, Save, Loader2
+  User, TrendingUp, Moon, Clock, ArrowLeft, Save, Loader2,
+  Smartphone, Send
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import { 
+  isPushSupported, 
+  getNotificationPermission, 
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  isSubscribedToPush 
+} from '@/utils/pushNotifications';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -15,6 +23,11 @@ const NotificationPreferencesPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState('default');
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [togglingPush, setTogglingPush] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
   const [preferences, setPreferences] = useState({
     hot_lead_alerts: true,
     stale_deal_alerts: true,
@@ -36,7 +49,15 @@ const NotificationPreferencesPage = () => {
 
   useEffect(() => {
     fetchPreferences();
+    checkPushStatus();
   }, []);
+
+  const checkPushStatus = async () => {
+    setPushSupported(isPushSupported());
+    setPushPermission(getNotificationPermission());
+    const subscribed = await isSubscribedToPush();
+    setPushSubscribed(subscribed);
+  };
 
   const fetchPreferences = async () => {
     try {

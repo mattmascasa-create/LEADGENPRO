@@ -333,7 +333,22 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 ## Future/Backlog (P2)
 - [ ] Connect AI Email "Generate" button to LLM
 - [ ] CRM Integrations (HubSpot/Salesforce placeholders)
-- [ ] Backend refactoring (server.py is 2500+ lines)
+- [ ] Continue backend refactoring (Phase 2+: auth, leads, calendar routes)
+
+## Backend Refactoring Progress (Jan 10, 2026)
+**COMPLETED - Phase 1**
+- Created `/app/backend/core/` module:
+  - `config.py` - Environment variables
+  - `database.py` - MongoDB connection
+  - `security.py` - JWT auth, User model, is_admin_user helper
+- Created `/app/backend/routes/` module:
+  - `notifications.py` - All notification endpoints (~700 lines extracted)
+  - `push.py` - Web push notification endpoints (~150 lines extracted)
+- Created `/app/backend/send_daily_digest.py` - Cron script for daily digest
+- Set up crontab for daily digest email (8 AM UTC)
+- **Impact**: Reduced server.py from ~9,100 to ~8,250 lines
+
+**See**: `/app/backend/REFACTORING.md` for full plan and next steps
 
 ## Technical Architecture
 

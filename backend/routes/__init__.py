@@ -157,6 +157,9 @@ __all__ = [
     'email_router',
     'forecasting_router',
     'google_router',
+    'tasks_router',
+    'meetings_router',
+    'public_api_router',
     'NotificationType',
     'SmartNotification',
     'NotificationPreferences',
@@ -202,5 +205,17 @@ __all__ = [
     'get_google_credentials',
     'get_drive_service',
     'get_calendar_service',
-    'GOOGLE_SCOPES'
+    'GOOGLE_SCOPES',
+    'Task',
+    'TaskCreate',
+    'TaskUpdate',
+    'MeetingTypeModel',
+    'MeetingTypeCreate',
+    'AvailabilityRule',
+    'UserStatusUpdate',
+    'APIKey',
+    'CreateAPIKeyRequest',
+    'PublicLeadCreate',
+    'WebhookSubscription',
+    'get_api_key_user'
 ]

@@ -452,6 +452,7 @@ class Lead(BaseModel):
     status: str = "new"
     stage: str = "prospecting"
     score: int = 0
+    deal_value: Optional[float] = 0.0  # Deal value for pipeline forecasting
     ai_insights: Optional[str] = None
     assigned_to: Optional[str] = None
     created_by: str
@@ -474,6 +475,7 @@ class LeadCreate(BaseModel):
     zip_code: Optional[str] = None
     notes: Optional[str] = None
     status: str = "new"
+    deal_value: Optional[float] = 0.0
     tags: List[str] = []
 
 class Appointment(BaseModel):

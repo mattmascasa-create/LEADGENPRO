@@ -1,51 +1,45 @@
 # LeadGen Pro Backend Refactoring Plan
 
 ## Current State
-- `server.py`: ~6,690 lines (reduced from ~9,100)
-- Notifications, Push, Auth, Leads, Calendar, and Calls endpoints moved to modular routes
-- Core configuration extracted to separate modules
+- `server.py`: ~5,998 lines (reduced from ~9,100)
+- 8 route modules created, covering major functionality
+- Core configuration and security extracted
 
 ## Refactoring Progress
 
-### Phase 1 (Completed ✅) - ~850 lines extracted
-- [x] Create `core/config.py`, `core/database.py`, `core/security.py`
-- [x] Create `routes/notifications.py`, `routes/push.py`
-- [x] Create `send_daily_digest.py` + crontab
+### Phase 1-5 (Previously Completed) - ~2,410 lines extracted
+- [x] Core modules (config, database, security)
+- [x] Routes: notifications, push, auth, leads, calendar, calls
 
-### Phase 2 (Completed ✅) - ~240 lines extracted
-- [x] Create `routes/auth.py` - All authentication endpoints
+### Phase 6 (Completed ✅) - ~692 lines extracted
+- [x] Create `routes/chat.py` - Team chat, channels, DMs, reactions, threads
+  - /chat/channels, /chat/dm/{user_id}, /chat/dm/list
+  - /chat/messages, /chat/messages/{id}/reactions, /chat/messages/{id}/thread
+- [x] Create `routes/booking.py` - Public booking, availability, meeting types
+  - /booking/{user_id}, /booking/{user_id}/slots
+  - /booking/{user_id}/book, /booking/{user_id}/meeting-types
+  - /booking/link/{user_id}
 
-### Phase 3 (Completed ✅) - ~350 lines extracted
-- [x] Create `routes/leads.py` - Lead CRUD, bulk ops, scraping
+**Total Progress:** Server.py reduced from ~9,100 to ~5,998 lines (~3,102 lines extracted, **34% reduction**)
 
-### Phase 4 (Completed ✅) - ~256 lines extracted
-- [x] Create `routes/calendar.py` - Calendar events, appointments, Meet
-
-### Phase 5 (Completed ✅) - ~713 lines extracted
-- [x] Create `routes/calls.py` - All voice/call endpoints
-  - /calls/dispositions, /calls/{id}/disposition
-  - /voice/token, /voice/call, /voice/connect/*
-  - /voice/dial-status, /voice/call-complete/*
-  - /voice/hangup, /voice/events, /voice/recording-callback
-  - /calls/log, /calls/logs, /calls/stats
-
-**Note**: AI-powered call features (analysis, transcribe, coaching) remain in server.py due to LLM dependencies.
-
-**Total Progress:** Server.py reduced from ~9,100 to ~6,690 lines (~2,410 lines extracted, 26.5% reduction)
-
-### Phase 6 (Next Priority)
-- [ ] Extract booking endpoints to `routes/booking.py`
-- [ ] Extract chat endpoints to `routes/chat.py`
-
-### Phase 7
+### Phase 7 (Next Priority)
 - [ ] Extract admin endpoints to `routes/admin.py`
 - [ ] Extract AI services to `services/ai.py`
-- [ ] Clean up server.py to be minimal entry point
+
+### Remaining in server.py (~5,998 lines)
+- User status endpoints
+- Meeting type management
+- Gong-like call analytics (AI-powered)
+- AI Assistant endpoints
+- Email/sequences
+- Google Drive/Calendar sync
+- Public API
+- Various admin endpoints
 
 ## Current Architecture
 ```
 /app/backend/
-├── server.py              # Main app (~6,690 lines)
+├── server.py              # Main app (~5,998 lines)
 ├── core/
 │   ├── config.py          # ✅ Environment variables
 │   ├── database.py        # ✅ MongoDB setup
@@ -56,12 +50,9 @@
 │   ├── notifications.py   # ✅ Smart notifications
 │   ├── push.py            # ✅ Web push
 │   ├── calendar.py        # ✅ Calendar/appointments
-│   └── calls.py           # ✅ Voice/Twilio (NEW)
+│   ├── calls.py           # ✅ Voice/Twilio
+│   ├── chat.py            # ✅ Team chat (NEW)
+│   └── booking.py         # ✅ Public booking (NEW)
 ├── send_daily_digest.py   # ✅ Cron script
 └── requirements.txt
-```
-
-## Cron Job
-```bash
-0 8 * * * cd /app/backend && /root/.venv/bin/python send_daily_digest.py >> /var/log/digest_cron.log 2>&1
 ```

@@ -41,7 +41,7 @@ from routes import (
     notifications_router, push_router, auth_router, leads_router,
     calendar_router, calls_router, chat_router, booking_router, admin_router,
     email_router, forecasting_router, google_router, tasks_router, 
-    meetings_router, public_api_router
+    meetings_router, public_api_router, support_router, stats_router
 )
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
@@ -55,6 +55,8 @@ from routes.google import CalendarSyncRequest, get_google_credentials, get_drive
 from routes.tasks import Task, TaskCreate
 from routes.meetings import MeetingType, MeetingTypeCreate, AvailabilityRule
 from routes.public_api import APIKey, CreateAPIKeyRequest, get_api_key_user
+from routes.support import ErrorSeverity, ErrorCategory, categorize_error, log_error_to_db, attempt_auto_fix
+from routes.stats import Stats, AIInsight
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

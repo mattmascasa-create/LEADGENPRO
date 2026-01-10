@@ -965,8 +965,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">First Name</label>
                   <input
                     type="text"
+                    name="first_name"
                     value={editingLead.first_name}
                     onChange={(e) => setEditingLead({...editingLead, first_name: e.target.value})}
+                    autoComplete="given-name"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -974,8 +978,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Last Name</label>
                   <input
                     type="text"
+                    name="last_name"
                     value={editingLead.last_name}
                     onChange={(e) => setEditingLead({...editingLead, last_name: e.target.value})}
+                    autoComplete="family-name"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -983,8 +991,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Email</label>
                   <input
                     type="email"
+                    name="email"
                     value={editingLead.email}
                     onChange={(e) => setEditingLead({...editingLead, email: e.target.value})}
+                    autoComplete="email"
+                    spellCheck="false"
+                    autoCapitalize="off"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -992,8 +1004,11 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Phone</label>
                   <input
                     type="tel"
+                    name="phone"
                     value={editingLead.phone || ''}
                     onChange={(e) => setEditingLead({...editingLead, phone: e.target.value})}
+                    autoComplete="tel"
+                    spellCheck="false"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1001,8 +1016,11 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Mobile</label>
                   <input
                     type="tel"
+                    name="mobile"
                     value={editingLead.mobile || ''}
                     onChange={(e) => setEditingLead({...editingLead, mobile: e.target.value})}
+                    autoComplete="tel"
+                    spellCheck="false"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1010,8 +1028,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Company</label>
                   <input
                     type="text"
+                    name="company"
                     value={editingLead.company}
                     onChange={(e) => setEditingLead({...editingLead, company: e.target.value})}
+                    autoComplete="organization"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1019,8 +1041,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Title</label>
                   <input
                     type="text"
+                    name="title"
                     value={editingLead.title || ''}
                     onChange={(e) => setEditingLead({...editingLead, title: e.target.value})}
+                    autoComplete="organization-title"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1028,8 +1054,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Street Address</label>
                   <input
                     type="text"
+                    name="street_address"
                     value={editingLead.street_address || ''}
                     onChange={(e) => setEditingLead({...editingLead, street_address: e.target.value})}
+                    autoComplete="street-address"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1037,8 +1067,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">City</label>
                   <input
                     type="text"
+                    name="city"
                     value={editingLead.city || ''}
                     onChange={(e) => setEditingLead({...editingLead, city: e.target.value})}
+                    autoComplete="address-level2"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1046,8 +1080,12 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">State</label>
                   <input
                     type="text"
+                    name="state"
                     value={editingLead.state || ''}
                     onChange={(e) => setEditingLead({...editingLead, state: e.target.value})}
+                    autoComplete="address-level1"
+                    spellCheck="true"
+                    autoCapitalize="words"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1055,8 +1093,11 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">ZIP Code</label>
                   <input
                     type="text"
+                    name="zip_code"
                     value={editingLead.zip_code || ''}
                     onChange={(e) => setEditingLead({...editingLead, zip_code: e.target.value})}
+                    autoComplete="postal-code"
+                    spellCheck="false"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -1064,10 +1105,13 @@ const LeadsPage = () => {
                   <label className="block text-sm font-medium mb-1">Deal Value ($)</label>
                   <input
                     type="number"
+                    name="deal_value"
                     min="0"
                     step="100"
                     value={editingLead.deal_value || ''}
                     onChange={(e) => setEditingLead({...editingLead, deal_value: parseFloat(e.target.value) || 0})}
+                    autoComplete="off"
+                    spellCheck="false"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="0.00"
                   />
@@ -1090,9 +1134,13 @@ const LeadsPage = () => {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Notes</label>
                   <textarea
+                    name="notes"
                     value={editingLead.notes || ''}
                     onChange={(e) => setEditingLead({...editingLead, notes: e.target.value})}
                     rows={3}
+                    spellCheck="true"
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
                     className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Add notes about this lead..."
                   />

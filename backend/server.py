@@ -935,6 +935,9 @@ app.include_router(meetings_router, prefix="/api")
 app.include_router(public_api_router, prefix="/api")
 app.include_router(support_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
+app.include_router(call_analysis_router, prefix="/api")
+app.include_router(workflows_router, prefix="/api")
+app.include_router(deal_velocity_router, prefix="/api")
 
 app.include_router(api_router)
 

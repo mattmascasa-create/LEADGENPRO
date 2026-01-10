@@ -313,6 +313,11 @@ const EmployeeDashboardPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Smart Alerts Widget */}
+        <div className="mt-6 lg:mt-8">
+          <NotificationStatsWidget />
+        </div>
       </div>
     </DashboardLayout>
   );

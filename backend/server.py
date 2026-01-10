@@ -48,7 +48,7 @@ from routes.notifications import (
 from routes.leads import Lead, LeadCreate, Activity, calculate_lead_score
 from routes.calendar import Appointment, AppointmentCreate, CalendarEvent, CalendarEventCreate
 from routes.calls import CallLog, CallLogCreate, CallOutcome, CALL_DISPOSITIONS
-from routes.chat import Channel, ChatMessage, ChatMessageCreate, UserStatus, STATUS_PRESETS
+from routes.chat import Channel, ChatMessage, ChatMessageCreate, UserStatus, STATUS_PRESETS, UpdateStatusRequest
 from routes.booking import BookingRequest, AvailabilitySlot
 
 ROOT_DIR = Path(__file__).parent

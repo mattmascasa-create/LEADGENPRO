@@ -527,95 +527,94 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             )}
           </div>
 
-          {/* Phone Number Display - Larger */}
+          {/* Phone Number Display - Compact */}
           {!showOutcomeModal && !showSettings && (
-            <div className="px-6 pb-4">
-              <div className="bg-slate-800/80 rounded-2xl p-5 flex items-center justify-between border border-slate-700/50">
+            <div className="px-4 pb-3">
+              <div className="bg-slate-800/80 rounded-xl p-3 flex items-center justify-between border border-slate-700/50">
                 <input
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d+\-\s()]/g, ''))}
                   placeholder="Enter phone number"
-                  className="bg-transparent text-white text-3xl font-light w-full outline-none placeholder-slate-500 tracking-wide"
+                  className="bg-transparent text-white text-2xl font-light w-full outline-none placeholder-slate-500 tracking-wide"
                   disabled={isCallActive}
                   data-testid="phone-input"
                 />
                 {phoneNumber && !isCallActive && (
                   <button
                     onClick={handleBackspace}
-                    className="p-3 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all ml-2"
+                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-all ml-2"
                   >
-                    <Delete className="w-7 h-7" />
+                    <Delete className="w-6 h-6" />
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Dial Pad - Larger */}
+          {/* Dial Pad - Compact */}
           {!isCallActive && !showOutcomeModal && !showSettings && (
-            <div className="px-6 pb-4">
-              <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
+            <div className="px-4 pb-3">
+              <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
                 {dialPadButtons.flat().map((btn) => (
                   <button
                     key={btn.digit}
                     onClick={() => handleDigitPress(btn.digit)}
-                    className="h-18 rounded-2xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/30 text-white transition-all active:scale-95 flex flex-col items-center justify-center"
-                    style={{height: '72px'}}
+                    className="h-14 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/30 text-white transition-all active:scale-95 flex flex-col items-center justify-center"
                     data-testid={`dial-${btn.digit}`}
                   >
-                    <span className="text-3xl font-light">{btn.digit}</span>
-                    {btn.letters && <span className="text-xs text-slate-500 tracking-widest">{btn.letters}</span>}
+                    <span className="text-2xl font-light">{btn.digit}</span>
+                    {btn.letters && <span className="text-[10px] text-slate-500 tracking-widest">{btn.letters}</span>}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Recording Toggle */}
+          {/* Recording Toggle - Compact */}
           {!isCallActive && !showOutcomeModal && !showSettings && (
-            <div className="px-6 pb-4">
+            <div className="px-4 pb-3">
               <button
                 onClick={() => setIsRecording(!isRecording)}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border ${
+                className={`w-full flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                   isRecording 
                     ? 'bg-red-500/10 border-red-500/30' 
                     : 'bg-slate-800/60 border-slate-700/30'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Circle className={`w-6 h-6 ${isRecording ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
-                  <span className={`font-medium ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
-                    Record this call
+                <div className="flex items-center gap-2">
+                  <Circle className={`w-5 h-5 ${isRecording ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
+                  <span className={`text-sm font-medium ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
+                    Record call
                   </span>
                 </div>
-                <div className={`w-12 h-7 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}>
-                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                <div className={`w-10 h-6 rounded-full transition-colors ${isRecording ? 'bg-red-500' : 'bg-slate-600'}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform mt-0.5 ${isRecording ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'}`} />
                 </div>
               </button>
             </div>
           )}
 
-          {/* Recent Calls */}
+          {/* Recent Calls - Compact */}
           {!isCallActive && !showOutcomeModal && !showSettings && recentCalls.length > 0 && (
-            <div className="px-6 pb-4">
+            <div className="px-4 pb-3">
               <button
                 onClick={() => setShowRecentCalls(!showRecentCalls)}
-                className="w-full text-left text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+                className="w-full text-left text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-sm"
               >
-                <Clock className="w-5 h-5" />
-                Recent calls ({recentCalls.length})
+                <Clock className="w-4 h-4" />
+                Recent ({recentCalls.length})
               </button>
               {showRecentCalls && (
-                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                <div className="mt-2 space-y-1.5 max-h-32 overflow-y-auto">
                   {recentCalls.map((call, idx) => (
                     <button
                       key={idx}
                       onClick={() => redialNumber(call.phone_number)}
-                      className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm"
                     >
                       <span className="text-white">{formatPhoneDisplay(call.phone_number)}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
                         call.outcome === 'connected' ? 'bg-green-500/20 text-green-400' :
                         call.outcome === 'no_answer' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-slate-600 text-slate-400'
@@ -629,26 +628,26 @@ const PhoneDialer = ({ isOpen, onClose, prefilledNumber = '', leadInfo = null })
             </div>
           )}
 
-          {/* Call Button - Larger */}
+          {/* Call Button - Compact */}
           {!showOutcomeModal && !showSettings && (
-            <div className="p-6 pt-2">
+            <div className="p-4 pt-1">
               {!isCallActive ? (
                 <button
                   onClick={initiateCall}
                   disabled={!phoneNumber || phoneNumber.replace(/\D/g, '').length < 10 || !user?.phone}
-                  className="w-full h-20 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-3 text-white font-semibold text-xl transition-all active:scale-95 shadow-lg shadow-green-500/30 disabled:shadow-none"
+                  className="w-full h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center gap-2 text-white font-semibold transition-all active:scale-95 shadow-lg shadow-green-500/30 disabled:shadow-none"
                   data-testid="call-btn"
                 >
-                  <Phone className="w-7 h-7" />
-                  {!user?.phone ? 'Set Your Phone Number First' : 'Start Call'}
+                  <Phone className="w-5 h-5" />
+                  {!user?.phone ? 'Set Phone First' : 'Start Call'}
                 </button>
               ) : (
                 <button
                   onClick={endCall}
-                  className="w-full h-20 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center gap-3 text-white font-semibold text-xl transition-all active:scale-95 shadow-lg shadow-red-500/30"
+                  className="w-full h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-full flex items-center justify-center gap-2 text-white font-semibold transition-all active:scale-95 shadow-lg shadow-red-500/30"
                   data-testid="end-call-btn"
                 >
-                  <PhoneOff className="w-7 h-7" />
+                  <PhoneOff className="w-5 h-5" />
                   End Call
                 </button>
               )}

@@ -8418,6 +8418,52 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
         "details": notifications_created
     }
 
+# ==================== AUTOMATIC CALENDAR BACKGROUND SYNC ====================
+
+@api_router.post("/google/calendar/auto-sync")
+async def auto_sync_calendar(
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+):
+    """Enable automatic calendar sync every 15 minutes"""
+    # Store auto-sync preference
+    await db.user_settings.update_one(
+        {"user_id": current_user.id},
+        {"$set": {
+            "calendar_auto_sync": True,
+            "calendar_sync_interval": 15,  # minutes
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "message": "Automatic calendar sync enabled (every 15 minutes)"
+    }
+
+@api_router.delete("/google/calendar/auto-sync")
+async def disable_auto_sync_calendar(current_user: User = Depends(get_current_user)):
+    """Disable automatic calendar sync"""
+    await db.user_settings.update_one(
+        {"user_id": current_user.id},
+        {"$set": {"calendar_auto_sync": False}}
+    )
+    return {"success": True, "message": "Automatic sync disabled"}
+
+@api_router.get("/google/calendar/auto-sync/status")
+async def get_auto_sync_status(current_user: User = Depends(get_current_user)):
+    """Get auto-sync status"""
+    settings = await db.user_settings.find_one({"user_id": current_user.id})
+    creds = await db.google_credentials.find_one({"user_id": current_user.id})
+    
+    return {
+        "auto_sync_enabled": settings.get("calendar_auto_sync", False) if settings else False,
+        "sync_interval_minutes": settings.get("calendar_sync_interval", 15) if settings else 15,
+        "google_connected": creds is not None,
+        "last_sync": creds.get("last_calendar_sync") if creds else None
+    }
+
 # Check if user is admin helper endpoint
 @api_router.get("/auth/check-admin")
 async def check_admin_status(current_user: User = Depends(get_current_user)):

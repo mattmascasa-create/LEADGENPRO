@@ -142,6 +142,33 @@ const SettingsPage = () => {
     }
   };
 
+  const fetchAutoSyncStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/google/calendar/auto-sync/status`, getAuthHeaders());
+      setAutoSyncStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch auto-sync status');
+    }
+  };
+
+  const toggleAutoSync = async () => {
+    setTogglingAutoSync(true);
+    try {
+      if (autoSyncStatus?.auto_sync_enabled) {
+        await axios.delete(`${API_URL}/api/google/calendar/auto-sync`, getAuthHeaders());
+        toast.success('Automatic sync disabled');
+      } else {
+        await axios.post(`${API_URL}/api/google/calendar/auto-sync`, {}, getAuthHeaders());
+        toast.success('Automatic sync enabled (every 15 minutes)');
+      }
+      fetchAutoSyncStatus();
+    } catch (error) {
+      toast.error('Failed to toggle auto-sync');
+    } finally {
+      setTogglingAutoSync(false);
+    }
+  };
+
   const fetchApiKeys = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/api-keys`, getAuthHeaders());

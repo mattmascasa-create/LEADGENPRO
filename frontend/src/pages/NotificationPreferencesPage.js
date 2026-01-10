@@ -438,7 +438,7 @@ const NotificationPreferencesPage = () => {
           </div>
           
           <div className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
                   <Mail className="w-5 h-5 text-blue-500" />
@@ -460,6 +460,36 @@ const NotificationPreferencesPage = () => {
                 }`} />
               </button>
             </div>
+
+            {preferences.email_digest && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="pt-4 border-t border-border"
+              >
+                <p className="text-sm text-green-600 flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  Daily digest enabled - sent every morning at 8 AM
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={sendTestDigest}
+                    disabled={sendingDigest}
+                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {sendingDigest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Send Test Digest
+                  </button>
+                  <button
+                    onClick={() => window.open(`${API_URL}/api/notifications/digest-preview`, '_blank')}
+                    className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Preview
+                  </button>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
 

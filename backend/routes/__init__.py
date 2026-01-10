@@ -3,10 +3,12 @@ Routes module for LeadGen Pro backend
 """
 from routes import notifications
 from routes import push
+from routes import auth
 
 # Export routers
 notifications_router = notifications.router
 push_router = push.router
+auth_router = auth.router
 
 # Export notification utilities for use in other modules
 from routes.notifications import (
@@ -21,6 +23,7 @@ from routes.notifications import (
 __all__ = [
     'notifications_router',
     'push_router',
+    'auth_router',
     'NotificationType',
     'SmartNotification',
     'NotificationPreferences',

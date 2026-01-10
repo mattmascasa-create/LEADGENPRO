@@ -7,6 +7,8 @@ from routes import auth
 from routes import leads
 from routes import calendar
 from routes import calls
+from routes import chat
+from routes import booking
 
 # Export routers
 notifications_router = notifications.router
@@ -15,6 +17,8 @@ auth_router = auth.router
 leads_router = leads.router
 calendar_router = calendar.router
 calls_router = calls.router
+chat_router = chat.router
+booking_router = booking.router
 
 # Export notification utilities
 from routes.notifications import (
@@ -52,6 +56,22 @@ from routes.calls import (
     format_phone_e164
 )
 
+# Export chat utilities
+from routes.chat import (
+    Channel,
+    ChatMessage,
+    ChatMessageCreate,
+    UserStatus,
+    STATUS_PRESETS
+)
+
+# Export booking utilities
+from routes.booking import (
+    BookingRequest,
+    AvailabilitySlot,
+    MeetingType
+)
+
 __all__ = [
     'notifications_router',
     'push_router',
@@ -59,6 +79,8 @@ __all__ = [
     'leads_router',
     'calendar_router',
     'calls_router',
+    'chat_router',
+    'booking_router',
     'NotificationType',
     'SmartNotification',
     'NotificationPreferences',
@@ -78,5 +100,13 @@ __all__ = [
     'CallLogCreate',
     'CallOutcome',
     'CALL_DISPOSITIONS',
-    'format_phone_e164'
+    'format_phone_e164',
+    'Channel',
+    'ChatMessage',
+    'ChatMessageCreate',
+    'UserStatus',
+    'STATUS_PRESETS',
+    'BookingRequest',
+    'AvailabilitySlot',
+    'MeetingType'
 ]

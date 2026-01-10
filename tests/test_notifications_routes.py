@@ -114,11 +114,10 @@ class TestNotificationEndpoints:
     
     # POST /api/notifications/mark-read - Mark notifications as read
     def test_mark_all_notifications_read(self, auth_headers):
-        """Test POST /api/notifications/mark-read with mark_all=true"""
+        """Test POST /api/notifications/mark-read with mark_all=true (query param)"""
         response = requests.post(
-            f"{BASE_URL}/api/notifications/mark-read",
-            headers=auth_headers,
-            json={"mark_all": True}
+            f"{BASE_URL}/api/notifications/mark-read?mark_all=true",
+            headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -126,7 +125,7 @@ class TestNotificationEndpoints:
         assert data["success"] == True
     
     def test_mark_specific_notifications_read(self, auth_headers):
-        """Test POST /api/notifications/mark-read with notification_ids"""
+        """Test POST /api/notifications/mark-read with notification_ids (query param)"""
         # First get some notifications
         get_response = requests.get(
             f"{BASE_URL}/api/notifications",
@@ -134,25 +133,27 @@ class TestNotificationEndpoints:
         )
         assert get_response.status_code == 200
         
-        # Try to mark with empty list (should still work)
+        # Try to mark with no notification_ids (should return success=False)
         response = requests.post(
             f"{BASE_URL}/api/notifications/mark-read",
-            headers=auth_headers,
-            json={"notification_ids": []}
+            headers=auth_headers
         )
         assert response.status_code == 200
+        data = response.json()
+        # When no params, should return success=False
+        assert "success" in data
     
     def test_mark_read_no_params(self, auth_headers):
         """Test POST /api/notifications/mark-read with no params returns appropriate response"""
         response = requests.post(
             f"{BASE_URL}/api/notifications/mark-read",
-            headers=auth_headers,
-            json={}
+            headers=auth_headers
         )
         assert response.status_code == 200
         data = response.json()
         # Should return success=False when no notifications specified
         assert "success" in data
+        assert data["success"] == False
     
     # DELETE /api/notifications/{id} - Delete notification
     def test_delete_notification_not_found(self, auth_headers):

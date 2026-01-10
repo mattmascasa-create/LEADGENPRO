@@ -41,7 +41,8 @@ from routes import (
     notifications_router, push_router, auth_router, leads_router,
     calendar_router, calls_router, chat_router, booking_router, admin_router,
     email_router, forecasting_router, google_router, tasks_router, 
-    meetings_router, public_api_router, support_router, stats_router
+    meetings_router, public_api_router, support_router, stats_router,
+    call_analysis_router, workflows_router, deal_velocity_router
 )
 from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
@@ -57,6 +58,9 @@ from routes.meetings import MeetingType, MeetingTypeCreate, AvailabilityRule
 from routes.public_api import APIKey, CreateAPIKeyRequest, get_api_key_user
 from routes.support import ErrorSeverity, ErrorCategory, categorize_error, log_error_to_db, attempt_auto_fix
 from routes.stats import Stats, AIInsight
+from routes.call_analysis import CallTranscript, CallAnalysis
+from routes.workflows import Workflow, WorkflowAction, WorkflowTrigger
+from routes.deal_velocity import record_stage_transition, STAGE_ORDER
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

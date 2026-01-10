@@ -8891,7 +8891,7 @@ def generate_digest_html(user_name: str, notifications: list, stats: dict, front
                 {notification_section("Upcoming Meetings", "📅", meetings, "#8b5cf6")}
                 {notification_section("Other Notifications", "📬", other, "#6b7280")}
                 
-                {'''<p style="color: #888; text-align: center; padding: 20px;">No new notifications overnight! 🎉</p>''' if not notifications else ""}
+                {'<p style="color: #888; text-align: center; padding: 20px;">No new notifications overnight! All caught up!</p>' if not notifications else ""}
             </div>
             
             <!-- CTA Button -->

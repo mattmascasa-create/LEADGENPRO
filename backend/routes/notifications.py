@@ -242,31 +242,7 @@ def generate_digest_html(user_name: str, notifications: list, stats: dict, front
 
 
 # ==================== NOTIFICATION ENDPOINTS ====================
-
-@router.get("")
-async def get_notifications(
-    unread_only: bool = False,
-    limit: int = 50,
-    current_user: User = Depends(get_current_user)
-):
-    """Get user's smart notifications"""
-    query = {"user_id": current_user.id}
-    if unread_only:
-        query["read"] = False
-    
-    notifications = await db.notifications.find(
-        query, {"_id": 0}
-    ).sort("created_at", -1).to_list(limit)
-    
-    unread_count = await db.notifications.count_documents({
-        "user_id": current_user.id, "read": False
-    })
-    
-    return {
-        "notifications": notifications,
-        "unread_count": unread_count
-    }
-
+# NOTE: Main GET /notifications endpoint is in server.py with admin error handling
 
 @router.post("/mark-read")
 async def mark_notifications_read(

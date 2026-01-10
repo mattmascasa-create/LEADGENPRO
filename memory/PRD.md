@@ -202,6 +202,13 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
   - Recent searches saved locally
   - Pro tip hints for efficiency
 
+### Backend Endpoints (New - Session 3 - Jan 10, 2026)
+- `/api/google/calendar/sync` (POST) - Full two-way calendar sync
+- `/api/google/calendar/sync-status` (GET) - Detailed sync status with event counts
+- `/api/google/calendar/events/{event_id}` (PUT) - Update event in both calendars
+- `/api/google/calendar/events/{event_id}` (DELETE) - Delete event from both calendars
+- `/api/google/calendar/push-event/{event_id}` (POST) - Push single event to Google
+
 ### Backend Endpoints (New - Session 2)
 - `/api/leads/bulk-assign` - Assign multiple leads to a user
 - `/api/leads/bulk-sequence` - Add multiple leads to a sequence

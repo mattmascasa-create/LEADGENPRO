@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, X, AlertTriangle, AlertCircle, Info, CheckCircle,
-  ExternalLink, Clock, Trash2
+  ExternalLink, Clock, Trash2, RefreshCw, Flame, Calendar,
+  CheckSquare, Mail, User
 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -14,18 +16,21 @@ const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
 
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(`${API_URL}/api/notifications`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      const response = await axios.get(`${API_URL}/api/notifications`, getAuthHeaders());
       setNotifications(response.data.notifications || []);
       setUnreadCount(response.data.unread_count || 0);
     } catch (err) {
@@ -33,11 +38,33 @@ const NotificationCenter = () => {
     }
   };
 
+  const generateNotifications = async () => {
+    setGenerating(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/notifications/generate`, getAuthHeaders());
+      if (response.data.notifications_created > 0) {
+        toast.success(`Generated ${response.data.notifications_created} new notifications`);
+        fetchNotifications();
+      } else {
+        toast.info('No new notifications to generate');
+      }
+    } catch (err) {
+      console.error('Failed to generate notifications:', err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
+    // Generate notifications on first load
+    generateNotifications();
     
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll for new notifications every 60 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+      generateNotifications();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -52,54 +79,89 @@ const NotificationCenter = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = async (notificationIds, markAll = false) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API_URL}/api/notifications/${notificationId}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axios.post(
+        `${API_URL}/api/notifications/mark-read`,
+        { notification_ids: notificationIds, mark_all: markAll },
+        getAuthHeaders()
       );
       
-      setNotifications(prev => 
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      if (markAll) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setUnreadCount(0);
+      } else {
+        setNotifications(prev => 
+          prev.map(n => notificationIds.includes(n.id) ? { ...n, read: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - notificationIds.length));
+      }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
   };
 
+  const deleteNotification = async (notificationId, e) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`${API_URL}/api/notifications/${notificationId}`, getAuthHeaders());
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      const deleted = notifications.find(n => n.id === notificationId);
+      if (deleted && !deleted.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
   const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
+    markAsRead([notification.id]);
     
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    // Navigate based on notification type
+    if (notification.lead_id) {
+      navigate(`/leads/${notification.lead_id}`);
+      setIsOpen(false);
+    } else if (notification.type === 'meeting_reminder' && notification.data?.event_id) {
+      navigate('/calendar');
+      setIsOpen(false);
+    } else if (notification.type === 'task_due') {
+      navigate('/tasks');
       setIsOpen(false);
     }
   };
 
-  const getSeverityIcon = (severity) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className="w-5 h-5 text-red-500" />;
-      case 'high':
-        return <AlertCircle className="w-5 h-5 text-orange-500" />;
-      case 'medium':
-        return <Info className="w-5 h-5 text-yellow-500" />;
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'hot_lead':
+        return <Flame className="w-5 h-5 text-orange-500" />;
+      case 'stale_deal':
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case 'email_opened':
+        return <Mail className="w-5 h-5 text-blue-500" />;
+      case 'meeting_reminder':
+        return <Calendar className="w-5 h-5 text-purple-500" />;
+      case 'task_due':
+        return <CheckSquare className="w-5 h-5 text-green-500" />;
+      case 'new_lead_assigned':
+        return <User className="w-5 h-5 text-primary" />;
       default:
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <Info className="w-5 h-5 text-secondary" />;
     }
   };
 
-  const getSeverityBg = (severity) => {
-    switch (severity) {
-      case 'critical':
-        return 'bg-red-50 border-red-200';
-      case 'high':
+  const getTypeBg = (type) => {
+    switch (type) {
+      case 'hot_lead':
         return 'bg-orange-50 border-orange-200';
-      case 'medium':
+      case 'stale_deal':
         return 'bg-yellow-50 border-yellow-200';
+      case 'email_opened':
+        return 'bg-blue-50 border-blue-200';
+      case 'meeting_reminder':
+        return 'bg-purple-50 border-purple-200';
+      case 'task_due':
+        return 'bg-green-50 border-green-200';
       default:
         return 'bg-slate-50 border-slate-200';
     }
@@ -122,6 +184,7 @@ const NotificationCenter = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        data-testid="notification-bell"
       >
         <Bell className="w-5 h-5 text-secondary" />
         {unreadCount > 0 && (
@@ -146,12 +209,32 @@ const NotificationCenter = () => {
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-slate-50">
-              <h3 className="font-semibold text-foreground">Notifications</h3>
-              {unreadCount > 0 && (
-                <span className="text-xs text-secondary">
-                  {unreadCount} unread
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-foreground">Smart Notifications</h3>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={generateNotifications}
+                  disabled={generating}
+                  className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
+                  title="Refresh notifications"
+                >
+                  <RefreshCw className={`w-4 h-4 text-secondary ${generating ? 'animate-spin' : ''}`} />
+                </button>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => markAsRead([], true)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Notifications List */}
@@ -159,7 +242,8 @@ const NotificationCenter = () => {
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-12 h-12 text-secondary/30 mx-auto mb-3" />
-                  <p className="text-secondary text-sm">No notifications</p>
+                  <p className="text-secondary text-sm">No notifications yet</p>
+                  <p className="text-xs text-secondary/70 mt-1">We'll alert you about hot leads, stale deals, and more</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
@@ -169,22 +253,30 @@ const NotificationCenter = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors ${
+                      className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors group ${
                         !notification.read ? 'bg-blue-50/50' : ''
                       }`}
                     >
                       <div className="flex gap-3">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border ${getSeverityBg(notification.severity)}`}>
-                          {getSeverityIcon(notification.severity)}
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border ${getTypeBg(notification.type)}`}>
+                          {getTypeIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground' : 'text-secondary'}`}>
                               {notification.title}
                             </h4>
-                            {!notification.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
-                            )}
+                            <div className="flex items-center gap-1">
+                              {!notification.read && (
+                                <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                              )}
+                              <button
+                                onClick={(e) => deleteNotification(notification.id, e)}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
                           </div>
                           <p className="text-xs text-secondary mt-1 line-clamp-2">
                             {notification.message}
@@ -194,8 +286,8 @@ const NotificationCenter = () => {
                             <span className="text-xs text-secondary/70">
                               {formatTime(notification.created_at)}
                             </span>
-                            {notification.action_url && (
-                              <ExternalLink className="w-3 h-3 text-primary ml-auto" />
+                            {notification.lead_id && (
+                              <span className="text-xs text-primary ml-auto">View lead →</span>
                             )}
                           </div>
                         </div>
@@ -207,19 +299,18 @@ const NotificationCenter = () => {
             </div>
 
             {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="px-4 py-3 border-t border-border bg-slate-50">
-                <button
-                  onClick={() => {
-                    navigate('/admin/errors');
-                    setIsOpen(false);
-                  }}
-                  className="w-full text-center text-sm text-primary hover:underline"
-                >
-                  View all system errors
-                </button>
-              </div>
-            )}
+            <div className="px-4 py-3 border-t border-border bg-slate-50 flex items-center justify-between">
+              <span className="text-xs text-secondary">Auto-refreshes every minute</span>
+              <button
+                onClick={() => {
+                  navigate('/settings');
+                  setIsOpen(false);
+                }}
+                className="text-xs text-primary hover:underline"
+              >
+                Notification settings
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

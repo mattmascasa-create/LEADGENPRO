@@ -41,6 +41,7 @@ const NotificationPreferencesPage = () => {
     quiet_hours_end: "08:00",
     email_digest: false
   });
+  const [sendingDigest, setSendingDigest] = useState(false);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');

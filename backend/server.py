@@ -47,14 +47,10 @@ from routes.notifications import (
     NotificationType, SmartNotification, NotificationPreferences,
     send_push_to_user, should_send_notification, create_lead_assigned_notification
 )
-from routes.leads import Lead, LeadCreate, Activity, calculate_lead_score
-from routes.calendar import Appointment, AppointmentCreate, CalendarEvent, CalendarEventCreate
-from routes.calls import CallLog, CallLogCreate, CallOutcome, CALL_DISPOSITIONS
+# Note: Many models (Lead, Activity, etc.) are defined locally in this file for legacy endpoints
 from routes.chat import Channel, ChatMessage, ChatMessageCreate, UserStatus, STATUS_PRESETS, UpdateStatusRequest
 from routes.booking import BookingRequest, AvailabilitySlot
 from routes.admin import AdminUserCreate, AdminUserUpdate, DailyGoals
-from routes.email import EmailTemplate, EmailCampaign, ScheduledEmail, EmailSequence, SequenceEnrollment
-from routes.forecasting import DealForecast
 from routes.google import CalendarSyncRequest, get_google_credentials, get_drive_service, get_calendar_service, GOOGLE_SCOPES
 from routes.tasks import Task, TaskCreate
 from routes.meetings import MeetingType, MeetingTypeCreate, AvailabilityRule

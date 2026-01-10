@@ -156,6 +156,13 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
    - Test notification feature to verify setup
    - Automatic cleanup of expired subscriptions
    - Click notification to navigate directly to relevant lead/task/calendar
+   - **Auto-Push Integration**: Smart alerts automatically send push notifications when:
+     - Hot leads need attention
+     - Deals become stale
+     - Meetings are starting soon
+     - Tasks are due today
+     - Leads open your emails
+     - New leads are assigned to you
 
 4. **Deal Value Field** (P2)
    - Added `deal_value` to Lead and LeadCreate models

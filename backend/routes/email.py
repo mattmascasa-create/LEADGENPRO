@@ -653,7 +653,7 @@ async def get_sequence(sequence_id: str, current_user: User = Depends(get_curren
     # Get lead details for enrollments
     lead_ids = [e["lead_id"] for e in enrollments]
     leads = await db.leads.find({"id": {"$in": lead_ids}}, {"_id": 0}).to_list(500)
-    lead_map = {l["id"]: l for l in leads}
+    lead_map = {lead["id"]: lead for lead in leads}
     
     for enrollment in enrollments:
         enrollment["lead"] = lead_map.get(enrollment["lead_id"])

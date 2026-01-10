@@ -8,10 +8,10 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 
-from core.config import JWT_SECRET, JWT_ALGORITHM
+from core.config import JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from core.database import db
 
 # Password hashing
@@ -41,6 +41,25 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    role: str
+    company: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: User
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against a hashed password"""
     return pwd_context.verify(plain_password, hashed_password)
@@ -49,6 +68,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """Hash a password"""
     return pwd_context.hash(password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
@@ -79,8 +110,13 @@ __all__ = [
     'ADMIN_EMAILS',
     'UserRole',
     'User',
+    'UserCreate',
+    'UserLogin',
+    'Token',
     'verify_password',
     'get_password_hash',
+    'create_access_token',
     'get_current_user',
-    'is_admin_user'
+    'is_admin_user',
+    'ACCESS_TOKEN_EXPIRE_MINUTES'
 ]

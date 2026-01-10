@@ -239,7 +239,14 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 
 ## Blocked Items
 - **Email Notifications (Resend)** - In sandbox mode, can only send to verified emails. User needs to verify domain in Resend dashboard.
-- **Two-Way Google Calendar Sync** - Blocked on user providing Google OAuth credentials. Setup guide at `/app/GOOGLE_OAUTH_SETUP.md`
+
+## Recently Unblocked (Jan 10, 2026)
+- **Two-Way Google Calendar Sync** - ✅ IMPLEMENTED! User provided Google OAuth credentials.
+  - Full two-way sync (push LeadGen events to Google, pull Google events to LeadGen)
+  - Sync status tracking with event counts
+  - Individual event push/pull options
+  - Auto-refresh of expired OAuth tokens
+  - Settings page UI with sync controls
 
 ## Paused Items
 - **Google Drive Content Hub** - OAuth flow paused by user request

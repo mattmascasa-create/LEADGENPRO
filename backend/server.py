@@ -1553,6 +1553,9 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(email_router, prefix="/api")
 app.include_router(forecasting_router, prefix="/api")
 app.include_router(google_router, prefix="/api")
+app.include_router(tasks_router, prefix="/api")
+app.include_router(meetings_router, prefix="/api")
+app.include_router(public_api_router, prefix="/api")
 
 app.include_router(api_router)
 

@@ -8610,6 +8610,14 @@ async def create_email_opened_notification(
     doc["created_at"] = doc["created_at"].isoformat()
     await db.notifications.insert_one(doc)
     
+    # Send push notification
+    await send_push_to_user(
+        user_id=user_id,
+        title=notif.title,
+        message=notif.message,
+        data={"type": notif.type, "lead_id": lead_id}
+    )
+    
     return {"success": True}
 
 # ==================== NEW LEAD ASSIGNED NOTIFICATION ====================
@@ -8635,6 +8643,14 @@ async def create_lead_assigned_notification(lead: dict, assigned_to: str):
     doc = notif.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.notifications.insert_one(doc)
+    
+    # Send push notification
+    await send_push_to_user(
+        user_id=assigned_to,
+        title=notif.title,
+        message=notif.message,
+        data={"type": notif.type, "lead_id": lead["id"]}
+    )
 
 # ==================== WEB PUSH NOTIFICATIONS ====================
 

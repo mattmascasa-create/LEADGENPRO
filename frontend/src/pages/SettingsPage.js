@@ -4,7 +4,8 @@ import {
   Key, Plus, Copy, Trash2, Eye, EyeOff, Shield, 
   Settings, Phone, Bell, Link2, Code, CheckCircle,
   AlertCircle, Loader2, RefreshCw, ExternalLink,
-  HardDrive, Calendar, Video, Mail, User as UserIcon
+  HardDrive, Calendar, Video, Mail, User as UserIcon,
+  ArrowLeftRight, Clock
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -23,6 +24,8 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleStatus, setGoogleStatus] = useState(null);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [calendarSyncStatus, setCalendarSyncStatus] = useState(null);
+  const [syncing, setSyncing] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     phone: '',

@@ -15,12 +15,12 @@ import asyncio
 from pywebpush import webpush, WebPushException
 import resend
 
-from ..core.config import (
+from core.config import (
     VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_CLAIMS_EMAIL,
     RESEND_API_KEY, SENDER_EMAIL, FRONTEND_URL
 )
-from ..core.database import db
-from ..core.security import User, get_current_user, is_admin_user
+from core.database import db
+from core.security import User, get_current_user, is_admin_user
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 

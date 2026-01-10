@@ -11,8 +11,8 @@ from typing import Optional
 from datetime import datetime, timezone
 import uuid
 
-from .config import JWT_SECRET, JWT_ALGORITHM
-from .database import db
+from core.config import JWT_SECRET, JWT_ALGORITHM
+from core.database import db
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

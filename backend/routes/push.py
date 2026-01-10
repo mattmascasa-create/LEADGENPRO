@@ -11,9 +11,9 @@ import json
 
 from pywebpush import webpush, WebPushException
 
-from ..core.config import VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_CLAIMS_EMAIL
-from ..core.database import db
-from ..core.security import User, get_current_user
+from core.config import VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_CLAIMS_EMAIL
+from core.database import db
+from core.security import User, get_current_user
 
 router = APIRouter(prefix="/push", tags=["Push Notifications"])
 

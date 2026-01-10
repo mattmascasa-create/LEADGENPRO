@@ -2,7 +2,7 @@
 Database connection and utilities for LeadGen Pro
 """
 from motor.motor_asyncio import AsyncIOMotorClient
-from .config import MONGO_URL, DB_NAME
+from core.config import MONGO_URL, DB_NAME
 
 # MongoDB client
 client = AsyncIOMotorClient(MONGO_URL)

@@ -82,6 +82,44 @@ const NotificationPreferencesPage = () => {
     }
   };
 
+  const togglePushNotifications = async () => {
+    setTogglingPush(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (pushSubscribed) {
+        await unsubscribeFromPushNotifications(token);
+        setPushSubscribed(false);
+        toast.success('Push notifications disabled');
+      } else {
+        await subscribeToPushNotifications(token);
+        setPushSubscribed(true);
+        setPushPermission('granted');
+        toast.success('Push notifications enabled! You\'ll now receive alerts even when the tab is closed.');
+      }
+    } catch (error) {
+      console.error('Push toggle error:', error);
+      if (error.message.includes('denied')) {
+        toast.error('Notification permission denied. Please enable in browser settings.');
+      } else {
+        toast.error('Failed to toggle push notifications');
+      }
+    } finally {
+      setTogglingPush(false);
+    }
+  };
+
+  const sendTestPush = async () => {
+    setTestingPush(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/push/test`, {}, getAuthHeaders());
+      toast.success(`Test notification sent to ${response.data.sent} device(s)!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send test notification');
+    } finally {
+      setTestingPush(false);
+    }
+  };
+
   const togglePreference = (key) => {
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
   };

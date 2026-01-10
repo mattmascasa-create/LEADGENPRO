@@ -7979,17 +7979,8 @@ async def get_my_stats(current_user: User = Depends(get_current_user)):
 # have been moved to modular routes:
 # - /app/backend/routes/notifications.py
 # - /app/backend/routes/push.py
+# - /app/backend/routes/auth.py
 # The main GET /notifications endpoint remains here for admin error integration.
-
-# Check if user is admin helper endpoint
-@api_router.get("/auth/check-admin")
-async def check_admin_status(current_user: User = Depends(get_current_user)):
-    """Check if current user has admin privileges"""
-    return {
-        "is_admin": is_admin_user(current_user),
-        "role": current_user.role,
-        "email": current_user.email
-    }
 
 # Include public API router
 app.include_router(public_api, prefix="/api")

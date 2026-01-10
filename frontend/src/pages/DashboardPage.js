@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Users, Target, Calendar, Sparkles, ArrowRight, Activity } from 'lucide-react';
 import { toast } from 'react-toastify';
 import DashboardLayout from '@/components/DashboardLayout';
+import NotificationStatsWidget from '@/components/NotificationStatsWidget';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 

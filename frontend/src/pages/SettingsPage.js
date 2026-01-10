@@ -33,6 +33,8 @@ const SettingsPage = () => {
     department: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [autoSyncStatus, setAutoSyncStatus] = useState(null);
+  const [togglingAutoSync, setTogglingAutoSync] = useState(false);
 
   useEffect(() => {
     if (user) {

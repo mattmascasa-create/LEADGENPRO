@@ -36,6 +36,13 @@ from google.auth.transport.requests import Request as GoogleRequest
 import tempfile
 from pywebpush import webpush, WebPushException
 
+# Import modular routes
+from routes import notifications_router, push_router
+from routes.notifications import (
+    NotificationType, SmartNotification, NotificationPreferences,
+    send_push_to_user, should_send_notification, create_lead_assigned_notification
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 

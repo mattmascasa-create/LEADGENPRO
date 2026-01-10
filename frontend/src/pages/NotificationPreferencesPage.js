@@ -1,0 +1,346 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Bell, Flame, AlertTriangle, Mail, Calendar, CheckSquare,
+  User, TrendingUp, Moon, Clock, ArrowLeft, Save, Loader2
+} from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '@/components/DashboardLayout';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const NotificationPreferencesPage = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [preferences, setPreferences] = useState({
+    hot_lead_alerts: true,
+    stale_deal_alerts: true,
+    email_opened_alerts: true,
+    meeting_reminders: true,
+    task_due_alerts: true,
+    new_lead_assigned: true,
+    deal_stage_change: true,
+    quiet_hours_enabled: false,
+    quiet_hours_start: "22:00",
+    quiet_hours_end: "08:00",
+    email_digest: false
+  });
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
+
+  useEffect(() => {
+    fetchPreferences();
+  }, []);
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/notifications/preferences`, getAuthHeaders());
+      setPreferences(prev => ({ ...prev, ...response.data }));
+    } catch (error) {
+      console.error('Failed to fetch preferences');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const savePreferences = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API_URL}/api/notifications/preferences`, preferences, getAuthHeaders());
+      toast.success('Notification preferences saved!');
+    } catch (error) {
+      toast.error('Failed to save preferences');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const togglePreference = (key) => {
+    setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const notificationTypes = [
+    {
+      key: 'hot_lead_alerts',
+      icon: Flame,
+      iconColor: 'text-orange-500',
+      iconBg: 'bg-orange-100',
+      title: 'Hot Lead Alerts',
+      description: 'Get notified when high-score leads need attention'
+    },
+    {
+      key: 'stale_deal_alerts',
+      icon: AlertTriangle,
+      iconColor: 'text-yellow-500',
+      iconBg: 'bg-yellow-100',
+      title: 'Stale Deal Alerts',
+      description: 'Alert when deals are stuck in proposal/negotiation too long'
+    },
+    {
+      key: 'email_opened_alerts',
+      icon: Mail,
+      iconColor: 'text-blue-500',
+      iconBg: 'bg-blue-100',
+      title: 'Email Opened',
+      description: 'Know when leads open your emails'
+    },
+    {
+      key: 'meeting_reminders',
+      icon: Calendar,
+      iconColor: 'text-purple-500',
+      iconBg: 'bg-purple-100',
+      title: 'Meeting Reminders',
+      description: 'Reminders for upcoming meetings'
+    },
+    {
+      key: 'task_due_alerts',
+      icon: CheckSquare,
+      iconColor: 'text-green-500',
+      iconBg: 'bg-green-100',
+      title: 'Task Due Alerts',
+      description: 'Alerts for tasks due today'
+    },
+    {
+      key: 'new_lead_assigned',
+      icon: User,
+      iconColor: 'text-primary',
+      iconBg: 'bg-blue-100',
+      title: 'New Lead Assigned',
+      description: 'Get notified when a lead is assigned to you'
+    },
+    {
+      key: 'deal_stage_change',
+      icon: TrendingUp,
+      iconColor: 'text-emerald-500',
+      iconBg: 'bg-emerald-100',
+      title: 'Deal Stage Changes',
+      description: 'Track when deals move through pipeline stages'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/settings')}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Notification Preferences</h1>
+              <p className="text-secondary text-sm">Customize which alerts you receive</p>
+            </div>
+          </div>
+          <button
+            onClick={savePreferences}
+            disabled={saving}
+            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            data-testid="save-preferences-btn"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save Changes
+          </button>
+        </div>
+
+        {/* Notification Types */}
+        <div className="bg-white rounded-xl border border-border overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-border bg-slate-50">
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold">Alert Types</h2>
+            </div>
+            <p className="text-sm text-secondary mt-1">Choose which notifications you want to receive</p>
+          </div>
+          
+          <div className="divide-y divide-border">
+            {notificationTypes.map((type, idx) => (
+              <motion.div
+                key={type.key}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-lg ${type.iconBg} flex items-center justify-center`}>
+                    <type.icon className={`w-5 h-5 ${type.iconColor}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{type.title}</h3>
+                    <p className="text-sm text-secondary">{type.description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => togglePreference(type.key)}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${
+                    preferences[type.key] ? 'bg-primary' : 'bg-slate-300'
+                  }`}
+                  data-testid={`toggle-${type.key}`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform ${
+                    preferences[type.key] ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quiet Hours */}
+        <div className="bg-white rounded-xl border border-border overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-border bg-slate-50">
+            <div className="flex items-center gap-2">
+              <Moon className="w-5 h-5 text-indigo-500" />
+              <h2 className="font-semibold">Quiet Hours</h2>
+            </div>
+            <p className="text-sm text-secondary mt-1">Pause notifications during specific hours</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                  <Moon className="w-5 h-5 text-indigo-500" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Enable Quiet Hours</h3>
+                  <p className="text-sm text-secondary">No notifications during set times</p>
+                </div>
+              </div>
+              <button
+                onClick={() => togglePreference('quiet_hours_enabled')}
+                className={`w-12 h-7 rounded-full transition-colors relative ${
+                  preferences.quiet_hours_enabled ? 'bg-primary' : 'bg-slate-300'
+                }`}
+                data-testid="toggle-quiet-hours"
+              >
+                <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform ${
+                  preferences.quiet_hours_enabled ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
+            {preferences.quiet_hours_enabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="flex items-center gap-4 pt-4 border-t border-border"
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-secondary" />
+                  <span className="text-sm text-secondary">From</span>
+                </div>
+                <input
+                  type="time"
+                  value={preferences.quiet_hours_start}
+                  onChange={(e) => setPreferences(prev => ({ ...prev, quiet_hours_start: e.target.value }))}
+                  className="px-3 py-2 border border-border rounded-lg text-sm"
+                />
+                <span className="text-sm text-secondary">to</span>
+                <input
+                  type="time"
+                  value={preferences.quiet_hours_end}
+                  onChange={(e) => setPreferences(prev => ({ ...prev, quiet_hours_end: e.target.value }))}
+                  className="px-3 py-2 border border-border rounded-lg text-sm"
+                />
+              </motion.div>
+            )}
+          </div>
+        </div>
+
+        {/* Email Digest */}
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-slate-50">
+            <div className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-500" />
+              <h2 className="font-semibold">Email Digest</h2>
+            </div>
+            <p className="text-sm text-secondary mt-1">Receive a daily summary by email</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Daily Email Summary</h3>
+                  <p className="text-sm text-secondary">Get a digest of all notifications each morning</p>
+                </div>
+              </div>
+              <button
+                onClick={() => togglePreference('email_digest')}
+                className={`w-12 h-7 rounded-full transition-colors relative ${
+                  preferences.email_digest ? 'bg-primary' : 'bg-slate-300'
+                }`}
+                data-testid="toggle-email-digest"
+              >
+                <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform ${
+                  preferences.email_digest ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-6 flex justify-center gap-4">
+          <button
+            onClick={() => {
+              setPreferences(prev => Object.keys(prev).reduce((acc, key) => {
+                if (typeof prev[key] === 'boolean' && key !== 'quiet_hours_enabled' && key !== 'email_digest') {
+                  acc[key] = true;
+                } else {
+                  acc[key] = prev[key];
+                }
+                return acc;
+              }, {}));
+            }}
+            className="text-sm text-primary hover:underline"
+          >
+            Enable all alerts
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={() => {
+              setPreferences(prev => Object.keys(prev).reduce((acc, key) => {
+                if (typeof prev[key] === 'boolean' && key !== 'quiet_hours_enabled' && key !== 'email_digest') {
+                  acc[key] = false;
+                } else {
+                  acc[key] = prev[key];
+                }
+                return acc;
+              }, {}));
+            }}
+            className="text-sm text-red-500 hover:underline"
+          >
+            Disable all alerts
+          </button>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default NotificationPreferencesPage;

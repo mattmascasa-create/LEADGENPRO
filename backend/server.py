@@ -8435,14 +8435,12 @@ async def generate_smart_notifications(current_user: User = Depends(get_current_
                     message=f"'{task.get('title', 'Task')}' is due today.",
                     data={"task_id": task.get("id"), "title": task.get("title")}
                 )
-                doc = notif.model_dump()
-                doc["created_at"] = doc["created_at"].isoformat()
-                await db.notifications.insert_one(doc)
-                notifications_created.append(notif.title)
+                await create_notification_with_push(notif)
     
     return {
         "success": True,
         "notifications_created": len(notifications_created),
+        "push_notifications_sent": push_notifications_sent,
         "details": notifications_created
     }
 

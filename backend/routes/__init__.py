@@ -18,6 +18,9 @@ from routes import meetings
 from routes import public_api
 from routes import support
 from routes import stats
+from routes import call_analysis
+from routes import workflows
+from routes import deal_velocity
 
 # Export routers
 notifications_router = notifications.router
@@ -37,6 +40,9 @@ meetings_router = meetings.router
 public_api_router = public_api.router
 support_router = support.router
 stats_router = stats.router
+call_analysis_router = call_analysis.router
+workflows_router = workflows.router
+deal_velocity_router = deal_velocity.router
 
 # Export notification utilities
 from routes.notifications import (

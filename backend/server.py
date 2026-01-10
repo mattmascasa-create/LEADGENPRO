@@ -8213,6 +8213,12 @@ async def get_my_stats(current_user: User = Depends(get_current_user)):
         "connect_rate": round((connected_calls / total_calls * 100) if total_calls > 0 else 0, 1)
     }
 
+# ==================== SMART NOTIFICATIONS ====================
+# NOTE: Smart Notifications, Push Notifications, and Digest Email endpoints
+# have been moved to modular routes:
+# - /app/backend/routes/notifications.py
+# - /app/backend/routes/push.py
+# The main GET /notifications endpoint remains here for admin error integration.
 
 # Check if user is admin helper endpoint
 @api_router.get("/auth/check-admin")

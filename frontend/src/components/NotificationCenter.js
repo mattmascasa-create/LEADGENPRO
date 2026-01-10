@@ -38,18 +38,37 @@ const NotificationCenter = () => {
     }
   };
 
-  const generateNotifications = async () => {
+  const generateNotifications = async (showToast = false) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/notifications/generate`, getAuthHeaders());
+      if (response.data.notifications_created > 0) {
+        // Only show toast when new notifications are created
+        toast.success(`${response.data.notifications_created} new alert${response.data.notifications_created > 1 ? 's' : ''}!`, {
+          icon: '🔔',
+          position: 'top-right',
+          autoClose: 3000
+        });
+        fetchNotifications();
+      }
+      // Don't show anything if no new notifications - silent refresh
+    } catch (err) {
+      console.error('Failed to generate notifications:', err);
+    }
+  };
+
+  // Manual refresh button handler - this one can show feedback
+  const handleManualRefresh = async () => {
     setGenerating(true);
     try {
       const response = await axios.get(`${API_URL}/api/notifications/generate`, getAuthHeaders());
       if (response.data.notifications_created > 0) {
-        toast.success(`Generated ${response.data.notifications_created} new notifications`);
-        fetchNotifications();
+        toast.success(`${response.data.notifications_created} new alert${response.data.notifications_created > 1 ? 's' : ''}!`);
       } else {
-        toast.info('No new notifications to generate');
+        toast.info('All caught up!', { autoClose: 2000 });
       }
+      fetchNotifications();
     } catch (err) {
-      console.error('Failed to generate notifications:', err);
+      toast.error('Failed to refresh');
     } finally {
       setGenerating(false);
     }
@@ -57,13 +76,13 @@ const NotificationCenter = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Generate notifications on first load
-    generateNotifications();
+    // Silently check for new notifications on first load (no toast if empty)
+    generateNotifications(false);
     
-    // Poll for new notifications every 60 seconds
+    // Poll silently every 60 seconds
     const interval = setInterval(() => {
       fetchNotifications();
-      generateNotifications();
+      generateNotifications(false);
     }, 60000);
     return () => clearInterval(interval);
   }, []);

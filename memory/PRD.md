@@ -144,9 +144,18 @@ LeadGen Pro is an internal, enterprise-grade AI-powered CRM and sales automation
 3. **Notification Preferences Page** (P1) - NEW
    - `/settings/notifications` page with full customization
    - Toggle each alert type on/off
+   - **Browser Push Notifications** - Get alerts even when tab is closed
    - Quiet Hours (pause notifications during set times)
    - Email Digest option (daily summary)
    - Enable All / Disable All quick actions
+
+4. **Browser Push Notifications** (P1) - NEW
+   - Service Worker (`/public/sw.js`) for background notifications
+   - VAPID key authentication for secure push
+   - `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/status` endpoints
+   - Test notification feature to verify setup
+   - Automatic cleanup of expired subscriptions
+   - Click notification to navigate directly to relevant lead/task/calendar
 
 4. **Deal Value Field** (P2)
    - Added `deal_value` to Lead and LeadCreate models
